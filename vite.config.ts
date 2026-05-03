@@ -9,10 +9,11 @@ export default defineConfig(({mode}) => {
     base: '/My-Assistant/',
     build: {
       outDir: 'docs',
+      emptyOutDir: true,
     },
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ""),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
     resolve: {
       alias: {
