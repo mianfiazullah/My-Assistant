@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Assistant</title>
+    <script>
+      // Early interception for MetaMask/Web3 extension errors
+      (function() {
+        const originalFetch = window.fetch;
+        try {
+          Object.defineProperty(window, 'fetch', {
+            get: function() { return originalFetch; },
+            set: function(val) { 
+              // Silently ignore attempts to overwrite fetch
+              return; 
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          // If we can't redefine it, we'll fall back to the error handlers below
+        }
+      })();
+
+      const originalConsoleError = console.error;
+      console.error = function() {
+        const msg = Array.from(arguments).join(' ');
+        if (msg.includes('Cannot set property fetch of #<Window>') || 
+            msg.includes('MetaMask') || 
+            msg.includes('inpage.js')) {
+          return;
+        }
+        originalConsoleError.apply(console, arguments);
+      };
+      window.addEventListener('error', function(e) {
+        if (e.message && (e.message.includes('Cannot set property fetch') || e.message.includes('MetaMask'))) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+    </script>
+    <script type="module" crossorigin src="/My-Assistant/assets/index-D81yUZDI.js"></script>
+    <link rel="stylesheet" crossorigin href="/My-Assistant/assets/index-Bz98SrN7.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
