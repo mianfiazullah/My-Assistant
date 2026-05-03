@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from './components/Layout';
 import FeederMonitoring from './pages/FeederMonitoring';
