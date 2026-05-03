@@ -6,7 +6,13 @@ import { Zap, Calendar, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { toast } from 'sonner';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+let _ai: any = null;
+function getAI() {
+  if (!_ai) {
+    _ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "missing-key" });
+  }
+  return _ai;
+}
 
 const FEEDER_OPTIONS = [
   "Kasur Road",
@@ -65,7 +71,7 @@ export default function FeederMonitoring() {
   const generateForecast = async () => {
     if (readings.length < 5) return;
     const prompt = `Based on these daily feeder readings: ${JSON.stringify(readings.slice(0, 10))}, forecast the total progressive units for this month. Return only the number.`;
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt
     });
@@ -89,7 +95,7 @@ export default function FeederMonitoring() {
       Consider the weather temperature conditions for the current month, last month, and last year for the feeder location.
       Return only the number.
     `;
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt
     });

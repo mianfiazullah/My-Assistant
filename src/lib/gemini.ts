@@ -1,6 +1,12 @@
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+let _ai: any = null;
+function getAI() {
+  if (!_ai) {
+    _ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "missing-key" });
+  }
+  return _ai;
+}
 
 export async function extractBillData(base64Image: string) {
   if (!process.env.GEMINI_API_KEY) {
@@ -20,7 +26,7 @@ export async function extractBillData(base64Image: string) {
     setTimeout(() => reject(new Error("Gemini API request timed out after 180 seconds")), 180000)
   );
 
-  const apiCallPromise = ai.models.generateContent({
+  const apiCallPromise = getAI().models.generateContent({
     model,
     contents: {
       parts: [
