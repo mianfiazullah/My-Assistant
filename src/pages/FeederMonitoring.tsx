@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    _ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "missing-key" });
+    const apiKey = process.env.GEMINI_API_KEY;
+    _ai = new GoogleGenAI({ apiKey });
   }
   return _ai;
 }

@@ -9,10 +9,6 @@ function getAI() {
 }
 
 export async function extractBillData(base64Image: string) {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured. Please add it in the Settings menu.");
-  }
-
   const model = "gemini-3-flash-preview";
   
   const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
@@ -67,7 +63,6 @@ export async function extractBillData(base64Image: string) {
       ],
     },
     config: {
-      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,

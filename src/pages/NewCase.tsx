@@ -2725,7 +2725,7 @@ export default function NewCase() {
         setStep(3);
       } catch (err: any) {
         console.error("Extraction error:", err);
-        setError("Failed to extract data from screenshot. Please try again or enter manually.");
+        setError(err.message || "Failed to extract data from screenshot. Please try again or enter manually.");
       } finally {
         setIsScanning(false);
         e.target.value = ''; // Reset input value
