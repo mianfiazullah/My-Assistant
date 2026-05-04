@@ -378,7 +378,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const buildPath = path.join(process.cwd(), 'docs');
+    const buildPath = path.join(process.cwd(), 'dist');
     app.use(express.static(buildPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(buildPath, 'index.html'));

@@ -4,18 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Assistant</title>
-    <script>
-      window.addEventListener('error', function(event) {
-        if (event.message && (event.message.includes('fetch') || event.message.includes('MetaMask'))) {
-          event.preventDefault();
-        }
-      });
-      window.addEventListener('unhandledrejection', function(event) {
-        if (event.reason && event.reason.message && (event.reason.message.includes('fetch') || event.reason.message.includes('MetaMask'))) {
-          event.preventDefault();
-        }
-      });
-    </script>
   </head>
   <body>
     <div id="root"></div>
