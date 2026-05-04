@@ -20,15 +20,6 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   public static getDerivedStateFromError(error: Error): State {
-    const msg = error.message || '';
-    if (
-      msg.includes('Cannot set property fetch of #<Window> which has only a getter') ||
-      msg.includes('Failed to connect to MetaMask') ||
-      msg.includes('MetaMask')
-    ) {
-      // Ignore MetaMask errors
-      return { hasError: false, error: null };
-    }
     return { hasError: true, error };
   }
 
