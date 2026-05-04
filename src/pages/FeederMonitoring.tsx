@@ -4,16 +4,19 @@ import { db, auth } from '../firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { FeederReading } from '../types';
 import { Zap, Calendar, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 import { toast } from 'sonner';
 
-let _ai: any = null;
-function getAI() {
-  if (!_ai) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    _ai = new GoogleGenAI({ apiKey });
+async function generateAIContent(prompt: string): Promise<string> {
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  if (!response.ok) {
+    throw new Error('Failed to generate AI content');
   }
-  return _ai;
+  const data = await response.json();
+  return data.text || 'N/A';
 }
 
 const FEEDER_OPTIONS = [
@@ -73,11 +76,8 @@ export default function FeederMonitoring() {
   const generateForecast = async () => {
     if (readings.length < 5) return;
     const prompt = `Based on these daily feeder readings: ${safeStringify(readings.slice(0, 10))}, forecast the total progressive units for this month. Return only the number.`;
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt
-    });
-    setForecast(response.text || 'N/A');
+    const responseText = await generateAIContent(prompt);
+    setForecast(responseText);
   };
 
   const calculateAITentative = async (
@@ -97,11 +97,8 @@ export default function FeederMonitoring() {
       Consider the weather temperature conditions for the current month, last month, and last year for the feeder location.
       Return only the number.
     `;
-    const response = await getAI().models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt
-    });
-    return response.text || 'N/A';
+    const responseText = await generateAIContent(prompt);
+    return responseText;
   };
 
   const [editingId, setEditingId] = useState<string | null>(null);
