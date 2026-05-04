@@ -9,7 +9,7 @@ export default defineConfig(({mode}) => {
     base: './',
     build: {
       chunkSizeWarningLimit: 5000,
-      outDir: 'build',
+      outDir: 'docs',
     },
     plugins: [react(), tailwindcss()],
     define: {
