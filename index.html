@@ -34,55 +34,6 @@
         }
         originalConsoleError.apply(console, arguments);
       };
-      window.addEventListener('error', function(e) {
-        if (e.message && (e.message.includes('Cannot set property fetch') || e.message.includes('MetaMask'))) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        // Only show red banner for actual script errors, not resource loading errors
-        if (!(e instanceof ErrorEvent)) return;
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.style.position = 'fixed';
-        errorDiv.style.top = '0';
-        errorDiv.style.left = '0';
-        errorDiv.style.width = '100%';
-        errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
-        errorDiv.style.color = 'white';
-        errorDiv.style.padding = '10px';
-        errorDiv.style.zIndex = '999999';
-        errorDiv.textContent = 'Error: ' + (e.message || 'Unknown') + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || '0');
-        document.body.appendChild(errorDiv);
-      }, true);
-      
-      window.addEventListener('unhandledrejection', function(e) {
-        if (e.reason && e.reason.message && (
-            e.reason.message.includes('Cannot set property fetch') || 
-            e.reason.message.includes('MetaMask') ||
-            e.reason.message.includes('WebSocket closed without opened')
-        )) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        if (e.reason === 'WebSocket closed without opened.' || (e.reason && e.reason.message === 'WebSocket closed without opened.')) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        const errorDiv = document.createElement('div');
-        errorDiv.style.position = 'fixed';
-        errorDiv.style.top = '0';
-        errorDiv.style.left = '0';
-        errorDiv.style.width = '100%';
-        errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
-        errorDiv.style.color = 'white';
-        errorDiv.style.padding = '10px';
-        errorDiv.style.zIndex = '999999';
-        errorDiv.textContent = 'Unhandled Rejection: ' + (e.reason ? (e.reason.message || e.reason) : 'Unknown reason');
-        document.body.appendChild(errorDiv);
-      }, true);
     </script>
   </head>
   <body>
