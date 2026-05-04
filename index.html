@@ -24,7 +24,7 @@
       })();
 
       const originalConsoleError = console.error;
-      window.process = { env: {} };
+      window.process = { env: {}, emit: function() {}, version: "v18.0.0", nextTick: function(cb) { setTimeout(cb, 0); } };
       console.error = function() {
         const msg = Array.from(arguments).join(' ');
         if (msg.includes('Cannot set property fetch of #<Window>') || 
@@ -38,7 +38,38 @@
         if (e.message && (e.message.includes('Cannot set property fetch') || e.message.includes('MetaMask'))) {
           e.preventDefault();
           e.stopPropagation();
+          return;
         }
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+        errorDiv.style.color = 'white';
+        errorDiv.style.padding = '10px';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.textContent = 'Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+        document.body.appendChild(errorDiv);
+      }, true);
+      
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && (e.reason.message.includes('Cannot set property fetch') || e.reason.message.includes('MetaMask'))) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+        errorDiv.style.color = 'white';
+        errorDiv.style.padding = '10px';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.textContent = 'Unhandled Rejection: ' + (e.reason ? (e.reason.message || e.reason) : 'Unknown reason');
+        document.body.appendChild(errorDiv);
       }, true);
     </script>
   </head>
