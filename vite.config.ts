@@ -10,22 +10,6 @@ export default defineConfig(({mode}) => {
     build: {
       chunkSizeWarningLimit: 5000,
       outDir: 'dist',
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('@google/genai')) return 'vendor-genai';
-              if (id.includes('lucide-react')) return 'vendor-lucide';
-              if (id.includes('firebase') || id.includes('@firebase')) return 'vendor-firebase';
-              if (id.includes('html2canvas')) return 'vendor-html2canvas';
-              if (id.includes('jspdf')) return 'vendor-jspdf';
-              if (id.includes('motion') || id.includes('framer-motion')) return 'vendor-motion';
-              if (id.includes('date-fns')) return 'vendor-date-fns';
-              return 'vendor'; // all other package goes here
-            }
-          }
-        }
-      }
     },
     plugins: [react(), tailwindcss()],
     define: {
