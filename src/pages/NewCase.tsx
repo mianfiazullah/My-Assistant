@@ -1,3 +1,4 @@
+import { safeStringify } from "../lib/safeStringify";
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -199,7 +200,7 @@ export default function NewCase() {
 
   // Persistence Effects
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_step', JSON.stringify(step));
+    localStorage.setItem('lesco_new_case_step', safeStringify(step));
   }, [step]);
 
   useEffect(() => {
@@ -212,35 +213,35 @@ export default function NewCase() {
   }, [referenceNumber]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_is_saved', JSON.stringify(isSaved));
+    localStorage.setItem('lesco_new_case_is_saved', safeStringify(isSaved));
   }, [isSaved]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_show_meter_mismatch', JSON.stringify(showMeterMismatch));
+    localStorage.setItem('lesco_new_case_show_meter_mismatch', safeStringify(showMeterMismatch));
   }, [showMeterMismatch]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_is_meter_verified', JSON.stringify(isMeterVerified));
+    localStorage.setItem('lesco_new_case_is_meter_verified', safeStringify(isMeterVerified));
   }, [isMeterVerified]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_show_reading_mismatch', JSON.stringify(showReadingMismatch));
+    localStorage.setItem('lesco_new_case_show_reading_mismatch', safeStringify(showReadingMismatch));
   }, [showReadingMismatch]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_reading_mismatch_type', JSON.stringify(readingMismatchType));
+    localStorage.setItem('lesco_new_case_reading_mismatch_type', safeStringify(readingMismatchType));
   }, [readingMismatchType]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_is_reading_verified', JSON.stringify(isReadingVerified));
+    localStorage.setItem('lesco_new_case_is_reading_verified', safeStringify(isReadingVerified));
   }, [isReadingVerified]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_show_ac_mismatch', JSON.stringify(showAcMismatch));
+    localStorage.setItem('lesco_new_case_show_ac_mismatch', safeStringify(showAcMismatch));
   }, [showAcMismatch]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_is_ac_verified', JSON.stringify(isAcVerified));
+    localStorage.setItem('lesco_new_case_is_ac_verified', safeStringify(isAcVerified));
   }, [isAcVerified]);
 
   useEffect(() => {
@@ -329,11 +330,11 @@ export default function NewCase() {
   });
 
   useEffect(() => {
-    localStorage.setItem('lesco_field_order', JSON.stringify(fieldOrder));
+    localStorage.setItem('lesco_field_order', safeStringify(fieldOrder));
   }, [fieldOrder]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_field_serials', JSON.stringify(fieldSerials));
+    localStorage.setItem('lesco_field_serials', safeStringify(fieldSerials));
   }, [fieldSerials]);
 
   const sensors = useSensors(
@@ -382,7 +383,7 @@ export default function NewCase() {
       return serialA - serialB;
     });
     
-    if (JSON.stringify(sorted) !== JSON.stringify(fieldOrder)) {
+    if (safeStringify(sorted) !== safeStringify(fieldOrder)) {
       setFieldOrder(sorted);
     }
   }, [fieldSerials, fieldOrder]);
@@ -394,7 +395,7 @@ export default function NewCase() {
   ]));
 
   useEffect(() => {
-    localStorage.setItem('lesco_template_order', JSON.stringify(templateOrder));
+    localStorage.setItem('lesco_template_order', safeStringify(templateOrder));
   }, [templateOrder]);
 
   const handleTemplateDragEnd = (event: DragEndEvent) => {
@@ -417,11 +418,11 @@ export default function NewCase() {
   const [step2ButtonSerials, setStep2ButtonSerials] = useState(() => getInitialState('lesco_step2_button_serials', { fetch: '1', scan: '2', skip: '3' }));
 
   useEffect(() => {
-    localStorage.setItem('lesco_step2_button_order', JSON.stringify(step2ButtonOrder));
+    localStorage.setItem('lesco_step2_button_order', safeStringify(step2ButtonOrder));
   }, [step2ButtonOrder]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_step2_button_serials', JSON.stringify(step2ButtonSerials));
+    localStorage.setItem('lesco_step2_button_serials', safeStringify(step2ButtonSerials));
   }, [step2ButtonSerials]);
 
   const handleStep2ButtonDragEnd = (event: DragEndEvent) => {
@@ -453,7 +454,7 @@ export default function NewCase() {
       return serialA - serialB;
     });
     
-    if (JSON.stringify(sorted) !== JSON.stringify(step2ButtonOrder)) {
+    if (safeStringify(sorted) !== safeStringify(step2ButtonOrder)) {
       setStep2ButtonOrder(sorted);
     }
   }, [step2ButtonSerials, step2ButtonOrder]);
@@ -461,7 +462,7 @@ export default function NewCase() {
   const [hasGenerated, setHasGenerated] = useState(() => getInitialState('lesco_new_case_has_generated', false));
 
   useEffect(() => {
-    localStorage.setItem('lesco_new_case_has_generated', JSON.stringify(hasGenerated));
+    localStorage.setItem('lesco_new_case_has_generated', safeStringify(hasGenerated));
   }, [hasGenerated]);
 
   const today = new Date().toISOString().split('T')[0];
@@ -1871,11 +1872,11 @@ export default function NewCase() {
   });
 
   useEffect(() => {
-    localStorage.setItem('lesco_bill_data', JSON.stringify(billData));
+    localStorage.setItem('lesco_bill_data', safeStringify(billData));
   }, [billData]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_detection_data', JSON.stringify(detectionData));
+    localStorage.setItem('lesco_detection_data', safeStringify(detectionData));
   }, [detectionData]);
 
   const isSlownessActive = detectionData.discrepancy.includes('Meter Slow By');
@@ -2745,7 +2746,7 @@ export default function NewCase() {
       const response = await fetch('/api/fetch-bill', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceNumber: cleanRef }),
+        body: safeStringify({ referenceNumber: cleanRef }),
       });
       
       const text = await response.text();

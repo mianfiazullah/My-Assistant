@@ -1,3 +1,4 @@
+import { safeStringify } from "./lib/safeStringify";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore, doc, getDocFromServer } from "firebase/firestore";
@@ -103,6 +104,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.error('Firestore Error: ', safeStringify(errInfo));
+  throw new Error(safeStringify(errInfo));
 }

@@ -1,3 +1,4 @@
+import { safeStringify } from "../lib/safeStringify";
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
@@ -70,7 +71,7 @@ export default function FeederMonitoring() {
 
   const generateForecast = async () => {
     if (readings.length < 5) return;
-    const prompt = `Based on these daily feeder readings: ${JSON.stringify(readings.slice(0, 10))}, forecast the total progressive units for this month. Return only the number.`;
+    const prompt = `Based on these daily feeder readings: ${safeStringify(readings.slice(0, 10))}, forecast the total progressive units for this month. Return only the number.`;
     const response = await getAI().models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt

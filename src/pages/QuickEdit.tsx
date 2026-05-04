@@ -1,3 +1,4 @@
+import { safeStringify } from "../lib/safeStringify";
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, Save, FileText, Activity, ShieldAlert, Eye, Loader2, CheckCircle, AlertCircle, Hash, User, MapPin, Zap, Home, PlusCircle, X, ZoomIn, ZoomOut, RotateCcw, Scan } from 'lucide-react';
@@ -33,7 +34,7 @@ export default function QuickEdit() {
   // Persistence for QuickEdit data
   useEffect(() => {
     if (existingCase) {
-      localStorage.setItem('lesco_quick_edit_case', JSON.stringify(existingCase));
+      localStorage.setItem('lesco_quick_edit_case', safeStringify(existingCase));
     }
   }, [existingCase]);
 
@@ -105,11 +106,11 @@ export default function QuickEdit() {
   });
 
   useEffect(() => {
-    localStorage.setItem('lesco_quick_edit_data', JSON.stringify(data));
+    localStorage.setItem('lesco_quick_edit_data', safeStringify(data));
   }, [data]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_quick_edit_template', JSON.stringify(activeTemplate));
+    localStorage.setItem('lesco_quick_edit_template', safeStringify(activeTemplate));
   }, [activeTemplate]);
 
   const printRef = useRef<HTMLDivElement>(null);
