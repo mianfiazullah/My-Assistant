@@ -43,6 +43,13 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// Remove any legacy error banners left over from cached index.html
+document.querySelectorAll('div').forEach(div => {
+  if (div.style.zIndex === '999999' && (div.style.backgroundColor === 'rgba(255, 0, 0, 0.8)' || div.textContent?.includes('Error: undefined at undefined:undefined'))) {
+    div.remove();
+  }
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
