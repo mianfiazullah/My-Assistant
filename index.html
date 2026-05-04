@@ -54,7 +54,16 @@
       }, true);
       
       window.addEventListener('unhandledrejection', function(e) {
-        if (e.reason && e.reason.message && (e.reason.message.includes('Cannot set property fetch') || e.reason.message.includes('MetaMask'))) {
+        if (e.reason && e.reason.message && (
+            e.reason.message.includes('Cannot set property fetch') || 
+            e.reason.message.includes('MetaMask') ||
+            e.reason.message.includes('WebSocket closed without opened')
+        )) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if (e.reason === 'WebSocket closed without opened.' || (e.reason && e.reason.message === 'WebSocket closed without opened.')) {
           e.preventDefault();
           e.stopPropagation();
           return;
