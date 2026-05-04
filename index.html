@@ -4,37 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Assistant</title>
-    <script>
-      // Early interception for MetaMask/Web3 extension errors
-      (function() {
-        const originalFetch = window.fetch;
-        try {
-          Object.defineProperty(window, 'fetch', {
-            get: function() { return originalFetch; },
-            set: function(val) { 
-              // Silently ignore attempts to overwrite fetch
-              return; 
-            },
-            configurable: true,
-            enumerable: true
-          });
-        } catch (e) {
-          // If we can't redefine it, we'll fall back to the error handlers below
-        }
-      })();
-
-      const originalConsoleError = console.error;
-      window.process = { env: {}, emit: function() {}, version: "v18.0.0", nextTick: function(cb) { setTimeout(cb, 0); } };
-      console.error = function() {
-        const msg = Array.from(arguments).join(' ');
-        if (msg.includes('Cannot set property fetch of #<Window>') || 
-            msg.includes('MetaMask') || 
-            msg.includes('inpage.js')) {
-          return;
-        }
-        originalConsoleError.apply(console, arguments);
-      };
-    </script>
   </head>
   <body>
     <div id="root"></div>
