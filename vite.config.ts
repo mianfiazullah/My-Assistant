@@ -9,7 +9,7 @@ export default defineConfig(({mode}) => {
     base: './',
     build: {
       chunkSizeWarningLimit: 5000,
-      outDir: 'docs',
+      outDir: 'dist',
       rollupOptions: {
         output: {
           manualChunks(id) {
