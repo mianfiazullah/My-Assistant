@@ -18,8 +18,8 @@ let _ai: any = null;
 function getAI() {
   if (!_ai) {
     const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
+    if (!key || key === "MY_GEMINI_API_KEY") {
+      throw new Error("Gemini API Key is not configured. Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
     }
     _ai = new GoogleGenAI({ apiKey: key });
   }
@@ -53,20 +53,22 @@ async function startServer() {
 
   // API routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      aiConfigured: !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY")
+    });
   });
 
   // GEMINI ROUTES
   app.post("/api/extract-bill", async (req, res) => {
     try {
-      const { base64Data, model = "gemini-1.5-flash" } = req.body;
+      const { base64Data, model = "gemini-3-flash-preview" } = req.body;
       if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
-      const aiModel = getAI().getGenerativeModel({ model });
-      
-      const response = await aiModel.generateContent({
-        contents: [{
-          role: "user",
+      const response = await getAI().models.generateContent({
+        model,
+        contents: {
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: base64Data } },
             { text: `Extract the following details from this electricity bill image into the specified JSON format.
@@ -96,8 +98,8 @@ async function startServer() {
 - Extract data exactly as written on the bill.
 - Return ONLY the JSON object.` }
           ]
-        }],
-        generationConfig: {
+        },
+        config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -136,13 +138,11 @@ async function startServer() {
         },
       });
 
-      const result = await response.response;
-      const text = result.text();
+      const text = response.text;
       if (!text) throw new Error("No data returned from Gemini");
       res.json(JSON.parse(text));
     } catch (e: any) {
       console.error("Extraction error:", e);
-      // Check if it's an API key error
       if (e.message?.includes("API key not valid")) {
         return res.status(401).json({ error: "The Gemini API key is invalid or not set correctly in the environment." });
       }
@@ -155,14 +155,14 @@ async function startServer() {
       const { input } = req.body;
       if (!input) return res.status(400).json({ error: "No input provided" });
 
-      const model = getAI().getGenerativeModel({
-        model: "gemini-1.5-flash",
-        systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
+      const response = await getAI().models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
+        config: {
+          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
+        }
       });
-
-      const response = await model.generateContent(input.trim());
-      const result = await response.response;
-      res.json({ text: result.text() });
+      res.json({ text: response.text });
     } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message });
@@ -174,10 +174,11 @@ async function startServer() {
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-      const model = getAI().getGenerativeModel({ model: "gemini-1.5-flash" });
-      const response = await model.generateContent(prompt);
-      const result = await response.response;
-      res.json({ text: result.text() });
+      const response = await getAI().models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt
+      });
+      res.json({ text: response.text });
     } catch (error: any) {
       console.error("Generate error:", error);
       res.status(500).json({ error: error.message });
