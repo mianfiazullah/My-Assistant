@@ -6,17 +6,24 @@ import { FeederReading } from '../types';
 import { Zap, Calendar, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { GoogleGenAI } from "@google/genai";
+
 async function generateAIContent(prompt: string): Promise<string> {
-  const response = await fetch('/api/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt })
-  });
-  if (!response.ok) {
-    throw new Error('Failed to generate AI content');
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt
+    });
+    return response.text || 'N/A';
+  } catch (err) {
+    console.error("AI Generation Error:", err);
+    return 'N/A';
   }
-  const data = await response.json();
-  return data.text || 'N/A';
 }
 
 const FEEDER_OPTIONS = [

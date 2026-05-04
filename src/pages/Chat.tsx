@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
+import { GoogleGenAI } from "@google/genai";
 
 interface Message {
   id: string;
@@ -37,10 +38,11 @@ export default function Chat() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    const userInput = input.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: userInput,
       timestamp: new Date(),
     };
 
@@ -49,31 +51,31 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ input: input.trim() })
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY is not set.");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: 'user', parts: [{ text: userInput }] }],
+        config: {
+          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
+        }
       });
       
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      
-      const data = await response.json();
-
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.text || "I'm sorry, I couldn't generate a response.",
+        content: response.text || "I'm sorry, I couldn't generate a response.",
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat Error:', error);
-      toast.error('Failed to get response from AI');
+      toast.error(`Failed to get response from AI: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

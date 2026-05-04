@@ -28,9 +28,6 @@ try {
   console.warn('Server will continue without Firebase Admin features (Upload Proxy will fail)');
 }
 
-import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "missing-key" });
-
 const upload = multer({ storage: multer.memoryStorage() });
 
 async function startServer() {
@@ -44,127 +41,6 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     console.log('Health check received');
     res.json({ status: "ok", timestamp: new Date().toISOString() });
-  });
-
-  // GEMINI ROUTES
-  app.post("/api/extract-bill", async (req, res) => {
-    try {
-      const { base64Data, model = "gemini-3-flash-preview" } = req.body;
-      if (!base64Data) return res.status(400).json({ error: "Missing image data" });
-
-      const response = await ai.models.generateContent({
-        model,
-        contents: {
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-            { text: `Extract the following details from this electricity bill image into the specified JSON format.
-            
-=== FIELDS TO EXTRACT ===
-- Reference Number (14 digits, usually found in a box at the top)
-- Consumer Name (Found under "NAME AND ADDRESS")
-- Address (Found under "NAME AND ADDRESS")
-- Sanctioned Load (Look for "SANCTIONED LOAD" or "S.LOAD", e.g., "1.00 kW")
-- Customer ID (Found near the reference number)
-- Tariff (e.g., "A-1a(01)")
-- Billing Month (CRITICAL: Look for "BILLING MONTH" or "MONTH". Extract exactly what is printed, e.g., "FEB 26" or "MAR 2026".)
-- PAYABLE WITHIN DUE DATE (The total amount due for the current month, number only)
-- Deferred Amount (If any, number only)
-- Previous Reading (The reading from the previous month, number only)
-- Present Reading (The current reading, number only)
-- Meter Number (The serial number of the meter)
-- Sub Division Name (Look for "SUB DIVISION" or "S/DIV")
-- Feeder Name with Code (Look for "FEEDER" or "FEEDER NAME")
-- Meter Status (Look for "METER STATUS" or "STATUS")
-- Month-wise history (A table of the last 12-13 months. Extract: Month, Units, Bill/Amount, ADJ, Payment).
-
-=== RULES ===
-- Use "N/A" for missing fields.
-- Amounts and Units must be numbers only.
-- For the ADJ column, extract the numeric value (e.g., "+35" becomes 35).
-- Extract data exactly as written on the bill.
-- Return ONLY the JSON object.` }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              referenceNumber: { type: Type.STRING },
-              consumerName: { type: Type.STRING },
-              address: { type: Type.STRING },
-              sanctionedLoad: { type: Type.STRING },
-              customerId: { type: Type.STRING },
-              tariff: { type: Type.STRING },
-              billingMonth: { type: Type.STRING },
-              currentBill: { type: Type.STRING },
-              deferredAmount: { type: Type.STRING },
-              presentReading: { type: Type.STRING },
-              previousReading: { type: Type.STRING },
-              meterNoOnBill: { type: Type.STRING },
-              subDivisionName: { type: Type.STRING },
-              feederName: { type: Type.STRING },
-              meterStatus: { type: Type.STRING },
-              monthWiseUnits: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    month: { type: Type.STRING },
-                    units: { type: Type.STRING },
-                    bill: { type: Type.STRING },
-                    adj: { type: Type.STRING },
-                    payment: { type: Type.STRING },
-                  }
-                }
-              }
-            },
-            required: ["referenceNumber", "consumerName", "address"],
-          },
-        },
-      });
-
-      const text = response.text;
-      if (!text) throw new Error("No data returned from Gemini");
-      
-      const cleanedJson = text.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      res.json(JSON.parse(cleanedJson));
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.post("/api/chat", async (req, res) => {
-    try {
-      const { input } = req.body;
-      if (!input) return res.status(400).json({ error: "No input provided" });
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
-        config: {
-          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
-        }
-      });
-      res.json({ text: response.text });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/generate", async (req, res) => {
-    try {
-      const { prompt } = req.body;
-      if (!prompt) return res.status(400).json({ error: "No prompt provided" });
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
-      });
-      res.json({ text: response.text });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
   });
 
   // Upload Proxy Route
