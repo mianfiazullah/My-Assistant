@@ -40,6 +40,9 @@
           e.stopPropagation();
           return;
         }
+        // Only show red banner for actual script errors, not resource loading errors
+        if (!(e instanceof ErrorEvent)) return;
+        
         const errorDiv = document.createElement('div');
         errorDiv.style.position = 'fixed';
         errorDiv.style.top = '0';
@@ -49,7 +52,7 @@
         errorDiv.style.color = 'white';
         errorDiv.style.padding = '10px';
         errorDiv.style.zIndex = '999999';
-        errorDiv.textContent = 'Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+        errorDiv.textContent = 'Error: ' + (e.message || 'Unknown') + ' at ' + (e.filename || 'unknown') + ':' + (e.lineno || '0');
         document.body.appendChild(errorDiv);
       }, true);
       
