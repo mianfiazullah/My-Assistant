@@ -12,9 +12,6 @@ export default defineConfig(({mode}) => {
       outDir: 'dist',
     },
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
