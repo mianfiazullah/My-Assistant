@@ -6,10 +6,10 @@ import {defineConfig, loadEnv} from 'vite';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: '/',
+    base: '/My-Assistant/',
     build: {
       chunkSizeWarningLimit: 5000,
-      outDir: 'dist',
+      outDir: 'docs',
     },
     plugins: [react(), tailwindcss()],
     define: {
