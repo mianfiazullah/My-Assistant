@@ -24,6 +24,7 @@
       })();
 
       const originalConsoleError = console.error;
+      window.process = { env: {} };
       console.error = function() {
         const msg = Array.from(arguments).join(' ');
         if (msg.includes('Cannot set property fetch of #<Window>') || 

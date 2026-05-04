@@ -24,6 +24,7 @@
       })();
 
       const originalConsoleError = console.error;
+      window.process = { env: {} };
       console.error = function() {
         const msg = Array.from(arguments).join(' ');
         if (msg.includes('Cannot set property fetch of #<Window>') || 
@@ -40,7 +41,7 @@
         }
       }, true);
     </script>
-    <script type="module" crossorigin src="./assets/index-B1-RFZy_.js"></script>
+    <script type="module" crossorigin src="./assets/index-DIfNn270.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-B9XZfQlM.css">
   </head>
   <body>
