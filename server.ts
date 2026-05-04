@@ -59,12 +59,14 @@ async function startServer() {
   // GEMINI ROUTES
   app.post("/api/extract-bill", async (req, res) => {
     try {
-      const { base64Data, model = "gemini-3-flash-preview" } = req.body;
+      const { base64Data, model = "gemini-1.5-flash" } = req.body;
       if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
-      const response = await getAI().models.generateContent({
-        model,
-        contents: {
+      const aiModel = getAI().getGenerativeModel({ model });
+      
+      const response = await aiModel.generateContent({
+        contents: [{
+          role: "user",
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: base64Data } },
             { text: `Extract the following details from this electricity bill image into the specified JSON format.
@@ -94,8 +96,8 @@ async function startServer() {
 - Extract data exactly as written on the bill.
 - Return ONLY the JSON object.` }
           ]
-        },
-        config: {
+        }],
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -134,11 +136,16 @@ async function startServer() {
         },
       });
 
-      const text = response.text;
+      const result = await response.response;
+      const text = result.text();
       if (!text) throw new Error("No data returned from Gemini");
       res.json(JSON.parse(text));
     } catch (e: any) {
       console.error("Extraction error:", e);
+      // Check if it's an API key error
+      if (e.message?.includes("API key not valid")) {
+        return res.status(401).json({ error: "The Gemini API key is invalid or not set correctly in the environment." });
+      }
       res.status(500).json({ error: e.message });
     }
   });
@@ -148,14 +155,14 @@ async function startServer() {
       const { input } = req.body;
       if (!input) return res.status(400).json({ error: "No input provided" });
 
-      const response = await getAI().models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
-        config: {
-          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
-        }
+      const model = getAI().getGenerativeModel({
+        model: "gemini-1.5-flash",
+        systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
       });
-      res.json({ text: response.text });
+
+      const response = await model.generateContent(input.trim());
+      const result = await response.response;
+      res.json({ text: result.text() });
     } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message });
@@ -167,16 +174,16 @@ async function startServer() {
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-      const response = await getAI().models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
-      });
-      res.json({ text: response.text });
+      const model = getAI().getGenerativeModel({ model: "gemini-1.5-flash" });
+      const response = await model.generateContent(prompt);
+      const result = await response.response;
+      res.json({ text: result.text() });
     } catch (error: any) {
       console.error("Generate error:", error);
       res.status(500).json({ error: error.message });
     }
   });
+
 
   // Upload Proxy Route
   app.post("/api/upload", upload.single('file'), async (req, res) => {
