@@ -1,4 +1,3 @@
-import { safeFetchJson } from '../lib/safeFetch';
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, 
@@ -14,6 +13,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 interface Message {
   id: string;
@@ -51,25 +53,18 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ input: userInput })
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: 'user', parts: [{ text: userInput }] }],
+        config: {
+          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
+        }
       });
-      
-      if (!response.ok) {
-        const errorData = await safeFetchJson(response).catch(() => ({}));
-        throw new Error(errorData.error || 'Network response was not ok');
-      }
-      
-      const data = await safeFetchJson(response);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.text || "I'm sorry, I couldn't generate a response.",
+        content: response.text || "I'm sorry, I couldn't generate a response.",
         timestamp: new Date(),
       };
 
