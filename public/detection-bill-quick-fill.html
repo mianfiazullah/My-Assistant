@@ -500,7 +500,7 @@
             const saved = localStorage.getItem('detectionBillDraft');
             if (saved) {
                 const trimmed = saved.trim();
-                if (trimmed !== 'undefined' && trimmed !== 'null' && trimmed !== '') {
+                if (trimmed !== 'undefined' && trimmed !== 'null' && trimmed !== '' && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
                     try {
                         const data = JSON.parse(trimmed);
                     for (const id in data) {
