@@ -1,10 +1,19 @@
+import express from "express";
+import axios from "axios";
+import https from "https";
+import * as cheerio from "cheerio";
 import { GoogleGenAI, Type } from "@google/genai";
+import multer from 'multer';
 
+const app = express();
+app.use(express.json({ limit: '50mb' }));
+
+// Initialize AI lazily
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
     const key = process.env.GEMINI_API_KEY;
-    if (!key) {
+    if (!key || key === "MY_GEMINI_API_KEY") {
       throw new Error("Gemini API Key is not configured.");
     }
     _ai = new GoogleGenAI({ apiKey: key });
@@ -12,16 +21,17 @@ function getAI() {
   return _ai;
 }
 
-export async function extractBillData(base64Image: string) {
-  const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
-  
-  if (base64Data.length < 100) {
-    throw new Error("Invalid image data. The image might be too small or corrupted.");
-  }
+const upload = multer({ storage: multer.memoryStorage() });
 
-  console.log(`Extracting bill data via Gemini API. Image data length: ${base64Data.length}`);
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
+app.post("/api/extract-bill", async (req, res) => {
   try {
+    const { base64Data } = req.body;
+    if (!base64Data) return res.status(400).json({ error: "Missing image data" });
+
     const response = await getAI().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: {
@@ -72,39 +82,85 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       },
     });
 
-    const cleanText = response.text || "";
-    if (!cleanText) throw new Error("The AI model returned an empty response.");
+    let cleanText = response.text || "";
+    if (!cleanText) {
+      if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+        cleanText = response.candidates[0].content.parts[0].text;
+      }
+    }
 
-    return JSON.parse(cleanText);
-  } catch (error: any) {
-    console.error("Gemini Extraction Error:", error);
-    throw new Error(error.message || "Failed to extract bill data");
+    if (!cleanText) {
+      throw new Error("The AI model returned an empty response.");
+    }
+
+    try {
+      res.json(JSON.parse(cleanText));
+    } catch (parseErr) {
+      console.error("JSON Parse Error on text:", cleanText);
+      res.status(500).json({ error: "The AI returned data in an invalid format." });
+    }
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
   }
-}
+});
 
-export async function chatWithGemini(input: string) {
+app.post("/api/chat", async (req, res) => {
   try {
+    const { input } = req.body;
     const response = await getAI().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
       config: { systemInstruction: "You are an expert assistant. Be professional, helpful, and concise." }
     });
-    return response.text;
+    res.json({ text: response.text });
   } catch (error: any) {
-    console.error("Gemini Chat Error:", error);
-    throw new Error(error.message || "Failed to get chat response");
+    res.status(500).json({ error: error.message });
   }
-}
+});
 
-export async function generateGeminiContent(prompt: string) {
+app.post("/api/generate", async (req, res) => {
   try {
+    const { prompt } = req.body;
     const response = await getAI().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
-    return response.text;
+    res.json({ text: response.text });
   } catch (error: any) {
-    console.error("Gemini Generation Error:", error);
-    throw new Error(error.message || "Failed to generate content");
+    res.status(500).json({ error: error.message });
   }
-}
+});
+
+app.post("/api/fetch-bill", async (req, res) => {
+  const { referenceNumber } = req.body;
+  if (!referenceNumber) return res.status(400).json({ error: "Reference Number is required" });
+  const cleanRef = referenceNumber.replace(/[^0-9]/g, '');
+
+  try {
+    const url = `https://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`;
+    const agent = new https.Agent({
+      // rejectUnauthorized: false - removed for security
+    });
+    const response = await axios.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      httpsAgent: agent,
+      timeout: 15000
+    });
+
+    const $ = cheerio.load(response.data);
+    // Simplified scraping logic for the proxy
+    const consumerName = $(`td:contains("NAME & ADDRESS")`).next('td').text().trim().split('\n')[0] || "Unknown";
+    const amountDue = parseInt($(`td:contains("TOTAL PAYABLE")`).next('td').text().replace(/[^0-9]/g, '')) || 0;
+
+    res.json({
+      consumerName,
+      amountDue,
+      referenceNumber: cleanRef,
+      // ... include other fields if needed, or stick to essential for proxy
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default app;

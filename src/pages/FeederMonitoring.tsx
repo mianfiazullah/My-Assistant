@@ -1,5 +1,5 @@
 import { safeStringify } from "../lib/safeStringify";
-import { safeFetchJson } from "../lib/safeFetch";
+import { generateGeminiContent } from "../lib/gemini";
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
@@ -7,17 +7,10 @@ import { FeederReading } from '../types';
 import { Zap, Calendar, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 async function generateAIContent(prompt: string): Promise<string> {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
-    });
-    return response.text || 'N/A';
+    const text = await generateGeminiContent(prompt);
+    return text || 'N/A';
   } catch (err) {
     console.error("AI Generation Error:", err);
     return 'N/A';

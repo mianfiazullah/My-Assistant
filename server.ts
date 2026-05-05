@@ -9,9 +9,23 @@ import https from "https";
 import * as cheerio from "cheerio";
 import admin from 'firebase-admin';
 import multer from 'multer';
+import { GoogleGenAI, Type } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize AI lazily
+let _ai: any = null;
+function getAI() {
+  if (!_ai) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key || key === "MY_GEMINI_API_KEY") {
+      throw new Error("Gemini API Key is not configured. Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
+    }
+    _ai = new GoogleGenAI({ apiKey: key });
+  }
+  return _ai;
+}
 
 // Initialize Firebase Admin lazily
 let bucket: any;
@@ -30,11 +44,11 @@ try {
 }
 
 const upload = multer({ storage: multer.memoryStorage() });
+const app = express();
+const PORT = 3000;
 
 async function startServer() {
   console.log('Starting server initialization...');
-  const app = express();
-  const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
 
@@ -46,8 +60,136 @@ async function startServer() {
     });
   });
 
-  // GEMINI ROUTES - Moved to frontend as per guidelines
-// Removed /api/extract-bill, /api/chat, /api/generate
+  // GEMINI ROUTES
+  app.post("/api/extract-bill", async (req, res) => {
+    try {
+      const { base64Data, model = "gemini-1.5-flash" } = req.body;
+      if (!base64Data) return res.status(400).json({ error: "Missing image data" });
+
+      console.log(`Analyzing bill using model: ${model}, data length: ${base64Data.length}`);
+
+      const response = await getAI().getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent({
+        contents: {
+          parts: [
+            { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+            { text: `Extract the following details from this electricity bill image into a valid JSON object.
+            
+=== FIELDS TO EXTRACT ===
+- referenceNumber: exact 14 digits (often in a prominent box)
+- consumerName: full name
+- address: full address
+- sanctionedLoad: e.g., "1.00 kW"
+- customerId: e.g., "01-12345-6789123"
+- tariff: e.g., "A-1a(01)"
+- billingMonth: month and year, e.g., "MAR 26"
+- currentBill: numeric value only
+- deferredAmount: numeric value only (0 if not present)
+- presentReading: number only
+- previousReading: number only
+- meterNoOnBill: serial number
+- subDivisionName: e.g., "FATEH SHER"
+- feederName: e.g., "CIVIL LINES"
+- meterStatus: e.g., "NORMAL"
+- monthWiseUnits: Array of { month, units, bill, adj, payment } (extract last 12-13 months if table present)
+
+=== RULES ===
+- If a field is missing, use "N/A".
+- Return ONLY the JSON object. Do not include any commentary or other text.` }
+          ]
+        },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              referenceNumber: { type: Type.STRING },
+              consumerName: { type: Type.STRING },
+              address: { type: Type.STRING },
+              sanctionedLoad: { type: Type.STRING },
+              customerId: { type: Type.STRING },
+              tariff: { type: Type.STRING },
+              billingMonth: { type: Type.STRING },
+              currentBill: { type: Type.STRING },
+              deferredAmount: { type: Type.STRING },
+              presentReading: { type: Type.STRING },
+              previousReading: { type: Type.STRING },
+              meterNoOnBill: { type: Type.STRING },
+              subDivisionName: { type: Type.STRING },
+              feederName: { type: Type.STRING },
+              meterStatus: { type: Type.STRING },
+              monthWiseUnits: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    month: { type: Type.STRING },
+                    units: { type: Type.STRING },
+                    bill: { type: Type.STRING },
+                    adj: { type: Type.STRING },
+                    payment: { type: Type.STRING },
+                  }
+                }
+              }
+            },
+            required: ["referenceNumber", "consumerName"],
+          },
+        },
+      });
+
+      let cleanText = response.text || "";
+      if (!cleanText) {
+        if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+          cleanText = response.candidates[0].content.parts[0].text;
+        }
+      }
+
+      if (!cleanText) throw new Error("The AI model returned an empty response. Please try a clearer picture.");
+      
+      try {
+        const parsed = JSON.parse(cleanText);
+        res.json(parsed);
+      } catch (parseErr) {
+        console.error("JSON Parse Error on text:", cleanText);
+        throw new Error("The AI returned data in an invalid format. Please try again.");
+      }
+    } catch (e: any) {
+      console.error("Extraction error:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { input } = req.body;
+      if (!input) return res.status(400).json({ error: "No input provided" });
+
+      const response = await getAI().getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent({
+        contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
+        config: {
+          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
+        }
+      });
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/generate", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+
+      const response = await getAI().getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      });
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Generate error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
 
   // Upload Proxy Route
@@ -178,7 +320,7 @@ async function startServer() {
         console.log(`Starting parallel fetch for reference: ${cleanRef} with ${uniqueUrls.length} mirrors`);
         
         const agent = new https.Agent({
-          rejectUnauthorized: false
+          // rejectUnauthorized: false - removed for security
         });
 
         response = await Promise.any(uniqueUrls.map(async (url, index) => {
@@ -399,7 +541,15 @@ async function startServer() {
   });
 }
 
-startServer().catch(err => {
-  console.error('FATAL: Server failed to start:', err);
-  process.exit(1);
-});
+// Only start the server if this file is run directly
+if (process.env.NODE_ENV !== 'production') {
+  startServer().catch(err => {
+    console.error('FATAL: Server failed to start:', err);
+    process.exit(1);
+  });
+} else {
+  // Production start logic for serverless
+  // Add static middleware for production if needed here, but it's already in build logic
+}
+
+export default app;
