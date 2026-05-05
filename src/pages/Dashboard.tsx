@@ -20,7 +20,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState<{ type: string; data: any; isEditing?: boolean } | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<string | null>(null);
-  const [refNumber, setRefNumber] = useState(() => localStorage.getItem('lesco_dashboard_ref') || '');
+  const [refNumber, setRefNumber] = useState(() => {
+    const saved = localStorage.getItem('lesco_dashboard_ref');
+    return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
+  });
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState('');
 

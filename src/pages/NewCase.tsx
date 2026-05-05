@@ -1,4 +1,5 @@
 import { safeStringify } from "../lib/safeStringify";
+import { safeFetchJson } from "../lib/safeFetch";
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -172,9 +173,9 @@ export default function NewCase() {
 
   // Load initial state from localStorage
   const getInitialState = (key: string, defaultValue: any) => {
-    const saved = localStorage.getItem(key);
-    if (!saved || saved === 'undefined') return defaultValue;
     try {
+      const saved = localStorage.getItem(key);
+      if (!saved || saved === 'undefined' || saved === 'null') return defaultValue;
       return JSON.parse(saved);
     } catch (e) {
       return defaultValue;
@@ -182,8 +183,14 @@ export default function NewCase() {
   };
 
   const [step, setStep] = useState(() => getInitialState('lesco_new_case_step', 1));
-  const [photo, setPhoto] = useState<string | null>(() => localStorage.getItem('lesco_new_case_photo'));
-  const [referenceNumber, setReferenceNumber] = useState(() => localStorage.getItem('lesco_new_case_ref') || '');
+  const [photo, setPhoto] = useState<string | null>(() => {
+    const saved = localStorage.getItem('lesco_new_case_photo');
+    return (saved && saved !== 'undefined' && saved !== 'null') ? saved : null;
+  });
+  const [referenceNumber, setReferenceNumber] = useState(() => {
+    const saved = localStorage.getItem('lesco_new_case_ref');
+    return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
+  });
   const [isFetching, setIsFetching] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -2749,14 +2756,7 @@ export default function NewCase() {
         body: safeStringify({ referenceNumber: cleanRef }),
       });
       
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        console.error("JSON Parse Error:", parseErr, "Raw Text:", text.substring(0, 500) + "...");
-        throw new Error("LESCO server returned malformed data. Please try again or enter details manually.");
-      }
+      const data = await safeFetchJson(response);
       
       if (!response.ok) {
         const errorMsg = data.details ? `${data.error}\n\nDetails: ${data.details}` : data.error;

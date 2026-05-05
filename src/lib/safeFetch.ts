@@ -1,9 +1,11 @@
 
 export async function safeFetchJson(response: Response) {
-  const text = await response.text();
+  const rawText = await response.text();
+  const text = rawText.trim();
+  
   if (!text || text === 'undefined' || text === 'null') {
     if (!response.ok) {
-      throw new Error(`Server returned empty response with status ${response.status}`);
+      throw new Error(`Server returned status ${response.status} with empty or invalid response`);
     }
     return {};
   }
