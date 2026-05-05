@@ -18,10 +18,10 @@ const __dirname = path.dirname(__filename);
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY;
     if (!key || key === "MY_GEMINI_API_KEY" || key === "") {
       const errorMsg = "Gemini API Key is not configured. " + 
-        (process.env.VERCEL ? "Please add GEMINI_API_KEY (or API_KEY) to your Vercel Project Environment Variables." : "Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
+        (process.env.VERCEL ? "Please add GEMINI_API_KEY (or VITE_GEMINI_API_KEY / API_KEY) to your Vercel Project Environment Variables." : "Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
       throw new Error(errorMsg);
     }
     _ai = new GoogleGenAI({ apiKey: key });
