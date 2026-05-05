@@ -67,37 +67,36 @@ async function startServer() {
       const { base64Data, model = "gemini-3-flash-preview" } = req.body;
       if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
+      console.log(`Analyzing bill using model: ${model}, data length: ${base64Data.length}`);
+
       const response = await getAI().models.generateContent({
         model,
         contents: {
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-            { text: `Extract the following details from this electricity bill image into the specified JSON format.
+            { text: `Extract the following details from this electricity bill image into a valid JSON object.
             
 === FIELDS TO EXTRACT ===
-- Reference Number (14 digits, usually found in a box at the top)
-- Consumer Name (Found under "NAME AND ADDRESS")
-- Address (Found under "NAME AND ADDRESS")
-- Sanctioned Load (Look for "SANCTIONED LOAD" or "S.LOAD", e.g., "1.00 kW")
-- Customer ID (Found near the reference number)
-- Tariff (e.g., "A-1a(01)")
-- Billing Month (CRITICAL: Look for "BILLING MONTH" or "MONTH". Extract exactly what is printed, e.g., "FEB 26" or "MAR 2026".)
-- PAYABLE WITHIN DUE DATE (The total amount due for the current month, number only)
-- Deferred Amount (If any, number only)
-- Previous Reading (The reading from the previous month, number only)
-- Present Reading (The current reading, number only)
-- Meter Number (The serial number of the meter)
-- Sub Division Name (Look for "SUB DIVISION" or "S/DIV")
-- Feeder Name with Code (Look for "FEEDER" or "FEEDER NAME")
-- Meter Status (Look for "METER STATUS" or "STATUS")
-- Month-wise history (A table of the last 12-13 months. Extract: Month, Units, Bill/Amount, ADJ, Payment).
+- referenceNumber: exact 14 digits (often in a prominent box)
+- consumerName: full name
+- address: full address
+- sanctionedLoad: e.g., "1.00 kW"
+- customerId: e.g., "01-12345-6789123"
+- tariff: e.g., "A-1a(01)"
+- billingMonth: month and year, e.g., "MAR 26"
+- currentBill: numeric value only
+- deferredAmount: numeric value only (0 if not present)
+- presentReading: number only
+- previousReading: number only
+- meterNoOnBill: serial number
+- subDivisionName: e.g., "FATEH SHER"
+- feederName: e.g., "CIVIL LINES"
+- meterStatus: e.g., "NORMAL"
+- monthWiseUnits: Array of { month, units, bill, adj, payment } (extract last 12-13 months if table present)
 
 === RULES ===
-- Use "N/A" for missing fields.
-- Amounts and Units must be numbers only.
-- For the ADJ column, extract the numeric value (e.g., "+35" becomes 35).
-- Extract data exactly as written on the bill.
-- Return ONLY the JSON object.` }
+- If a field is missing, use "N/A".
+- Return ONLY the JSON object. Do not include any commentary or other text.` }
           ]
         },
         config: {
@@ -134,18 +133,34 @@ async function startServer() {
                 }
               }
             },
-            required: ["referenceNumber", "consumerName", "address"],
+            required: ["referenceNumber", "consumerName"],
           },
         },
       });
 
-      let cleanText = response.text;
-      if (!cleanText) throw new Error("No data returned from Gemini");
-      cleanText = cleanText.replace(/^```json\n/, '').replace(/\n```$/, '').trim();
-      if (cleanText.startsWith('```')) {
-        cleanText = cleanText.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+      let cleanText = response.text || "";
+      if (!cleanText) {
+        // Fallback for some SDK versions or response types
+        if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+          cleanText = response.candidates[0].content.parts[0].text;
+        }
       }
-      res.json(JSON.parse(cleanText));
+
+      if (!cleanText) throw new Error("The AI model returned an empty response. Please try a clearer picture.");
+      
+      // Extract JSON if it's wrapped in markdown
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanText = jsonMatch[0];
+      }
+
+      try {
+        const parsed = JSON.parse(cleanText);
+        res.json(parsed);
+      } catch (parseErr) {
+        console.error("JSON Parse Error on text:", cleanText);
+        throw new Error("The AI returned data in an invalid format. Please try again.");
+      }
     } catch (e: any) {
       console.error("Extraction error:", e);
       if (e.message?.includes("API key not valid")) {

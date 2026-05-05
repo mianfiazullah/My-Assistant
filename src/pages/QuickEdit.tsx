@@ -322,38 +322,76 @@ export default function QuickEdit() {
     const loadingToast = toast.loading('Reading bill with AI...');
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      try {
-        const extractedData = await extractBillData(base64);
-        
-        setData(prev => ({
-          ...prev,
-          name: extractedData.consumerName && extractedData.consumerName !== 'N/A' ? extractedData.consumerName : prev.name,
-          address: extractedData.address && extractedData.address !== 'N/A' ? extractedData.address : prev.address,
-          referenceNumber: extractedData.referenceNumber && extractedData.referenceNumber !== 'N/A' ? extractedData.referenceNumber : prev.referenceNumber,
-          customerId: extractedData.customerId && extractedData.customerId !== 'N/A' ? extractedData.customerId : prev.customerId,
-          tariff: extractedData.tariff && extractedData.tariff !== 'N/A' ? extractedData.tariff : prev.tariff,
-          sanctionLoad: extractedData.sanctionedLoad && extractedData.sanctionedLoad !== 'N/A' ? extractedData.sanctionedLoad : prev.sanctionLoad,
-          billingMonth: extractedData.billingMonth && extractedData.billingMonth !== 'N/A' ? extractedData.billingMonth : prev.billingMonth,
-          presentReading: extractedData.presentReading && extractedData.presentReading !== 'N/A' ? extractedData.presentReading : prev.presentReading,
-          previousReading: extractedData.previousReading && extractedData.previousReading !== 'N/A' ? extractedData.previousReading : prev.previousReading,
-          meterNumber: extractedData.meterNoOnBill && extractedData.meterNoOnBill !== 'N/A' ? extractedData.meterNoOnBill : prev.meterNumber,
-          billData: {
-            ...prev.billData,
-            ...extractedData
-          }
-        }));
+    reader.onerror = () => {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to read file');
+      setIsExtracting(false);
+    };
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onerror = () => {
         toast.dismiss(loadingToast);
-        toast.success('Bill data extracted successfully!');
-      } catch (err: any) {
-        console.error(err);
-        toast.dismiss(loadingToast);
-        toast.error(err.message || 'Failed to extract data');
-      } finally {
+        toast.error('Failed to load image');
         setIsExtracting(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
+      };
+      img.onload = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1600;
+          const MAX_HEIGHT = 1600;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error("Could not initialize canvas");
+          ctx.drawImage(img, 0, 0, width, height);
+          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+          const extractedData = await extractBillData(resizedBase64);
+          
+          setData(prev => ({
+            ...prev,
+            name: extractedData.consumerName && extractedData.consumerName !== 'N/A' ? extractedData.consumerName : prev.name,
+            address: extractedData.address && extractedData.address !== 'N/A' ? extractedData.address : prev.address,
+            referenceNumber: extractedData.referenceNumber && extractedData.referenceNumber !== 'N/A' ? extractedData.referenceNumber : prev.referenceNumber,
+            customerId: extractedData.customerId && extractedData.customerId !== 'N/A' ? extractedData.customerId : prev.customerId,
+            tariff: extractedData.tariff && extractedData.tariff !== 'N/A' ? extractedData.tariff : prev.tariff,
+            sanctionLoad: extractedData.sanctionedLoad && extractedData.sanctionedLoad !== 'N/A' ? extractedData.sanctionedLoad : prev.sanctionLoad,
+            billingMonth: extractedData.billingMonth && extractedData.billingMonth !== 'N/A' ? extractedData.billingMonth : prev.billingMonth,
+            presentReading: extractedData.presentReading && extractedData.presentReading !== 'N/A' ? extractedData.presentReading : prev.presentReading,
+            previousReading: extractedData.previousReading && extractedData.previousReading !== 'N/A' ? extractedData.previousReading : prev.previousReading,
+            meterNumber: extractedData.meterNoOnBill && extractedData.meterNoOnBill !== 'N/A' ? extractedData.meterNoOnBill : prev.meterNumber,
+            billData: {
+              ...prev.billData,
+              ...extractedData
+            }
+          }));
+          toast.dismiss(loadingToast);
+          toast.success('Bill data extracted successfully!');
+        } catch (err: any) {
+          console.error(err);
+          toast.dismiss(loadingToast);
+          toast.error(err.message || 'Failed to extract data');
+        } finally {
+          setIsExtracting(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.onerror = () => {
       toast.dismiss(loadingToast);

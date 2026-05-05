@@ -2648,10 +2648,12 @@ export default function NewCase() {
       
       try {
         // Resize image to prevent payload too large errors
-        const resizedBase64 = await new Promise<string>((resolve) => {
+        const resizedBase64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
+          reader.onerror = () => reject(new Error("Failed to read the file."));
           reader.onload = (event) => {
             const img = new Image();
+            img.onerror = () => reject(new Error("Failed to load the image. Please use a standard image format (JPG/PNG)."));
             img.onload = () => {
               const canvas = document.createElement('canvas');
               const MAX_WIDTH = 1600;
@@ -2674,7 +2676,11 @@ export default function NewCase() {
               canvas.width = width;
               canvas.height = height;
               const ctx = canvas.getContext('2d');
-              ctx?.drawImage(img, 0, 0, width, height);
+              if (!ctx) {
+                reject(new Error("Could not initialize image processing context."));
+                return;
+              }
+              ctx.drawImage(img, 0, 0, width, height);
               resolve(canvas.toDataURL('image/jpeg', 0.8));
             };
             img.src = event.target?.result as string;
