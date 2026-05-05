@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ override: true });
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -138,9 +139,13 @@ async function startServer() {
         },
       });
 
-      const text = response.text;
-      if (!text) throw new Error("No data returned from Gemini");
-      res.json(JSON.parse(text));
+      let cleanText = response.text;
+      if (!cleanText) throw new Error("No data returned from Gemini");
+      cleanText = cleanText.replace(/^```json\n/, '').replace(/\n```$/, '').trim();
+      if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```[a-z]*\n/, '').replace(/\n```$/, '').trim();
+      }
+      res.json(JSON.parse(cleanText));
     } catch (e: any) {
       console.error("Extraction error:", e);
       if (e.message?.includes("API key not valid")) {

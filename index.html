@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Assistant</title>
+    <script>
+      // Workaround for environments defining non-writable global fetch
+      if (typeof window !== 'undefined' && window.fetch) {
+        try {
+          const original = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: () => original,
+            set: (val) => {
+              console.warn("Intercepted and ignored assignment to window.fetch", val);
+            },
+            configurable: true
+          });
+        } catch (e) {
+          console.warn('Could not redefine window.fetch:', e);
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
