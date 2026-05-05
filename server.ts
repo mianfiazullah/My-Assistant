@@ -63,20 +63,22 @@ async function startServer() {
   // GEMINI ROUTES
   app.post("/api/extract-bill", async (req, res) => {
     try {
-      const { base64Data } = req.body;
+      const { base64Data, model: requestedModel = "gemini-3-flash-preview" } = req.body;
       if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
       const modelName = "gemini-3-flash-preview";
+      const ai = getAI();
       
       console.log(`Analyzing bill using model: ${modelName}, data length: ${base64Data.length}`);
 
-      const response = await getAI().models.generateContent({
+      const result = await ai.models.generateContent({
         model: modelName,
-        contents: [{
-          role: "user",
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-            { text: `Extract the following details from this electricity bill image into a valid JSON object.
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+              { text: `Extract the following details from this electricity bill image into a valid JSON object.
             
 === FIELDS TO EXTRACT ===
 - referenceNumber: exact 14 digits (often in a prominent box)
@@ -99,8 +101,9 @@ async function startServer() {
 === RULES ===
 - If a field is missing, use "N/A".
 - Return ONLY the JSON object. Do not include any commentary or other text.` }
-          ]
-        }],
+            ]
+          }
+        ],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -140,10 +143,8 @@ async function startServer() {
         },
       });
 
-      const cleanText = (response.text || "").trim();
-      if (!cleanText || cleanText === 'undefined' || !(cleanText.startsWith('{') || cleanText.startsWith('['))) {
-        throw new Error("The AI model returned an empty response. Please try a clearer picture.");
-      }
+      const cleanText = (result.text || '').trim();
+      if (!cleanText || cleanText === 'undefined') throw new Error("The AI model returned an empty response. Please try a clearer picture.");
       
       try {
         const parsed = JSON.parse(cleanText);
@@ -166,15 +167,16 @@ async function startServer() {
       const { input } = req.body;
       if (!input) return res.status(400).json({ error: "No input provided" });
 
-      const response = await getAI().models.generateContent({
+      const ai = getAI();
+      const result = await ai.models.generateContent({ 
         model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
         config: {
-          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
+          systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
         }
       });
-      res.json({ text: response.text });
-  } catch (error: any) {
+      res.json({ text: result.text });
+    } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message });
     }
@@ -185,16 +187,18 @@ async function startServer() {
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-      const response = await getAI().models.generateContent({
+      const ai = getAI();
+      const result = await ai.models.generateContent({ 
         model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: prompt }] }]
       });
-      res.json({ text: response.text });
-  } catch (error: any) {
+      res.json({ text: result.text });
+    } catch (error: any) {
       console.error("Generate error:", error);
       res.status(500).json({ error: error.message });
     }
   });
+
 
 
   // Upload Proxy Route

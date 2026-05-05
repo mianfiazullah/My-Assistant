@@ -44,14 +44,16 @@ export default class ErrorBoundary extends Component<Props, State> {
       let errorMessage = "An unexpected error occurred.";
       try {
         const errorMsg = state.error?.message;
-        if (errorMsg && typeof errorMsg === 'string') {
-          const trimmed = errorMsg.trim();
-          if (trimmed !== "" && trimmed !== "undefined" && trimmed !== "null" && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
-            // Try to parse if it's a FirestoreErrorInfo JSON string
-            const parsed = JSON.parse(trimmed);
-            if (parsed.error && parsed.operationType) {
+        if (errorMsg && typeof errorMsg === "string" && errorMsg.trim() !== "" && errorMsg !== "undefined" && errorMsg !== "null") {
+          // Try to parse if it's a FirestoreErrorInfo JSON string
+          try {
+            const parsed = JSON.parse(errorMsg);
+            if (parsed && typeof parsed === 'object' && parsed.error && parsed.operationType) {
               errorMessage = `Firestore ${parsed.operationType} error: ${parsed.error}`;
             }
+          } catch (e) {
+            // Not a JSON string, check if it's a regular error message
+            errorMessage = errorMsg;
           }
         }
       } catch (e) {

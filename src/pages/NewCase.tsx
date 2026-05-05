@@ -177,7 +177,7 @@ export default function NewCase() {
       const saved = localStorage.getItem(key);
       if (!saved) return defaultValue;
       const trimmed = saved.trim();
-      if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '' || !(trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.startsWith('"') || !isNaN(Number(trimmed)) || trimmed === 'true' || trimmed === 'false')) return defaultValue;
+      if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
       return JSON.parse(trimmed);
     } catch (e) {
       return defaultValue;

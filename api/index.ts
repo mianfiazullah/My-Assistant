@@ -32,7 +32,7 @@ app.post("/api/extract-bill", async (req, res) => {
     const { base64Data } = req.body;
     if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
-    const response = await getAI().models.generateContent({
+    const model = getAI().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{
         role: "user",
@@ -83,11 +83,12 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       },
     });
 
-    const cleanText = (response.text || "").trim();
-    if (!cleanText || cleanText === 'undefined' || !(cleanText.startsWith('{') || cleanText.startsWith('['))) {
+    const result = await model;
+    const cleanText = result.text;
+    if (!cleanText || cleanText.trim() === 'undefined') {
       throw new Error("The AI model returned an empty or invalid response.");
     }
-    
+
     try {
       res.json(JSON.parse(cleanText));
     } catch (parseErr) {
@@ -105,12 +106,14 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
 app.post("/api/chat", async (req, res) => {
   try {
     const { input } = req.body;
-    const response = await getAI().models.generateContent({
+    const result = await getAI().models.generateContent({ 
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
-      config: { systemInstruction: "You are an expert assistant. Be professional, helpful, and concise." }
+      config: {
+        systemInstruction: "You are an expert assistant. Be professional, helpful, and concise."
+      }
     });
-    res.json({ text: response.text });
+    res.json({ text: result.text });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -119,11 +122,11 @@ app.post("/api/chat", async (req, res) => {
 app.post("/api/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
-    const response = await getAI().models.generateContent({
+    const result = await getAI().models.generateContent({ 
       model: "gemini-3-flash-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
-    res.json({ text: response.text });
+    res.json({ text: result.text });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
