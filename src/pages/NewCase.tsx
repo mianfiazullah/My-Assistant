@@ -173,7 +173,7 @@ export default function NewCase() {
   // Load initial state from localStorage
   const getInitialState = (key: string, defaultValue: any) => {
     const saved = localStorage.getItem(key);
-    if (!saved) return defaultValue;
+    if (!saved || saved === 'undefined') return defaultValue;
     try {
       return JSON.parse(saved);
     } catch (e) {

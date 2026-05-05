@@ -37,8 +37,8 @@ const PathPersistence = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const savedPath = localStorage.getItem('lesco_last_path');
-    // Only redirect if we are at root and have a saved path
-    if (savedPath && location.pathname === '/' && savedPath !== '/') {
+    // Only redirect if we are at root and have a valid saved path
+    if (savedPath && savedPath !== 'undefined' && savedPath !== 'null' && location.pathname === '/' && savedPath !== '/') {
       navigate(savedPath, { replace: true });
     }
   }, []);

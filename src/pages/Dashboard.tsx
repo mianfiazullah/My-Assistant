@@ -1,4 +1,5 @@
 import { safeStringify } from "../lib/safeStringify";
+import { safeFetchJson } from "../lib/safeFetch";
 import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PlusCircle, FileText, Download, TrendingUp, Users, AlertTriangle, ArrowRight, Loader2, Eye, X, Printer, Edit2, Save, Zap, ShieldAlert, ClipboardList, Bell, Trash2, ExternalLink } from 'lucide-react';
@@ -122,7 +123,7 @@ export default function Dashboard() {
         body: safeStringify({ referenceNumber: cleanRef }),
       });
       
-      const data = await response.json();
+      const data = await safeFetchJson(response);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch bill data');

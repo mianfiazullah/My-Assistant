@@ -1,4 +1,5 @@
 import { safeStringify } from "../lib/safeStringify";
+import { safeFetchJson } from "../lib/safeFetch";
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
@@ -16,7 +17,7 @@ async function generateAIContent(prompt: string): Promise<string> {
     if (!response.ok) {
       throw new Error('Failed to generate AI content');
     }
-    const data = await response.json();
+    const data = await safeFetchJson(response);
     return data.text || 'N/A';
   } catch (err) {
     console.error("AI Generation Error:", err);

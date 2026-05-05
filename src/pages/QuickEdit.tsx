@@ -21,7 +21,7 @@ export default function QuickEdit() {
   // Load initial state from localStorage if location.state is missing
   const getInitialState = (key: string, defaultValue: any) => {
     const saved = localStorage.getItem(key);
-    if (!saved) return defaultValue;
+    if (!saved || saved === 'undefined') return defaultValue;
     try {
       return JSON.parse(saved);
     } catch (e) {

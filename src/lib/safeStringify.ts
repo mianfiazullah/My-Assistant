@@ -1,6 +1,7 @@
 export function safeStringify(obj: any, spaces?: number): string {
+  if (obj === undefined) return "null";
   const cache = new Set();
-  return JSON.stringify(
+  const result = JSON.stringify(
     obj,
     (key, value) => {
       if (typeof value === "object" && value !== null) {
@@ -18,4 +19,5 @@ export function safeStringify(obj: any, spaces?: number): string {
     },
     spaces
   );
+  return result || "null";
 }

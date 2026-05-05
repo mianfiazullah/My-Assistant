@@ -1,3 +1,4 @@
+import { safeFetchJson } from '../lib/safeFetch';
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, 
@@ -59,11 +60,11 @@ export default function Chat() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await safeFetchJson(response).catch(() => ({}));
         throw new Error(errorData.error || 'Network response was not ok');
       }
       
-      const data = await response.json();
+      const data = await safeFetchJson(response);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),

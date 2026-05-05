@@ -1,3 +1,5 @@
+import { safeFetchJson } from './safeFetch';
+
 export async function extractBillData(base64Image: string) {
   const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
   
@@ -14,9 +16,9 @@ export async function extractBillData(base64Image: string) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    const errorData = await safeFetchJson(response).catch(() => ({}));
     throw new Error(errorData.error || `Server error: ${response.statusText}`);
   }
 
-  return response.json();
+  return safeFetchJson(response);
 }
