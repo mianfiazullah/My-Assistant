@@ -2298,8 +2298,8 @@ export default function NewCase() {
                 meterStatus: data.meterStatus || "",
                 customerId: data.customerId || "",
                 tariff: data.tariff || "",
-                currentBill: parseInt(data.currentBill?.replace(/[^0-9]/g, '')) || 0,
-                deferredAmount: parseInt(data.deferredAmount?.replace(/[^0-9]/g, '')) || 0,
+                currentBill: parseInt(data.currentBill?.toString().replace(/[^0-9]/g, '') || '0') || 0,
+                deferredAmount: parseInt(data.deferredAmount?.toString().replace(/[^0-9]/g, '') || '0') || 0,
                 presentReading: data.presentReading || "",
                 previousReading: data.previousReading || "",
                 difference: (() => {
@@ -2711,8 +2711,8 @@ export default function NewCase() {
           meterStatus: data.meterStatus || "",
           customerId: data.customerId || "",
           tariff: data.tariff || "",
-          currentBill: parseInt(data.currentBill?.replace(/[^0-9]/g, '')) || 0,
-          deferredAmount: parseInt(data.deferredAmount?.replace(/[^0-9]/g, '')) || 0,
+          currentBill: parseInt(data.currentBill?.toString().replace(/[^0-9]/g, '') || '0') || 0,
+          deferredAmount: parseInt(data.deferredAmount?.toString().replace(/[^0-9]/g, '') || '0') || 0,
           presentReading: data.presentReading || "",
           previousReading: data.previousReading || "",
           difference: (() => {

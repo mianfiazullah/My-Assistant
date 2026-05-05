@@ -136,29 +136,96 @@ app.post("/api/fetch-bill", async (req, res) => {
   const { referenceNumber } = req.body;
   if (!referenceNumber) return res.status(400).json({ error: "Reference Number is required" });
   const cleanRef = referenceNumber.replace(/[^0-9]/g, '');
+  if (cleanRef.length !== 14) return res.status(400).json({ error: "Reference Number must be 14 digits" });
 
   try {
-    const url = `https://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`;
-    const agent = new https.Agent({
-      // rejectUnauthorized: false - removed for security
-    });
-    const response = await axios.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      httpsAgent: agent,
-      timeout: 15000
-    });
+    console.log(`Scraping LESCO bill (Vercel) for: ${cleanRef}`);
+    
+    // Demo cases
+    const demoRefs = ['00000000000000', '11111111111111', '22222222222222', '33333333333333'];
+    if (demoRefs.includes(cleanRef)) {
+      return res.json({
+        consumerName: `DEMO CONSUMER (${cleanRef})`,
+        address: "123 LESCO Street, Gulberg III, Lahore",
+        referenceNumber: cleanRef,
+        unitsConsumed: 450,
+        amountDue: 15420,
+        billingMonth: "FEB 2026",
+        sanctionedLoad: "5 kW",
+        connectionType: "A1-R",
+        currentBill: 15000,
+        deferredAmount: 420,
+        previousReading: "12050",
+        monthWiseUnitsConsumed: "Jan: 300, Feb: 350, Mar: 450"
+      });
+    }
+
+    const urls = [
+      `https://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`,
+      `http://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`,
+      `http://pitc.com.pk:36247/lescobill/general?refno=${cleanRef}`,
+      `http://bill.pitc.com.pk:36247/lescobill/general?refno=${cleanRef}`,
+    ];
+
+    let response: any = null;
+    const agent = new https.Agent({});
+
+    try {
+      response = await Promise.any(urls.map(url => 
+        axios.get(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' },
+          httpsAgent: agent,
+          timeout: 10000
+        }).then(res => {
+          if (res.data.toString().includes("Consumer Name") || res.data.toString().includes("NAME & ADDRESS")) return res;
+          throw new Error("Invalid content");
+        })
+      ));
+    } catch (err) {
+      throw new Error("All LESCO portals are currently unresponsive. Please enter details manually.");
+    }
+
+    if (!response) throw new Error("Failed to fetch bill data.");
 
     const $ = cheerio.load(response.data);
-    // Simplified scraping logic for the proxy
-    const consumerName = $(`td:contains("NAME & ADDRESS")`).next('td').text().trim().split('\n')[0] || "Unknown";
-    const amountDue = parseInt($(`td:contains("TOTAL PAYABLE")`).next('td').text().replace(/[^0-9]/g, '')) || 0;
+    
+    const getTextByLabel = (label: string) => {
+      let val = "";
+      $(`td:contains("${label}")`).each((i, el) => {
+        val = $(el).next().text().trim();
+        if (val) return false;
+      });
+      return val;
+    };
 
-    res.json({
-      consumerName,
-      amountDue,
+    let consumerName = "";
+    let address = "";
+    const nameAddrTd = $(`td:contains("NAME & ADDRESS")`).next('td');
+    if (nameAddrTd.length) {
+      const text = nameAddrTd.text().trim();
+      const parts = text.split('\n').map(p => p.trim()).filter(p => p);
+      consumerName = parts[0] || "";
+      address = parts.slice(1).join(', ') || "";
+    }
+
+    if (!consumerName) consumerName = getTextByLabel("NAME") || "Unknown";
+    if (!address) address = getTextByLabel("ADDRESS") || "Address not found";
+
+    const billData = {
+      consumerName: consumerName,
+      address: address,
       referenceNumber: cleanRef,
-      // ... include other fields if needed, or stick to essential for proxy
-    });
+      unitsConsumed: parseInt((getTextByLabel("UNITS CONSUMED") || "0").replace(/[^0-9]/g, '')) || 0,
+      amountDue: parseInt((getTextByLabel("TOTAL PAYABLE") || "0").replace(/[^0-9]/g, '')) || 0,
+      billingMonth: getTextByLabel("BILLING MONTH") || "N/A",
+      sanctionedLoad: getTextByLabel("LOAD") || "N/A",
+      connectionType: getTextByLabel("TARIFF") || "N/A",
+      customerId: getTextByLabel("CONSUMER ID") || "N/A",
+      currentBill: parseInt(getTextByLabel("CURRENT BILL").replace(/[^0-9]/g, '')) || 0,
+      previousReading: getTextByLabel("PREVIOUS READING") || "N/A",
+    };
+
+    res.json(billData);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
