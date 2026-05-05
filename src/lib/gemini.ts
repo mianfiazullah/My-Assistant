@@ -24,7 +24,8 @@ export async function extractBillData(base64Image: string) {
   try {
     const response = await getAI().models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: {
+      contents: [{
+        role: "user",
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: base64Data } },
           { text: `Extract the following details from this electricity bill image into a valid JSON object.
@@ -32,7 +33,7 @@ export async function extractBillData(base64Image: string) {
 - referenceNumber, consumerName, address, sanctionedLoad, customerId, tariff, billingMonth, currentBill, deferredAmount, presentReading, previousReading, meterNoOnBill, subDivisionName, feederName, meterStatus, monthWiseUnits
 RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
         ]
-      },
+      }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -72,10 +73,17 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       },
     });
 
-    const cleanText = response.text || "";
-    if (!cleanText) throw new Error("The AI model returned an empty response.");
-
-    return JSON.parse(cleanText);
+    const cleanText = (response.text || "").trim();
+    if (!cleanText || cleanText === 'undefined' || !(cleanText.startsWith('{') || cleanText.startsWith('['))) {
+      throw new Error("The AI model returned an empty or invalid response.");
+    }
+    
+    try {
+      return JSON.parse(cleanText);
+    } catch (e) {
+      console.error("Failed to parse Gemini response:", cleanText);
+      throw new Error("Failed to parse AI response as JSON");
+    }
   } catch (error: any) {
     console.error("Gemini Extraction Error:", error);
     throw new Error(error.message || "Failed to extract bill data");

@@ -22,8 +22,10 @@ export default function QuickEdit() {
   const getInitialState = (key: string, defaultValue: any) => {
     try {
       const saved = localStorage.getItem(key);
-      if (!saved || saved === 'undefined' || saved === 'null') return defaultValue;
-      return JSON.parse(saved);
+      if (!saved) return defaultValue;
+      const trimmed = saved.trim();
+      if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '' || !(trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.startsWith('"') || !isNaN(Number(trimmed)) || trimmed === 'true' || trimmed === 'false')) return defaultValue;
+      return JSON.parse(trimmed);
     } catch (e) {
       return defaultValue;
     }

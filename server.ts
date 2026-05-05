@@ -63,13 +63,17 @@ async function startServer() {
   // GEMINI ROUTES
   app.post("/api/extract-bill", async (req, res) => {
     try {
-      const { base64Data, model = "gemini-1.5-flash" } = req.body;
+      const { base64Data } = req.body;
       if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
-      console.log(`Analyzing bill using model: ${model}, data length: ${base64Data.length}`);
+      const modelName = "gemini-3-flash-preview";
+      
+      console.log(`Analyzing bill using model: ${modelName}, data length: ${base64Data.length}`);
 
-      const response = await getAI().getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent({
-        contents: {
+      const response = await getAI().models.generateContent({
+        model: modelName,
+        contents: [{
+          role: "user",
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: base64Data } },
             { text: `Extract the following details from this electricity bill image into a valid JSON object.
@@ -96,7 +100,7 @@ async function startServer() {
 - If a field is missing, use "N/A".
 - Return ONLY the JSON object. Do not include any commentary or other text.` }
           ]
-        },
+        }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -136,21 +140,20 @@ async function startServer() {
         },
       });
 
-      let cleanText = response.text || "";
-      if (!cleanText) {
-        if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
-          cleanText = response.candidates[0].content.parts[0].text;
-        }
+      const cleanText = (response.text || "").trim();
+      if (!cleanText || cleanText === 'undefined' || !(cleanText.startsWith('{') || cleanText.startsWith('['))) {
+        throw new Error("The AI model returned an empty response. Please try a clearer picture.");
       }
-
-      if (!cleanText) throw new Error("The AI model returned an empty response. Please try a clearer picture.");
       
       try {
         const parsed = JSON.parse(cleanText);
         res.json(parsed);
       } catch (parseErr) {
         console.error("JSON Parse Error on text:", cleanText);
-        throw new Error("The AI returned data in an invalid format. Please try again.");
+        res.status(500).json({ 
+          error: "The AI returned data in an invalid format.", 
+          raw: cleanText.substring(0, 500) 
+        });
       }
     } catch (e: any) {
       console.error("Extraction error:", e);
@@ -163,14 +166,15 @@ async function startServer() {
       const { input } = req.body;
       if (!input) return res.status(400).json({ error: "No input provided" });
 
-      const response = await getAI().getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent({
+      const response = await getAI().models.generateContent({
+        model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
         config: {
           systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise.",
         }
       });
       res.json({ text: response.text });
-    } catch (error: any) {
+  } catch (error: any) {
       console.error("Chat error:", error);
       res.status(500).json({ error: error.message });
     }
@@ -181,11 +185,12 @@ async function startServer() {
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-      const response = await getAI().getGenerativeModel({ model: "gemini-1.5-flash" }).generateContent({
+      const response = await getAI().models.generateContent({
+        model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts: [{ text: prompt }] }]
       });
       res.json({ text: response.text });
-    } catch (error: any) {
+  } catch (error: any) {
       console.error("Generate error:", error);
       res.status(500).json({ error: error.message });
     }
@@ -541,15 +546,10 @@ async function startServer() {
   });
 }
 
-// Only start the server if this file is run directly
-if (process.env.NODE_ENV !== 'production') {
-  startServer().catch(err => {
-    console.error('FATAL: Server failed to start:', err);
-    process.exit(1);
-  });
-} else {
-  // Production start logic for serverless
-  // Add static middleware for production if needed here, but it's already in build logic
-}
+// Start the server
+startServer().catch(err => {
+  console.error('FATAL: Server failed to start:', err);
+  process.exit(1);
+});
 
 export default app;

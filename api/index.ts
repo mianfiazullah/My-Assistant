@@ -34,7 +34,8 @@ app.post("/api/extract-bill", async (req, res) => {
 
     const response = await getAI().models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: {
+      contents: [{
+        role: "user",
         parts: [
           { inlineData: { mimeType: "image/jpeg", data: base64Data } },
           { text: `Extract the following details from this electricity bill image into a valid JSON object.
@@ -42,7 +43,7 @@ app.post("/api/extract-bill", async (req, res) => {
 - referenceNumber, consumerName, address, sanctionedLoad, customerId, tariff, billingMonth, currentBill, deferredAmount, presentReading, previousReading, meterNoOnBill, subDivisionName, feederName, meterStatus, monthWiseUnits
 RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
         ]
-      },
+      }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -82,22 +83,19 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       },
     });
 
-    let cleanText = response.text || "";
-    if (!cleanText) {
-      if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
-        cleanText = response.candidates[0].content.parts[0].text;
-      }
+    const cleanText = (response.text || "").trim();
+    if (!cleanText || cleanText === 'undefined' || !(cleanText.startsWith('{') || cleanText.startsWith('['))) {
+      throw new Error("The AI model returned an empty or invalid response.");
     }
-
-    if (!cleanText) {
-      throw new Error("The AI model returned an empty response.");
-    }
-
+    
     try {
       res.json(JSON.parse(cleanText));
     } catch (parseErr) {
       console.error("JSON Parse Error on text:", cleanText);
-      res.status(500).json({ error: "The AI returned data in an invalid format." });
+      res.status(500).json({ 
+        error: "The AI returned data in an invalid format.",
+        raw: cleanText.substring(0, 500)
+      });
     }
   } catch (e: any) {
     res.status(500).json({ error: e.message });

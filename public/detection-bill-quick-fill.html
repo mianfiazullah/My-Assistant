@@ -498,9 +498,11 @@
         // Load Draft
         function loadDraft() {
             const saved = localStorage.getItem('detectionBillDraft');
-            if (saved && saved !== 'undefined' && saved !== 'null') {
-                try {
-                    const data = JSON.parse(saved);
+            if (saved) {
+                const trimmed = saved.trim();
+                if (trimmed !== 'undefined' && trimmed !== 'null' && trimmed !== '') {
+                    try {
+                        const data = JSON.parse(trimmed);
                     for (const id in data) {
                         const el = document.getElementById(id);
                         if (el) {
