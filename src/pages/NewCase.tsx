@@ -54,7 +54,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'motion/react';
 import * as Dropzone from 'react-dropzone';
 import { domToJpeg } from 'modern-screenshot';
-import { cn } from '../lib/utils';
+import { cn, safeParse } from '../lib/utils';
 import { BillData, DetectionCase, LoadItem } from '../types';
 import { jsPDF } from 'jspdf';
 import { ProformaTemplates } from '../components/ProformaTemplates';
@@ -173,15 +173,7 @@ export default function NewCase() {
 
   // Load initial state from localStorage
   const getInitialState = (key: string, defaultValue: any) => {
-    try {
-      const saved = localStorage.getItem(key);
-      if (!saved) return defaultValue;
-      const trimmed = saved.trim();
-      if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
-      return JSON.parse(trimmed);
-    } catch (e) {
-      return defaultValue;
-    }
+    return safeParse(localStorage.getItem(key), defaultValue);
   };
 
   const [step, setStep] = useState(() => getInitialState('lesco_new_case_step', 1));

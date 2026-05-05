@@ -1,4 +1,5 @@
 import { BillData } from "../types";
+import { safeFetchJson } from "./safeFetch";
 
 export async function extractBillData(base64Image: string): Promise<BillData> {
   const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
@@ -18,12 +19,13 @@ export async function extractBillData(base64Image: string): Promise<BillData> {
       body: JSON.stringify({ base64Data }),
     });
 
+    const data = await safeFetchJson(response);
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to extract bill data from server");
+      throw new Error(data?.error || `Server error: ${response.status}`);
     }
 
-    return await response.json();
+    return data;
   } catch (error: any) {
     console.error("Gemini Extraction Error:", error);
     throw new Error(error.message || "Failed to extract bill data");
@@ -40,12 +42,12 @@ export async function chatWithGemini(input: string) {
       body: JSON.stringify({ input }),
     });
 
+    const data = await safeFetchJson(response);
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to get chat response from server");
+      throw new Error(data?.error || `Server error: ${response.status}`);
     }
 
-    const data = await response.json();
     return data.text;
   } catch (error: any) {
     console.error("Gemini Chat Error:", error);
@@ -63,12 +65,12 @@ export async function generateGeminiContent(prompt: string) {
       body: JSON.stringify({ prompt }),
     });
 
+    const data = await safeFetchJson(response);
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to generate content from server");
+      throw new Error(data?.error || `Server error: ${response.status}`);
     }
 
-    const data = await response.json();
     return data.text;
   } catch (error: any) {
     console.error("Gemini Generation Error:", error);

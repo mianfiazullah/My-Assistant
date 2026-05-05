@@ -12,9 +12,11 @@ app.use(express.json({ limit: '50mb' }));
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key || key === "MY_GEMINI_API_KEY") {
-      throw new Error("Gemini API Key is not configured.");
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key;
+    if (!key || key === "MY_GEMINI_API_KEY" || key === "") {
+      const errorMsg = "Gemini API Key is not configured. " + 
+        (process.env.VERCEL ? "Please add GEMINI_API_KEY (or API_KEY) to your Vercel Project Environment Variables." : "Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
+      throw new Error(errorMsg);
     }
     _ai = new GoogleGenAI({ apiKey: key });
   }
@@ -84,9 +86,13 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
     });
 
     const result = await model;
-    const cleanText = result.text;
-    if (!cleanText || cleanText.trim() === 'undefined') {
-      throw new Error("The AI model returned an empty or invalid response.");
+    if (!result || !result.text) {
+      throw new Error("The AI model returned an empty response. Please try with a clearer image.");
+    }
+    
+    const cleanText = result.text.trim();
+    if (cleanText === 'undefined' || cleanText === 'null' || cleanText === '') {
+      throw new Error("The AI model returned an invalid response format.");
     }
 
     try {
@@ -99,7 +105,8 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       });
     }
   } catch (e: any) {
-    res.status(500).json({ error: e.message });
+    console.error("Extraction error:", e);
+    res.status(500).json({ error: e?.message || "Internal Extraction Error" });
   }
 });
 
