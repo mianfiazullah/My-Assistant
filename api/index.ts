@@ -29,15 +29,15 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/extract-bill", async (req, res) => {
   try {
-    const { base64Data } = req.body;
-    if (!base64Data) return res.status(400).json({ error: "Missing image data" });
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ error: "Missing image data" });
 
     const model = getAI().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{
         role: "user",
         parts: [
-          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+          { inlineData: { mimeType: "image/jpeg", data: image } },
           { text: `Extract the following details from this electricity bill image into a valid JSON object.
 === FIELDS TO EXTRACT ===
 - referenceNumber, consumerName, address, sanctionedLoad, customerId, tariff, billingMonth, currentBill, deferredAmount, presentReading, previousReading, meterNoOnBill, subDivisionName, feederName, meterStatus, monthWiseUnits
