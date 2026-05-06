@@ -18,13 +18,17 @@ const __dirname = path.dirname(__filename);
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY || process.env["API Key"] || process.env["API KEY"] || process.env["Gemini API Key"] || process.env["GEMINI API KEY"];
-    if (!key || key === "MY_GEMINI_API_KEY" || key === "") {
-      const errorMsg = "Gemini API Key is not configured. " + 
-        (process.env.VERCEL ? "Please add GEMINI_API_KEY to your Vercel Environment Variables. IMPORTANT: You MUST redeploy your Vercel project after adding the variable for it to take effect!" : "Please add your GEMINI_API_KEY in the AI Studio Settings/Secrets panel.");
-      throw new Error(errorMsg);
+    const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
+    if (!key) {
+      throw new Error("GEMINI_API_KEY is not configured. Please add your GEMINI_API_KEY in the AI Studio Settings/Secrets panel.");
     }
-    _ai = new GoogleGenAI({ apiKey: key });
+    
+    const trimmedKey = key.trim();
+    if (trimmedKey === "" || trimmedKey.includes("YOUR_API_KEY") || trimmedKey === "MY_GEMINI_API_KEY" || trimmedKey.length < 10) {
+      throw new Error("The GEMINI_API_KEY provided appears to be invalid or a placeholder (" + trimmedKey + "). Please generate a valid API key from Google AI Studio and update your secrets.");
+    }
+    
+    _ai = new GoogleGenAI({ apiKey: trimmedKey });
   }
   return _ai;
 }
@@ -49,6 +53,22 @@ const upload = multer({ storage: multer.memoryStorage() });
 const app = express();
 const PORT = 3000;
 
+const formatGeminiError = (e: any): string => {
+  let errorMsg = e?.message || String(e);
+  if (errorMsg.includes("API key not valid") || errorMsg.includes("API_KEY_INVALID")) {
+    return "The GEMINI_API_KEY provided is not valid. Please check your API key in the AI Studio Settings/Secrets panel and ensure it is correct.";
+  }
+  if (typeof errorMsg === 'string' && errorMsg.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(errorMsg);
+      if (parsed.error && parsed.error.message) {
+        return parsed.error.message;
+      }
+    } catch (e2) {}
+  }
+  return errorMsg;
+};
+
 async function startServer() {
   console.log('Starting server initialization...');
 
@@ -56,6 +76,7 @@ async function startServer() {
 
   // API routes
   app.get("/api/health", (req, res) => {
+    console.log("Checking API Keys length:", Object.keys(process.env).filter(x => x.includes("API_KEY") || x.includes("GEMINI")).map(k => `${k}: ${typeof process.env[k]} (${process.env[k]?.length})`).join(", "));
     res.json({ 
       status: "ok", 
       timestamp: new Date().toISOString()
@@ -175,7 +196,7 @@ async function startServer() {
       }
     } catch (e: any) {
       console.error("Extraction error:", e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: formatGeminiError(e) });
     }
   });
 
@@ -195,7 +216,7 @@ async function startServer() {
       res.json({ text: result.text });
     } catch (error: any) {
       console.error("Chat error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: formatGeminiError(error) });
     }
   });
 
@@ -212,7 +233,7 @@ async function startServer() {
       res.json({ text: result.text });
     } catch (error: any) {
       console.error("Generate error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: formatGeminiError(error) });
     }
   });
 
