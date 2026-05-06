@@ -1,5 +1,5 @@
 {
-  "name": "Genius Buddy Bill Assistant",
+  "name": "My Assistant",
   "description": "Generate Detection Bill Proforma, Notice, and FIR Request documents based on official templates.",
   "requestFramePermissions": [
     "camera"

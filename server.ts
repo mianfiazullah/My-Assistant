@@ -18,9 +18,9 @@ const __dirname = path.dirname(__filename);
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY;
     if (!key || key === "MY_GEMINI_API_KEY") {
-      throw new Error("Gemini API Key is not configured. Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
+      throw new Error("Gemini API Key is not configured. Please add your GEMINI_API_KEY, VITE_GEMINI_API_KEY, or API_KEY to your Vercel Environment Variables or AI Studio Secrets.");
     }
     _ai = new GoogleGenAI({ apiKey: key });
   }
@@ -147,7 +147,18 @@ async function startServer() {
       if (!cleanText || cleanText === 'undefined') throw new Error("The AI model returned an empty response. Please try a clearer picture.");
       
       try {
-        const parsed = JSON.parse(cleanText);
+        // Strip out ```json and ``` markdown if present
+        let jsonStr = cleanText;
+        if (jsonStr.startsWith('```json')) {
+          jsonStr = jsonStr.replace(/^```json/, '');
+          jsonStr = jsonStr.replace(/```$/, '');
+        } else if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.replace(/^```/, '');
+          jsonStr = jsonStr.replace(/```$/, '');
+        }
+        jsonStr = jsonStr.trim();
+        
+        const parsed = JSON.parse(jsonStr);
         res.json(parsed);
       } catch (parseErr) {
         console.error("JSON Parse Error on text:", cleanText);

@@ -12,9 +12,9 @@ app.use(express.json({ limit: '50mb' }));
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY;
     if (!key || key === "MY_GEMINI_API_KEY") {
-      throw new Error("Gemini API Key is not configured.");
+      throw new Error("Gemini API Key is not configured. Please add your GEMINI_API_KEY, VITE_GEMINI_API_KEY, or API_KEY to your Vercel Environment Variables.");
     }
     _ai = new GoogleGenAI({ apiKey: key });
   }
@@ -90,7 +90,16 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
     }
 
     try {
-      res.json(JSON.parse(cleanText));
+      let jsonStr = cleanText.trim();
+      if (jsonStr.startsWith('```json')) {
+        jsonStr = jsonStr.replace(/^```json/, '');
+        jsonStr = jsonStr.replace(/```$/, '');
+      } else if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```/, '');
+        jsonStr = jsonStr.replace(/```$/, '');
+      }
+      jsonStr = jsonStr.trim();
+      res.json(JSON.parse(jsonStr));
     } catch (parseErr) {
       console.error("JSON Parse Error on text:", cleanText);
       res.status(500).json({ 
