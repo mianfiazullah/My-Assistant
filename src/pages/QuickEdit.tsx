@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, Save, FileText, Activity, ShieldAlert, Eye, Loader2, CheckCircle, AlertCircle, Hash, User, MapPin, Zap, Home, PlusCircle, X, ZoomIn, ZoomOut, RotateCcw, Scan } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, safeParse } from '../lib/utils';
+import { cn } from '../lib/utils';
 import { DetectionCase, BillData } from '../types';
 import { ProformaTemplates } from '../components/ProformaTemplates';
 import { CustomDatePicker } from '../components/CustomDatePicker';
@@ -20,7 +20,15 @@ export default function QuickEdit() {
   
   // Load initial state from localStorage if location.state is missing
   const getInitialState = (key: string, defaultValue: any) => {
-    return safeParse(localStorage.getItem(key), defaultValue);
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) return defaultValue;
+      const trimmed = saved.trim();
+      if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
+      return JSON.parse(trimmed);
+    } catch (e) {
+      return defaultValue;
+    }
   };
 
   const existingCase = location.state?.case as DetectionCase | undefined;

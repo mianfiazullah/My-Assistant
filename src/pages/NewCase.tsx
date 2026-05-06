@@ -54,7 +54,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'motion/react';
 import * as Dropzone from 'react-dropzone';
 import { domToJpeg } from 'modern-screenshot';
-import { cn, safeParse } from '../lib/utils';
+import { cn } from '../lib/utils';
 import { BillData, DetectionCase, LoadItem } from '../types';
 import { jsPDF } from 'jspdf';
 import { ProformaTemplates } from '../components/ProformaTemplates';
@@ -173,7 +173,15 @@ export default function NewCase() {
 
   // Load initial state from localStorage
   const getInitialState = (key: string, defaultValue: any) => {
-    return safeParse(localStorage.getItem(key), defaultValue);
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) return defaultValue;
+      const trimmed = saved.trim();
+      if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
+      return JSON.parse(trimmed);
+    } catch (e) {
+      return defaultValue;
+    }
   };
 
   const [step, setStep] = useState(() => getInitialState('lesco_new_case_step', 1));
@@ -2290,8 +2298,8 @@ export default function NewCase() {
                 meterStatus: data.meterStatus || "",
                 customerId: data.customerId || "",
                 tariff: data.tariff || "",
-                currentBill: parseInt(data.currentBill?.toString().replace(/[^0-9]/g, '') || '0') || 0,
-                deferredAmount: parseInt(data.deferredAmount?.toString().replace(/[^0-9]/g, '') || '0') || 0,
+                currentBill: parseInt(data.currentBill?.replace(/[^0-9]/g, '')) || 0,
+                deferredAmount: parseInt(data.deferredAmount?.replace(/[^0-9]/g, '')) || 0,
                 presentReading: data.presentReading || "",
                 previousReading: data.previousReading || "",
                 difference: (() => {
@@ -2703,8 +2711,8 @@ export default function NewCase() {
           meterStatus: data.meterStatus || "",
           customerId: data.customerId || "",
           tariff: data.tariff || "",
-          currentBill: parseInt(data.currentBill?.toString().replace(/[^0-9]/g, '') || '0') || 0,
-          deferredAmount: parseInt(data.deferredAmount?.toString().replace(/[^0-9]/g, '') || '0') || 0,
+          currentBill: parseInt(data.currentBill?.replace(/[^0-9]/g, '')) || 0,
+          deferredAmount: parseInt(data.deferredAmount?.replace(/[^0-9]/g, '')) || 0,
           presentReading: data.presentReading || "",
           previousReading: data.previousReading || "",
           difference: (() => {
