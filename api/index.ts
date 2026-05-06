@@ -12,10 +12,10 @@ app.use(express.json({ limit: '50mb' }));
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY || process.env["API Key"] || process.env["API KEY"] || process.env["Gemini API Key"] || process.env["GEMINI API KEY"];
     if (!key || key === "MY_GEMINI_API_KEY" || key === "") {
       const errorMsg = "Gemini API Key is not configured. " + 
-        (process.env.VERCEL ? "Please add GEMINI_API_KEY (or VITE_GEMINI_API_KEY / API_KEY) to your Vercel Project Environment Variables." : "Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
+        (process.env.VERCEL ? "Please add GEMINI_API_KEY to your Vercel Environment Variables. IMPORTANT: You MUST redeploy your Vercel project after adding the variable for it to take effect!" : "Please add your GEMINI_API_KEY in the AI Studio Settings/Secrets panel.");
       throw new Error(errorMsg);
     }
     _ai = new GoogleGenAI({ apiKey: key });
@@ -34,19 +34,10 @@ app.post("/api/extract-bill", async (req, res) => {
     const { base64Data } = req.body;
     if (!base64Data) return res.status(400).json({ error: "Missing image data" });
 
-    const model = getAI().models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{
-        role: "user",
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-          { text: `Extract the following details from this electricity bill image into a valid JSON object.
-=== FIELDS TO EXTRACT ===
-- referenceNumber, consumerName, address, sanctionedLoad, customerId, tariff, billingMonth, currentBill, deferredAmount, presentReading, previousReading, meterNoOnBill, subDivisionName, feederName, meterStatus, monthWiseUnits
-RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
-        ]
-      }],
-      config: {
+    const genAI = getAI();
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -85,12 +76,31 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       },
     });
 
-    const result = await model;
-    if (!result || !result.text) {
+    const result = await model.generateContent([
+      { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+      { text: `Extract the following details from this electricity bill image into a valid JSON object.
+=== FIELDS TO EXTRACT ===
+- referenceNumber, consumerName, address, sanctionedLoad, customerId, tariff, billingMonth, currentBill, deferredAmount, presentReading, previousReading, meterNoOnBill, subDivisionName, feederName, meterStatus, monthWiseUnits
+RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+    
+    if (!text) {
       throw new Error("The AI model returned an empty response. Please try with a clearer image.");
     }
     
-    const cleanText = result.text.trim();
+    let cleanText = text.trim();
+    if (cleanText.startsWith('```json')) {
+      cleanText = cleanText.substring(7);
+    } else if (cleanText.startsWith('```')) {
+      cleanText = cleanText.substring(3);
+    }
+    if (cleanText.endsWith('```')) {
+      cleanText = cleanText.substring(0, cleanText.length - 3);
+    }
+    cleanText = cleanText.trim();
     if (cleanText === 'undefined' || cleanText === 'null' || cleanText === '') {
       throw new Error("The AI model returned an invalid response format.");
     }
@@ -113,15 +123,19 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
 app.post("/api/chat", async (req, res) => {
   try {
     const { input } = req.body;
-    const result = await getAI().models.generateContent({ 
-      model: "gemini-3-flash-preview",
-      contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
-      config: {
-        systemInstruction: "You are an expert assistant. Be professional, helpful, and concise."
-      }
+    if (!input) return res.status(400).json({ error: "No input provided" });
+
+    const genAI = getAI();
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
     });
-    res.json({ text: result.text });
+    
+    const result = await model.generateContent(input.trim());
+    const response = await result.response;
+    res.json({ text: response.text() });
   } catch (error: any) {
+    console.error("Chat error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -129,12 +143,15 @@ app.post("/api/chat", async (req, res) => {
 app.post("/api/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
-    const result = await getAI().models.generateContent({ 
-      model: "gemini-3-flash-preview",
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
-    });
-    res.json({ text: result.text });
+    if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+
+    const genAI = getAI();
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt.trim());
+    const response = await result.response;
+    res.json({ text: response.text() });
   } catch (error: any) {
+    console.error("Generate error:", error);
     res.status(500).json({ error: error.message });
   }
 });

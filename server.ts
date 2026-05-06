@@ -18,10 +18,10 @@ const __dirname = path.dirname(__filename);
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_KEY || process.env.api_key || process.env.VITE_GEMINI_API_KEY || process.env.VITE_API_KEY || process.env["API Key"] || process.env["API KEY"] || process.env["Gemini API Key"] || process.env["GEMINI API KEY"];
     if (!key || key === "MY_GEMINI_API_KEY" || key === "") {
       const errorMsg = "Gemini API Key is not configured. " + 
-        (process.env.VERCEL ? "Please add GEMINI_API_KEY (or VITE_GEMINI_API_KEY / API_KEY) to your Vercel Project Environment Variables." : "Please add your GEMINI_API_KEY in the AI Studio Secrets panel.");
+        (process.env.VERCEL ? "Please add GEMINI_API_KEY to your Vercel Environment Variables. IMPORTANT: You MUST redeploy your Vercel project after adding the variable for it to take effect!" : "Please add your GEMINI_API_KEY in the AI Studio Settings/Secrets panel.");
       throw new Error(errorMsg);
     }
     _ai = new GoogleGenAI({ apiKey: key });
@@ -149,7 +149,16 @@ async function startServer() {
         throw new Error("The AI model returned an empty response. Please try with a clearer image.");
       }
 
-      const cleanText = result.text.trim();
+      let cleanText = result.text.trim();
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.substring(7);
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.substring(3);
+      }
+      if (cleanText.endsWith('```')) {
+        cleanText = cleanText.substring(0, cleanText.length - 3);
+      }
+      cleanText = cleanText.trim();
       if (cleanText === 'undefined' || cleanText === 'null' || cleanText === '') {
         throw new Error("The AI model returned an empty response. Please try a clearer picture.");
       }
