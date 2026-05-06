@@ -63,13 +63,20 @@ async function startServer() {
   // GEMINI ROUTES
   app.post("/api/extract-bill", async (req, res) => {
     try {
-      const { base64Data, model: requestedModel = "gemini-3-flash-preview" } = req.body;
-      if (!base64Data) return res.status(400).json({ error: "Missing image data" });
+      console.log(`[extract-bill] type of req.body: ${typeof req.body}, isArray: ${Array.isArray(req.body)}`);
+      if (req.body) {
+        console.log(`[extract-bill] req.body keys: ${Object.keys(req.body).join(", ")}`);
+      }
+      const { base64Data, image, model: requestedModel = "gemini-3-flash-preview" } = req.body || {};
+      const imgData = image || base64Data;
+      if (!imgData) {
+        return res.status(400).json({ error: `Missing image data. Body keys: ${req.body ? Object.keys(req.body).join(", ") : 'none'}` });
+      }
 
       const modelName = "gemini-3-flash-preview";
       const ai = getAI();
       
-      console.log(`Analyzing bill using model: ${modelName}, data length: ${base64Data.length}`);
+      console.log(`Analyzing bill using model: ${modelName}, data length: ${imgData.length}`);
 
       const result = await ai.models.generateContent({
         model: modelName,
@@ -77,7 +84,7 @@ async function startServer() {
           {
             role: "user",
             parts: [
-              { inlineData: { mimeType: "image/jpeg", data: base64Data } },
+              { inlineData: { mimeType: "image/jpeg", data: imgData } },
               { text: `Extract the following details from this electricity bill image into a valid JSON object.
             
 === FIELDS TO EXTRACT ===
@@ -88,8 +95,8 @@ async function startServer() {
 - customerId: e.g., "01-12345-6789123"
 - tariff: e.g., "A-1a(01)"
 - billingMonth: month and year, e.g., "MAR 26"
-- currentBill: numeric value only
-- deferredAmount: numeric value only (0 if not present)
+- currentBill: numeric value only (preserve decimals, e.g. 36032.31)
+- deferredAmount: numeric value only (preserve decimals, e.g. 0.00)
 - presentReading: number only
 - previousReading: number only
 - meterNoOnBill: serial number
@@ -507,13 +514,13 @@ async function startServer() {
         address: address,
         referenceNumber: cleanRef,
         unitsConsumed: parseInt((getTextByLabel("UNITS CONSUMED") || getTextByLabel("Units") || "0").replace(/[^0-9]/g, '')) || 0,
-        amountDue: parseInt((getTextByLabel("TOTAL PAYABLE") || getTextByLabel("Payable") || "0").replace(/[^0-9]/g, '')) || 0,
+        amountDue: parseFloat((getTextByLabel("TOTAL PAYABLE") || getTextByLabel("Payable") || "0").replace(/[^0-9.]/g, '')) || 0,
         billingMonth: getTextByLabel("BILLING MONTH") || getTextByLabel("Month") || "N/A",
         sanctionedLoad: getTextByLabel("LOAD") || getTextByLabel("SANCTIONED LOAD") || getTextByLabel("SANC LOAD") || "N/A",
         connectionType: getTextByLabel("TARIFF") || "N/A",
         customerId: getTextByLabel("CONSUMER ID") || getTextByLabel("CUSTOMER ID") || getTextByLabel("CONS ID") || "N/A",
-        currentBill: parseInt(getTextByLabel("CURRENT BILL").replace(/[^0-9]/g, '')) || 0,
-        deferredAmount: parseInt(getTextByLabel("DEFERRED AMOUNT").replace(/[^0-9]/g, '')) || parseInt(getTextByLabel("DEFERRED").replace(/[^0-9]/g, '')) || 0,
+        currentBill: parseFloat(getTextByLabel("CURRENT BILL").replace(/[^0-9.]/g, '')) || 0,
+        deferredAmount: parseFloat(getTextByLabel("DEFERRED AMOUNT").replace(/[^0-9.]/g, '')) || parseFloat(getTextByLabel("DEFERRED").replace(/[^0-9.]/g, '')) || 0,
         previousReading: getTextByLabel("PREVIOUS READING") || getTextByLabel("PREV RDG") || getTextByLabel("PREVIOUS") || "N/A",
         meterNoOnBill: getTextByLabel("METER NO") || getTextByLabel("METER NUMBER") || "N/A",
         feederName: getTextByLabel("FEEDER") || getTextByLabel("FEEDER NAME") || "N/A",

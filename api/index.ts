@@ -7,6 +7,7 @@ import multer from 'multer';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Initialize AI lazily
 let _ai: any = null;
@@ -29,8 +30,9 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/extract-bill", async (req, res) => {
   try {
-    const { image } = req.body;
-    if (!image) return res.status(400).json({ error: "Missing image data" });
+    console.log("extract-bill called. type of req.body:", typeof req.body, "keys:", req.body ? Object.keys(req.body) : "none");
+    const { image } = req.body || {};
+    if (!image) return res.status(400).json({ error: "Missing image data. Body keys: " + (req.body ? Object.keys(req.body).join(",") : "none") });
 
     const model = getAI().models.generateContent({
       model: "gemini-3-flash-preview",

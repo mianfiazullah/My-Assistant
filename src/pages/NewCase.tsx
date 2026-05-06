@@ -178,7 +178,11 @@ export default function NewCase() {
       if (!saved) return defaultValue;
       const trimmed = saved.trim();
       if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
-      return JSON.parse(trimmed);
+      try {
+        return JSON.parse(trimmed);
+      } catch (err) {
+        return defaultValue; // Handle invalid JSON stored in localStorage
+      }
     } catch (e) {
       return defaultValue;
     }
@@ -2298,8 +2302,8 @@ export default function NewCase() {
                 meterStatus: data.meterStatus || "",
                 customerId: data.customerId || "",
                 tariff: data.tariff || "",
-                currentBill: parseInt(data.currentBill?.replace(/[^0-9]/g, '')) || 0,
-                deferredAmount: parseInt(data.deferredAmount?.replace(/[^0-9]/g, '')) || 0,
+                currentBill: parseFloat(data.currentBill?.toString().replace(/[^0-9.]/g, '')) || 0,
+                deferredAmount: parseFloat(data.deferredAmount?.toString().replace(/[^0-9.]/g, '')) || 0,
                 presentReading: data.presentReading || "",
                 previousReading: data.previousReading || "",
                 difference: (() => {
@@ -2658,8 +2662,8 @@ export default function NewCase() {
             img.onerror = () => reject(new Error("Failed to load the image. Please use a standard image format (JPG/PNG)."));
             img.onload = () => {
               const canvas = document.createElement('canvas');
-              const MAX_WIDTH = 1600;
-              const MAX_HEIGHT = 1600;
+              const MAX_WIDTH = 1200;
+              const MAX_HEIGHT = 1200;
               let width = img.width;
               let height = img.height;
 
@@ -2683,7 +2687,7 @@ export default function NewCase() {
                 return;
               }
               ctx.drawImage(img, 0, 0, width, height);
-              resolve(canvas.toDataURL('image/jpeg', 0.8));
+              resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
             img.src = event.target?.result as string;
           };
@@ -2711,8 +2715,8 @@ export default function NewCase() {
           meterStatus: data.meterStatus || "",
           customerId: data.customerId || "",
           tariff: data.tariff || "",
-          currentBill: parseInt(data.currentBill?.replace(/[^0-9]/g, '')) || 0,
-          deferredAmount: parseInt(data.deferredAmount?.replace(/[^0-9]/g, '')) || 0,
+          currentBill: parseFloat(data.currentBill?.toString().replace(/[^0-9.]/g, '')) || 0,
+          deferredAmount: parseFloat(data.deferredAmount?.toString().replace(/[^0-9.]/g, '')) || 0,
           presentReading: data.presentReading || "",
           previousReading: data.previousReading || "",
           difference: (() => {
@@ -3634,13 +3638,75 @@ export default function NewCase() {
                     </thead>
                     <tbody className="divide-y divide-neutral-200 bg-white">
                       <tr>
-                        <td className="px-4 py-3 font-mono text-neutral-900 align-top">{billData.referenceNumber}</td>
-                        <td className="px-4 py-3 text-neutral-900 font-medium align-top">{billData.consumerName}</td>
-                        <td className="px-4 py-3 text-neutral-900 font-bold align-top">{billData.billingMonth}</td>
-                        <td className="px-4 py-3 text-neutral-900 font-medium align-top">Rs. {billData.currentBill?.toLocaleString() || '0'}</td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">Rs. {billData.deferredAmount?.toLocaleString() || '0'}</td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">{billData.previousReading || ''}</td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">{billData.presentReading || ''}</td>
+                        <td className="px-4 py-3 align-top">
+                          <input
+                            type="text"
+                            value={billData.referenceNumber || ''}
+                            onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 font-mono text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[140px]"
+                            placeholder="Reference No."
+                          />
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <input
+                            type="text"
+                            value={billData.consumerName || ''}
+                            onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[150px]"
+                            placeholder="Consumer Name"
+                          />
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                           <input
+                            type="text"
+                            value={billData.billingMonth || ''}
+                            onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                            placeholder="Bill Month"
+                          />
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                           <div className="flex items-center gap-1">
+                             <span className="text-neutral-500">Rs.</span>
+                             <input
+                              type="number"
+                              value={billData.currentBill === 0 ? '' : billData.currentBill || ''}
+                              onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
+                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                              placeholder="0"
+                            />
+                           </div>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                           <div className="flex items-center gap-1">
+                             <span className="text-neutral-500">Rs.</span>
+                             <input
+                              type="number"
+                              value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''}
+                              onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
+                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                              placeholder="0"
+                            />
+                           </div>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <input
+                            type="text"
+                            value={billData.previousReading || ''}
+                            onChange={(e) => setBillData({...billData, previousReading: e.target.value})}
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                            placeholder="Prev Rdg"
+                          />
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                           <input
+                            type="text"
+                            value={billData.presentReading || ''}
+                            onChange={(e) => setBillData({...billData, presentReading: e.target.value})}
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                            placeholder="Pres Rdg"
+                          />
+                        </td>
                         <td className="px-4 py-3 text-neutral-900 align-top">
                           <input 
                             type="text" 
@@ -3673,7 +3739,10 @@ export default function NewCase() {
                             type="text" 
                             value={billData.meterStatus || ''} 
                             onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                            className={cn(
+                              "w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]",
+                              billData.meterStatus?.toUpperCase() === 'REPLACED' ? "text-red-600" : "text-neutral-900"
+                            )}
                             placeholder="Status"
                           />
                         </td>
@@ -3771,33 +3840,81 @@ export default function NewCase() {
                   <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-4">
                     <div className="flex flex-col gap-1 border-b border-neutral-100 pb-3">
                       <span className="text-xs font-bold text-neutral-400 uppercase">Reference Number</span>
-                      <span className="text-sm font-mono font-bold text-neutral-900">{billData.referenceNumber}</span>
+                      <input 
+                        type="text" 
+                        value={billData.referenceNumber || ''} 
+                        onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 font-mono text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
+                        placeholder="Reference No."
+                      />
                     </div>
                     <div className="flex flex-col gap-1 border-b border-neutral-100 pb-3">
                       <span className="text-xs font-bold text-neutral-400 uppercase">Consumer Name</span>
-                      <span className="text-sm font-bold text-neutral-900">{billData.consumerName}</span>
+                      <input 
+                        type="text" 
+                        value={billData.consumerName || ''} 
+                        onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
+                        placeholder="Consumer Name"
+                      />
                     </div>
                     <div className="flex flex-col gap-1 border-b border-neutral-100 pb-3">
                       <span className="text-xs font-bold text-neutral-400 uppercase">Bill Month</span>
-                      <span className="text-sm font-bold text-indigo-600">{billData.billingMonth}</span>
+                      <input 
+                        type="text" 
+                        value={billData.billingMonth || ''} 
+                        onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-indigo-600 font-bold focus:outline-none focus:border-indigo-500"
+                        placeholder="Bill Month"
+                      />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-neutral-400 uppercase">PAYABLE WITHIN DUE DATE</span>
-                        <span className="text-base sm:text-lg font-bold text-neutral-900">Rs. {billData.currentBill?.toLocaleString() || '0'}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-neutral-500 text-sm">Rs.</span>
+                          <input 
+                            type="number" 
+                            value={billData.currentBill === 0 ? '' : billData.currentBill || ''} 
+                            onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
+                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
+                            placeholder="0"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-neutral-400 uppercase">Deferred</span>
-                        <span className="text-sm font-medium text-neutral-900">Rs. {billData.deferredAmount?.toLocaleString() || '0'}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-neutral-500 text-sm">Rs.</span>
+                          <input 
+                            type="number" 
+                            value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''} 
+                            onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
+                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                            placeholder="0"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-neutral-400 uppercase">Prev Reading</span>
-                        <span className="text-sm font-medium text-neutral-900">{billData.previousReading || ''}</span>
+                        <input 
+                          type="text" 
+                          value={billData.previousReading || ''} 
+                          onChange={(e) => setBillData({...billData, previousReading: e.target.value})}
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                          placeholder="Prev Rdg"
+                        />
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-neutral-400 uppercase">Pres Reading</span>
-                        <span className="text-sm font-medium text-neutral-900">{billData.presentReading || ''}</span>
+                        <input 
+                          type="text" 
+                          value={billData.presentReading || ''} 
+                          onChange={(e) => setBillData({...billData, presentReading: e.target.value})}
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                          placeholder="Pres Rdg"
+                        />
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-neutral-400 uppercase">Meter No.</span>
@@ -3835,7 +3952,10 @@ export default function NewCase() {
                           type="text" 
                           value={billData.meterStatus || ''} 
                           onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                          className={cn(
+                            "w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 font-medium focus:outline-none focus:border-indigo-500",
+                            billData.meterStatus?.toUpperCase() === 'REPLACED' ? "text-red-600" : "text-neutral-900"
+                          )}
                           placeholder="Status"
                         />
                       </div>

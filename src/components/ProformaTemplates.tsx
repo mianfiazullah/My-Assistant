@@ -125,14 +125,18 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
   };
 
   const getCalculatedReadings = () => {
-    const readingsMap: Record<string, number> = {};
-    if (!data.billingMonth || !data.presentReading) return readingsMap;
+    const readingsMap: Record<string, number | string> = {};
+    if (!data.billingMonth) return readingsMap;
 
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const billingParts = data.billingMonth.toUpperCase().split(/[- ]+/).filter(Boolean);
     if (billingParts.length < 2) return readingsMap;
 
-    const startMonthName = billingParts[0].substring(0, 3);
+    let startMonthName = billingParts[0].substring(0, 3);
+    if (/^0?[1-9]$|^1[0-2]$/.test(startMonthName)) {
+      startMonthName = months[parseInt(startMonthName) - 1];
+    }
+    
     const startYearStr = billingParts[1].length === 4 ? billingParts[1].slice(-2) : billingParts[1];
     const startMonthIndex = months.indexOf(startMonthName);
     const startYear = parseInt(startYearStr);
@@ -145,71 +149,156 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         if (!item.month) return false;
         const parts = item.month.split(/[- ]/);
         if (parts.length < 2) return false;
-        const uMonth = parts[0].trim().toUpperCase();
+        let uMonth = parts[0].trim().toUpperCase();
+        if (/^0?[1-9]$|^1[0-2]$/.test(uMonth)) uMonth = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][parseInt(uMonth) - 1];
         const uYear = parts[1].trim();
         return uMonth.startsWith(m) && (uYear === y || uYear === `20${y}`);
       });
       
       if (u) {
-        return { units: parseInt(u.units?.toString().replace(/,/g, '') || '0') || 0, exists: true };
+        return { units: parseInt(u.units?.toString().replace(/,/g, '') || '0') || 0, exists: true, rawUnits: u.units?.toString() || '' };
       }
       
       // If none found in monthWiseUnits, check if it matches the current billing month's difference
-      if (m === startMonthName && (y === startYearStr || y === `20${startYearStr}`)) {
-        return { units: parseInt(data.difference?.toString().replace(/,/g, '') || '0') || 0, exists: true };
+      let mMatchName = startMonthName;
+      if (/^0?[1-9]$|^1[0-2]$/.test(mMatchName)) mMatchName = months[parseInt(mMatchName) - 1];
+      if (m.startsWith(mMatchName) && (y === startYearStr || y === `20${startYearStr}`)) {
+        return { units: parseInt(data.difference?.toString().replace(/,/g, '') || '0') || 0, exists: true, rawUnits: data.difference?.toString() || '' };
       }
       
-      return { units: 0, exists: false };
+      return { units: 0, exists: false, rawUnits: '' };
     };
 
-    let startReading = parseInt(data.presentReading.toString().replace(/,/g, '')) || 0;
-    readingsMap[`${months[startMonthIndex]} ${startYear}`] = startReading;
+    let startReading = parseInt(data.presentReading?.toString().replace(/,/g, '') || '');
+    if (!isNaN(startReading)) {
+      readingsMap[`${months[startMonthIndex]} ${startYear}`] = startReading;
+    }
+    
+    if (data.presentReading?.toString().toUpperCase() === 'DF' || data.presentReading?.toString().toUpperCase() === 'DEF' || (isNaN(startReading) && data.meterStatus?.toUpperCase() === 'DF')) {
+      readingsMap[`${months[startMonthIndex]} ${startYear}`] = 'Est. Def';
+    }
 
     // Backward calculation
     let tempReading = startReading;
     let bMonth = startMonthIndex;
     let bYear = startYear;
-    for (let i = 0; i < 48; i++) {
-      const { units, exists } = getUnitsData(months[bMonth], bYear.toString());
-      if (!exists) break;
-      
-      const prevReading = tempReading - units;
-      
-      bMonth--;
-      if (bMonth < 0) {
-        bMonth = 11;
-        bYear--;
-      }
-      if (bYear < 23) break;
+    
+    // If the meter is replaced, the prior units belong to the old meter or a mix.
+    // If the meter is DF in 12-2025, do not calculate readings backwards except to fill Est. Def.
+    if (data.meterStatus?.toUpperCase() !== 'REPLACED') {
+      for (let i = 0; i < 48; i++) {
+        const { units, exists, rawUnits } = getUnitsData(months[bMonth], bYear.toString());
+        if (!exists) break;
+        
+        let isDef = false;
+        if (rawUnits.toUpperCase().includes('DF') || rawUnits.toUpperCase().includes('DEF')) {
+          isDef = true;
+          readingsMap[`${months[bMonth]} ${bYear}`] = 'Est. Def';
+        } else if (data.meterStatus?.toUpperCase() === 'DF') {
+           // Provide Est. Def for backward readings if meter is DF (as it means readings before are uncalculable normally)
+           if (i !== 0) { // skip start month override here
+             readingsMap[`${months[bMonth]} ${bYear}`] = 'Est. Def';
+           }
+           isDef = true;
+        }
+        
+        if (data.meterStatus?.toUpperCase() === 'DF') {
+           // Do not break if DF, just set Est. Def and continue backward without tempReading updates
+           bMonth--;
+           if (bMonth < 0) {
+             bMonth = 11;
+             bYear--;
+           }
+           if (bYear < 23) break;
+           continue;
+        }
+        
+        if (!isDef) {
+          if (units > tempReading && !isNaN(tempReading)) break;
+          const prevReading = tempReading - units;
+          
+          bMonth--;
+          if (bMonth < 0) {
+            bMonth = 11;
+            bYear--;
+          }
+          if (bYear < 23) break;
 
-      readingsMap[`${months[bMonth]} ${bYear}`] = prevReading;
-      tempReading = prevReading;
+          if (!isNaN(prevReading)) {
+            readingsMap[`${months[bMonth]} ${bYear}`] = prevReading;
+            tempReading = prevReading;
+          }
+        } else {
+             bMonth--;
+             if (bMonth < 0) {
+               bMonth = 11;
+               bYear--;
+             }
+             if (bYear < 23) break;
+        }
+      }
     }
 
     // Forward calculation
     tempReading = startReading;
     let fMonth = startMonthIndex;
     let fYear = startYear;
-    for (let i = 0; i < 48; i++) {
-      // To get the reading for next month (fMonth + 1), we need units for THAT next month
-      let nextMonthIndex = fMonth + 1;
-      let nextYearValue = fYear;
-      if (nextMonthIndex > 11) {
-        nextMonthIndex = 0;
-        nextYearValue++;
-      }
-      
-      const { units, exists } = getUnitsData(months[nextMonthIndex], nextYearValue.toString());
-      if (!exists) break;
-      
-      const nextReadingValue = tempReading + units;
-      
-      fMonth = nextMonthIndex;
-      fYear = nextYearValue;
-      if (fYear > 27) break;
+    
+    // For advanced, write what is on the bill (just calculate normally even if DF)
+    if (data.meterStatus?.toUpperCase() !== 'REPLACED') {
+      for (let i = 0; i < 48; i++) {
+        // To get the reading for next month (fMonth + 1), we need units for THAT next month
+        let nextMonthIndex = fMonth + 1;
+        let nextYearValue = fYear;
+        if (nextMonthIndex > 11) {
+          nextMonthIndex = 0;
+          nextYearValue++;
+        }
+        
+        const { units, exists, rawUnits } = getUnitsData(months[nextMonthIndex], nextYearValue.toString());
+        if (!exists) break;
+        
+        if (rawUnits.toUpperCase().includes('DF') || rawUnits.toUpperCase().includes('DEF')) {
+          fMonth = nextMonthIndex;
+          fYear = nextYearValue;
+          readingsMap[`${months[fMonth]} ${fYear}`] = 'Est. Def';
+          continue; // Continue forward to next month
+        }
+        
+        if (!isNaN(tempReading)) {
+          const nextReadingValue = tempReading + units;
+          fMonth = nextMonthIndex;
+          fYear = nextYearValue;
+          if (fYear > 27) break;
 
-      readingsMap[`${months[fMonth]} ${fYear}`] = nextReadingValue;
-      tempReading = nextReadingValue;
+          readingsMap[`${months[fMonth]} ${fYear}`] = nextReadingValue;
+          tempReading = nextReadingValue;
+        } else {
+          fMonth = nextMonthIndex;
+          fYear = nextYearValue;
+          if (fYear > 27) break;
+          // If tempReading is NaN (e.g. from Est. Def initial), just output Est. Def
+          readingsMap[`${months[fMonth]} ${fYear}`] = 'Est. Def';
+        }
+      }
+    }
+
+    // Force pass to check for any leftover DF rawUnits
+    if (data.monthWiseUnits) {
+       data.monthWiseUnits.forEach(u => {
+         if (!u.month || !u.units) return;
+         const rawUnits = u.units.toString().toUpperCase();
+         if (rawUnits.includes('DF') || rawUnits.includes('DEF')) {
+           const parts = u.month.split(/[- ]/);
+           if (parts.length >= 2) {
+             let uMonth = parts[0].trim().toUpperCase().substring(0, 3);
+             if (/^0?[1-9]$|^1[0-2]$/.test(uMonth)) uMonth = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][parseInt(uMonth) - 1];
+             const uYear = parts[1].trim();
+             const yearStr = uYear.length === 4 ? uYear.slice(-2) : uYear;
+             readingsMap[`${uMonth} ${yearStr}`] = 'Est. Def';
+           }
+         }
+       });
     }
 
     return readingsMap;
@@ -252,7 +341,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         <div className="flex justify-between gap-4">
           <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.meterType}</span></div>
           <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.capacity}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter Status : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.meterStatus}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap font-bold", data.meterStatus?.toUpperCase() === 'REPLACED' ? "text-red-600" : "text-indigo-600")}>{data.meterStatus}</span></div>
         </div>
         <div className="flex justify-between gap-4">
           <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.noticeNo}</span></div>
@@ -338,7 +427,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               const mList = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
               const billingFull = data.billingMonth?.toUpperCase() || '';
               const billingParts = billingFull.split(/[- ]+/).filter(Boolean);
-              const bMonth = billingParts[0];
+              let bMonth = billingParts[0];
+              if (/^0?[1-9]$|^1[0-2]$/.test(bMonth || '')) bMonth = mList[parseInt(bMonth) - 1];
               const bYear = billingParts[1];
 
               const isMatch = (yearStr: string) => {
@@ -349,6 +439,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 const parts = billingMonth.toUpperCase().split(/[- ]+/).filter(Boolean);
                 if (parts.length < 2) return null;
                 let monthName = parts[0];
+                if (/^0?[1-9]$|^1[0-2]$/.test(monthName)) monthName = mList[parseInt(monthName) - 1];
                 let year = parseInt(parts[1]);
                 let monthIndex = mList.indexOf(monthName.substring(0, 3));
                 if (monthIndex === -1) return null;
@@ -367,9 +458,9 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               const getReadingVal = (yearStr: string) => {
                 const key = `${month} ${yearStr}`;
                 const val = calculatedReadings[key];
-                if (val !== undefined && !isNaN(val)) {
+                if (val !== undefined && (typeof val === 'string' || !isNaN(val))) {
                   const isBold = isMatch(yearStr) || isPreviousMatch(yearStr);
-                  return <span className={cn(isBold && "text-indigo-600 font-bold")}>{Math.round(val).toLocaleString()}</span>;
+                  return <span className={cn(isBold && "text-indigo-600 font-bold")}>{typeof val === 'number' ? Math.round(val).toLocaleString() : val}</span>;
                 }
                 return '';
               };
@@ -409,7 +500,11 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 const classes = isUnderlined ? 'text-indigo-600 underline italic font-bold text-[10px]' : 'text-indigo-600 font-bold';
 
                 if (isMatch(yearStr)) {
-                  const val = data.difference;
+                  let val = data.difference;
+                  if (val && (val.toString().toUpperCase().includes('DF') || val.toString().toUpperCase().includes('DEF'))) {
+                    const parsedVal = parseInt(val.toString().replace(/[^0-9]/g, ''));
+                    if (!isNaN(parsedVal)) val = parsedVal.toString();
+                  }
                   return (val === undefined || val === null || val === '') ? '' : <span className={classes}>{val}</span>;
                 }
                 const u = (data.monthWiseUnits || []).find(item => {
@@ -422,7 +517,12 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 });
                 
                 if (u?.units !== undefined && u.units !== 'N/A' && u.units !== '') {
-                  return <span className={classes}>{u.units}</span>;
+                  let displayUnits = u.units.toString();
+                  if (displayUnits.toUpperCase().includes('DF') || displayUnits.toUpperCase().includes('DEF')) {
+                    const val = parseInt(displayUnits.replace(/[^0-9]/g, ''));
+                    if (!isNaN(val)) displayUnits = val.toString();
+                  }
+                  return <span className={classes}>{displayUnits}</span>;
                 }
                 return '';
               };

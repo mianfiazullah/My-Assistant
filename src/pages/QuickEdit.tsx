@@ -25,7 +25,11 @@ export default function QuickEdit() {
       if (!saved) return defaultValue;
       const trimmed = saved.trim();
       if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
-      return JSON.parse(trimmed);
+      try {
+        return JSON.parse(trimmed);
+      } catch (err) {
+        return defaultValue;
+      }
     } catch (e) {
       return defaultValue;
     }
