@@ -1474,13 +1474,29 @@ export default function NewCase() {
                         playWarningSound();
                         setReadingMismatchType('REVERSED');
                         setShowReadingMismatch(true);
-                      } else if (presentReadingAtSiteNum > presReadingOnBillNum + 300) {
-                        playWarningSound();
-                        setReadingMismatchType('PENDING');
-                        setShowReadingMismatch(true);
                       } else {
-                        setShowReadingMismatch(false);
-                        setReadingMismatchType(null);
+                        let maxAllowedUnits = 300;
+                        if (billData.monthWiseUnits && billData.monthWiseUnits.length > 0) {
+                          const unitsArr = billData.monthWiseUnits
+                            .map(m => parseInt(m.units?.toString().replace(/,/g, '') || '0'))
+                            .filter(u => !isNaN(u));
+                          
+                          if (unitsArr.length > 0) {
+                            const sum = unitsArr.reduce((a, b) => a + b, 0);
+                            const avg = sum / 12;
+                            const highest = Math.max(...unitsArr);
+                            maxAllowedUnits = Math.max(avg, highest);
+                          }
+                        }
+
+                        if (presentReadingAtSiteNum > presReadingOnBillNum + maxAllowedUnits) {
+                          playWarningSound();
+                          setReadingMismatchType('PENDING');
+                          setShowReadingMismatch(true);
+                        } else {
+                          setShowReadingMismatch(false);
+                          setReadingMismatchType(null);
+                        }
                       }
                     }
                   } else {
@@ -3631,382 +3647,172 @@ export default function NewCase() {
                   <FileText className="w-5 h-5 text-indigo-600" /> Consumer Bill Details
                 </h3>
                 
-                {/* Scrollable Table View (Works for both mobile and desktop) */}
-                <div className="overflow-x-auto rounded-2xl border border-neutral-200 shadow-sm">
-                  <table className="w-full text-left text-xs sm:text-sm table-auto whitespace-nowrap">
-                    <thead className="bg-neutral-50 text-neutral-500 font-medium border-b border-neutral-200">
-                      <tr>
-                        <th className="px-4 py-3">Reference Number</th>
-                        <th className="px-4 py-3">Consumer Name</th>
-                        <th className="px-4 py-3">Bill Month</th>
-                        <th className="px-4 py-3">PAYABLE WITHIN DUE DATE</th>
-                        <th className="px-4 py-3">Deferred Amount</th>
-                        <th className="px-4 py-3">Previous Reading</th>
-                        <th className="px-4 py-3">Present Reading On Bill</th>
-                        <th className="px-4 py-3">Meter No. On Bill</th>
-                        <th className="px-4 py-3">Sub Division</th>
-                        <th className="px-4 py-3">Feeder Name</th>
-                        <th className="px-4 py-3">Meter Status</th>
-                        <th className="px-4 py-3">Difference</th>
-                        <th className="px-4 py-3">Month Wise Detail</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-200 bg-white">
-                      <tr>
-                        <td className="px-4 py-3 align-top">
-                          <input
-                            type="text"
-                            value={billData.referenceNumber || ''}
-                            onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[140px]"
-                            placeholder="Reference No."
-                          />
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <input
-                            type="text"
-                            value={billData.consumerName || ''}
-                            onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[150px]"
-                            placeholder="Consumer Name"
-                          />
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                           <input
-                            type="text"
-                            value={billData.billingMonth || ''}
-                            onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
-                            placeholder="Bill Month"
-                          />
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                           <div className="flex items-center gap-1">
-                             <span className="text-neutral-500">Rs.</span>
-                             <input
-                              type="number"
-                              value={billData.currentBill === 0 ? '' : billData.currentBill || ''}
-                              onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
-                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
-                              placeholder="0"
-                            />
-                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                           <div className="flex items-center gap-1">
-                             <span className="text-neutral-500">Rs.</span>
-                             <input
-                              type="number"
-                              value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''}
-                              onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
-                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
-                              placeholder="0"
-                            />
-                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <input
-                            type="text"
-                            value={billData.previousReading || ''}
-                            onChange={(e) => setBillData({...billData, previousReading: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
-                            placeholder="Prev Rdg"
-                          />
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                           <input
-                            type="text"
-                            value={billData.presentReading || ''}
-                            onChange={(e) => setBillData({...billData, presentReading: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
-                            placeholder="Pres Rdg"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">
-                          <input 
-                            type="text" 
-                            value={billData.meterNoOnBill || ''} 
-                            onChange={(e) => setBillData({...billData, meterNoOnBill: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[120px]"
-                            placeholder="Enter Meter No."
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">
-                          <input 
-                            type="text" 
-                            value={billData.subDivisionName || ''} 
-                            onChange={(e) => setBillData({...billData, subDivisionName: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[120px]"
-                            placeholder="Sub Division"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">
-                          <input 
-                            type="text" 
-                            value={billData.feederName || ''} 
-                            onChange={(e) => setBillData({...billData, feederName: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[120px]"
-                            placeholder="Feeder Name"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-neutral-900 align-top">
-                          <input 
-                            type="text" 
-                            value={billData.meterStatus || ''} 
-                            onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
-                            className={cn(
-                              "w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]",
-                              billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600" : "text-neutral-900"
-                            )}
-                            placeholder="Status"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-neutral-900 font-bold align-top">
-                          {billData.difference || (() => {
-                            const presVal = billData.presentReading?.toString().toUpperCase() || '';
-                            const prevVal = billData.previousReading?.toString().toUpperCase() || '';
-                            if (presVal.includes('DF') || prevVal.includes('DF')) return 'DF';
-                            
-                            const present = parseInt(presVal.replace(/,/g, '') || '0');
-                            const previous = parseInt(prevVal.replace(/,/g, '') || '0');
-                            const diff = present - previous;
-                            return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
-                          })()}
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          {(billData.monthWiseUnits && billData.monthWiseUnits.length > 0) ? (
-                            <div className="rounded-lg border border-neutral-200 overflow-hidden inline-block">
-                              <table className="text-[10px] text-left table-auto whitespace-nowrap">
-                                <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
-                                  <tr>
-                                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
-                                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
-                                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
-                                    <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
-                                    <th className="px-2 py-1 w-auto">Payment</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-neutral-200">
-                                  {billData.monthWiseUnits.map((item, index) => (
-                                    <tr key={index}>
-                                      <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-auto">
-                                        {item.month === 'N/A' ? '' : item.month}
-                                      </td>
-                                      <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
-                                        <input 
-                                          type="text" 
-                                          value={item.units === 'N/A' ? '' : item.units} 
-                                          onChange={(e) => {
-                                            const newUnits = [...billData.monthWiseUnits!];
-                                            newUnits[index].units = e.target.value;
-                                            setBillData({...billData, monthWiseUnits: newUnits});
-                                          }}
-                                          className="w-full bg-transparent focus:outline-none min-w-[40px]"
-                                        />
-                                      </td>
-                                      <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
-                                        <input 
-                                          type="text" 
-                                          value={item.bill === 'N/A' ? '' : (item.bill || '')} 
-                                          onChange={(e) => {
-                                            const newUnits = [...billData.monthWiseUnits!];
-                                            newUnits[index].bill = e.target.value;
-                                            setBillData({...billData, monthWiseUnits: newUnits});
-                                          }}
-                                          className="w-full bg-transparent focus:outline-none min-w-[50px]"
-                                        />
-                                      </td>
-                                      <td className="px-2 py-1 border-r border-neutral-200 text-red-600 font-bold w-1 whitespace-nowrap">
-                                        <input 
-                                          type="text" 
-                                          value={item.adj === 'N/A' ? '' : (item.adj || '')} 
-                                          onChange={(e) => {
-                                            const newUnits = [...billData.monthWiseUnits!];
-                                            newUnits[index].adj = e.target.value;
-                                            setBillData({...billData, monthWiseUnits: newUnits});
-                                          }}
-                                          style={{ width: `${Math.max(3, String(item.adj || '').length)}ch` }}
-                                          className="bg-transparent focus:outline-none text-center font-bold text-red-600"
-                                        />
-                                      </td>
-                                      <td className="px-2 py-1 text-neutral-900 w-auto">
-                                        <input 
-                                          type="text" 
-                                          value={item.payment === 'N/A' ? '' : (item.payment || '')} 
-                                          onChange={(e) => {
-                                            const newUnits = [...billData.monthWiseUnits!];
-                                            newUnits[index].payment = e.target.value;
-                                            setBillData({...billData, monthWiseUnits: newUnits});
-                                          }}
-                                          className="w-full bg-transparent focus:outline-none min-w-[50px]"
-                                        />
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            <span className="text-neutral-500 text-sm">{billData.monthWiseUnitsConsumed || 'No month wise details available'}</span>
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-4">
-                  <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-4">
-                    <div className="flex flex-col gap-1 border-b border-neutral-100 pb-3">
-                      <span className="text-xs font-bold text-neutral-400 uppercase">Reference Number</span>
-                      <input 
-                        type="text" 
-                        value={billData.referenceNumber || ''} 
-                        onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 font-mono text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
-                        placeholder="Reference No."
+                {/* Consumer Bill Details Grid Layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Reference Number</label>
+                    <input
+                      type="text"
+                      value={billData.referenceNumber || ''}
+                      onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500"
+                      placeholder="Reference No."
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Consumer Name</label>
+                    <input
+                      type="text"
+                      value={billData.consumerName || ''}
+                      onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500"
+                      placeholder="Consumer Name"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Bill Month</label>
+                    <input
+                      type="text"
+                      value={billData.billingMonth || ''}
+                      onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500"
+                      placeholder="Bill Month"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Payable Within Due Date</label>
+                    <div className="flex flex-row items-center gap-2">
+                       <span className="text-neutral-500 font-medium">Rs.</span>
+                       <input
+                        type="number"
+                        value={billData.currentBill === 0 ? '' : billData.currentBill || ''}
+                        onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
+                        className="flex-1 bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500"
+                        placeholder="0"
                       />
                     </div>
-                    <div className="flex flex-col gap-1 border-b border-neutral-100 pb-3">
-                      <span className="text-xs font-bold text-neutral-400 uppercase">Consumer Name</span>
-                      <input 
-                        type="text" 
-                        value={billData.consumerName || ''} 
-                        onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
-                        placeholder="Consumer Name"
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Deferred Amount</label>
+                    <div className="flex flex-row items-center gap-2">
+                       <span className="text-neutral-500 font-medium">Rs.</span>
+                       <input
+                        type="number"
+                        value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''}
+                        onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
+                        className="flex-1 bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500"
+                        placeholder="0"
                       />
-                    </div>
-                    <div className="flex flex-col gap-1 border-b border-neutral-100 pb-3">
-                      <span className="text-xs font-bold text-neutral-400 uppercase">Bill Month</span>
-                      <input 
-                        type="text" 
-                        value={billData.billingMonth || ''} 
-                        onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
-                        className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-indigo-600 font-bold focus:outline-none focus:border-indigo-500"
-                        placeholder="Bill Month"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">PAYABLE WITHIN DUE DATE</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-neutral-500 text-sm">Rs.</span>
-                          <input 
-                            type="number" 
-                            value={billData.currentBill === 0 ? '' : billData.currentBill || ''} 
-                            onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Deferred</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-neutral-500 text-sm">Rs.</span>
-                          <input 
-                            type="number" 
-                            value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''} 
-                            onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Prev Reading</span>
-                        <input 
-                          type="text" 
-                          value={billData.previousReading || ''} 
-                          onChange={(e) => setBillData({...billData, previousReading: e.target.value})}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                          placeholder="Prev Rdg"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Pres Reading</span>
-                        <input 
-                          type="text" 
-                          value={billData.presentReading || ''} 
-                          onChange={(e) => setBillData({...billData, presentReading: e.target.value})}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                          placeholder="Pres Rdg"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Meter No.</span>
-                        <input 
-                          type="text" 
-                          value={billData.meterNoOnBill || ''} 
-                          onChange={(e) => setBillData({...billData, meterNoOnBill: e.target.value})}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                          placeholder="Enter Meter No."
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Sub Division</span>
-                        <input 
-                          type="text" 
-                          value={billData.subDivisionName || ''} 
-                          onChange={(e) => setBillData({...billData, subDivisionName: e.target.value})}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                          placeholder="Sub Division"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Feeder Name</span>
-                        <input 
-                          type="text" 
-                          value={billData.feederName || ''} 
-                          onChange={(e) => setBillData({...billData, feederName: e.target.value})}
-                          className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                          placeholder="Feeder Name"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Meter Status</span>
-                        <input 
-                          type="text" 
-                          value={billData.meterStatus || ''} 
-                          onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
-                          className={cn(
-                            "w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 font-medium focus:outline-none focus:border-indigo-500",
-                            billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600" : "text-neutral-900"
-                          )}
-                          placeholder="Status"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-neutral-400 uppercase">Difference</span>
-                        <span className="text-sm font-bold text-neutral-900">
-                          {billData.difference || (() => {
-                            const presVal = billData.presentReading?.toString().toUpperCase() || '';
-                            const prevVal = billData.previousReading?.toString().toUpperCase() || '';
-                            if (presVal.includes('DF') || prevVal.includes('DF')) return 'DF';
-
-                            const present = parseInt(presVal.replace(/,/g, '') || '0');
-                            const previous = parseInt(prevVal.replace(/,/g, '') || '0');
-                            const diff = present - previous;
-                            return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
-                          })()}
-                        </span>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Mobile Month Wise Detail */}
-                  <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3">
-                    <span className="text-xs font-bold text-neutral-400 uppercase">Month Wise Detail</span>
-                    <div className="overflow-x-auto">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Meter No. On Bill</label>
+                    <input 
+                      type="text" 
+                      value={billData.meterNoOnBill || ''} 
+                      onChange={(e) => setBillData({...billData, meterNoOnBill: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                      placeholder="Enter Meter No."
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Sub Division</label>
+                    <input 
+                      type="text" 
+                      value={billData.subDivisionName || ''} 
+                      onChange={(e) => setBillData({...billData, subDivisionName: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                      placeholder="Sub Division"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Feeder Name</label>
+                    <input 
+                      type="text" 
+                      value={billData.feederName || ''} 
+                      onChange={(e) => setBillData({...billData, feederName: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                      placeholder="Feeder Name"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Meter Status</label>
+                    <input 
+                      type="text" 
+                      value={billData.meterStatus || ''} 
+                      onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
+                      className={cn(
+                        "w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 font-medium focus:outline-none focus:border-indigo-500",
+                        billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600 font-bold" : "text-neutral-900"
+                      )}
+                      placeholder="Status"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Previous Reading</label>
+                    <input
+                      type="text"
+                      value={billData.previousReading || ''}
+                      onChange={(e) => setBillData({...billData, previousReading: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                      placeholder="Prev Rdg"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Present Reading</label>
+                     <input
+                      type="text"
+                      value={billData.presentReading || ''}
+                      onChange={(e) => setBillData({...billData, presentReading: e.target.value})}
+                      className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                      placeholder="Pres Rdg"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Difference</label>
+                    <div className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold flex items-center h-[38px]">
+                      {billData.difference || (() => {
+                        const presVal = billData.presentReading?.toString().toUpperCase() || '';
+                        const prevVal = billData.previousReading?.toString().toUpperCase() || '';
+                        
+                        const presMarker = presVal.includes('EX') ? 'EX' : presVal.includes('MC') ? 'MC' : (presVal.includes('DF') || presVal.includes('EST.DEF') || presVal.includes('EST DEF') ? 'EST.DEF' : null);
+                        if (presMarker) return presMarker;
+                        const prevMarker = prevVal.includes('EX') ? 'EX' : prevVal.includes('MC') ? 'MC' : (prevVal.includes('DF') || prevVal.includes('EST.DEF') || prevVal.includes('EST DEF') ? 'EST.DEF' : null);
+                        if (prevMarker) return prevMarker;
+                        
+                        const present = parseInt(presVal.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0');
+                        const previous = parseInt(prevVal.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0');
+                        const diff = present - previous;
+                        return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+
+
+                {/* Month Wise Detail */}
+                <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3">
+                  <span className="text-xs font-bold text-neutral-400 uppercase">Month Wise Detail</span>
+                  <div className="overflow-x-auto">
                       {billData.monthWiseUnits && billData.monthWiseUnits.length > 0 ? (
                         <div className="rounded-lg border border-neutral-200 overflow-hidden inline-block min-w-full">
                           <table className="w-full text-[10px] text-left table-auto whitespace-nowrap">
                             <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
                               <tr>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
+                                <th className="px-2 py-1 border-r border-neutral-200 w-auto">Reading</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
@@ -4022,13 +3828,32 @@ export default function NewCase() {
                                   <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
                                     <input 
                                       type="text" 
+                                      value={item.reading === 'N/A' || item.reading === undefined ? '' : item.reading} 
+                                      onChange={(e) => {
+                                        const newUnits = [...billData.monthWiseUnits!];
+                                        newUnits[index].reading = e.target.value;
+                                        setBillData({...billData, monthWiseUnits: newUnits});
+                                      }}
+                                      className={cn(
+                                        "w-full bg-transparent focus:outline-none min-w-[40px]",
+                                        (item.reading?.toString().toUpperCase().includes('DF') || item.reading?.toString().toUpperCase().includes('EST.DEF')) && "text-red-600 font-bold"
+                                      )}
+                                      placeholder="Reading"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
+                                    <input 
+                                      type="text" 
                                       value={item.units === 'N/A' ? '' : item.units} 
                                       onChange={(e) => {
                                         const newUnits = [...billData.monthWiseUnits!];
                                         newUnits[index].units = e.target.value;
                                         setBillData({...billData, monthWiseUnits: newUnits});
                                       }}
-                                      className="w-full bg-transparent focus:outline-none min-w-[40px]"
+                                      className={cn(
+                                        "w-full bg-transparent focus:outline-none min-w-[40px]",
+                                        (item.units?.toString().toUpperCase().includes('DF') || item.units?.toString().toUpperCase().includes('EST.DEF')) && "text-red-600 font-bold"
+                                      )}
                                     />
                                   </td>
                                   <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
@@ -4078,7 +3903,6 @@ export default function NewCase() {
                       )}
                     </div>
                   </div>
-                </div>
               </div>
 
               {/* Detection Details Section */}
@@ -4434,12 +4258,12 @@ export default function NewCase() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-900/90 p-4">
           <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-2xl w-full text-center">
             <h2 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-bold text-indigo-600 mb-6">
-              {readingMismatchType === 'REVERSED' ? 'METER REVERSED' : 'READING PENDING'}
+              {readingMismatchType === 'REVERSED' ? 'METER REVERSED' : 'PENDING UNITS'}
             </h2>
             <p className="text-xl text-neutral-700 mb-8">
               {readingMismatchType === 'REVERSED' 
                 ? 'The present reading at site is less than the present reading on the bill.'
-                : 'The present reading at site is greater than the present reading on the bill by more than 300 units.'}
+                : 'The difference between the present reading at site and the reading on the bill exceeds the maximum of the average monthly consumption and highest consumption of the last 12 months.'}
             </p>
             <button
               onClick={() => {

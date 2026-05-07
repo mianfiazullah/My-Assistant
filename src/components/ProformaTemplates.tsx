@@ -124,13 +124,21 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     }).join(', ');
   };
 
+  const getMarker = (val: any): string | null => {
+    if (val === undefined || val === null || val === '') return null;
+    const str = val.toString().toUpperCase();
+    if (str.includes('EX')) return 'EX';
+    if (str.includes('MC')) return 'MC';
+    if (str.includes('DF') || str.includes('EST.DEF') || str.includes('EST DEF')) return 'EST.DEF';
+    return null;
+  };
+
   const formatDF = (val: any) => {
-    if (val === undefined || val === null || val === '') return '';
-    const str = val.toString();
-    if (str.toUpperCase() === 'DF' || str.toUpperCase().includes('DF')) {
-      return <span className="text-red-600 font-bold">Est. Def.</span>;
+    const marker = getMarker(val);
+    if (marker) {
+      return <span className={marker === 'EST.DEF' ? 'text-red-600 font-bold' : 'text-black font-bold'}>{marker}</span>;
     }
-    return val;
+    return val !== undefined && val !== null ? val : '';
   };
 
   const getCalculatedReadings = () => {
@@ -152,30 +160,41 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       // Find units in data.monthWiseUnits
       const u = (data.monthWiseUnits || []).find(item => {
         if (!item.month) return false;
-        const parts = item.month.split(/[- ]/);
-        if (parts.length < 2) return false;
-        const uMonth = parts[0].trim().toUpperCase();
-        const uYear = parts[1].trim();
-        return uMonth.startsWith(m) && (uYear === y || uYear === `20${y}`);
+        let s = item.month.trim().toUpperCase();
+        let mMatch = s.match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/);
+        let numMMatch = !mMatch ? s.match(/^0?([1-9]|1[0-2])[-/]/) : null;
+        let yMatch = s.match(/(20[2-9][0-9]|[2-9][0-9])/);
+        
+        const numberToMonth: Record<string, string> = {
+          "1": "JAN", "2": "FEB", "3": "MAR",
+          "4": "APR", "5": "MAY", "6": "JUN",
+          "7": "JUL", "8": "AUG", "9": "SEP",
+          "10": "OCT", "11": "NOV", "12": "DEC"
+        };
+        
+        let uMonth = mMatch ? mMatch[1] : (numMMatch ? numberToMonth[numMMatch[1]] : null);
+        let uYear = yMatch ? yMatch[1].slice(-2) : null;
+        
+        return uMonth === m && uYear === y.slice(-2);
       });
       
       if (u) {
         const unitsStr = u.units?.toString().toUpperCase() || '0';
-        const units = parseInt(unitsStr.replace(/,/g, '').replace(/EST. DEF./g, '').replace(/DF/g, '') || '0') || 0;
+        const units = parseInt(unitsStr.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
         return { units, exists: true };
       }
       
       // If none found in monthWiseUnits, check if it matches the current billing month's difference
       if (m === startMonthName && (y === startYearStr || y === `20${startYearStr}`)) {
         const valStr = data.difference?.toString().toUpperCase() || '0';
-        const units = parseInt(valStr.replace(/,/g, '').replace(/EST. DEF./g, '').replace(/DF/g, '') || '0') || 0;
+        const units = parseInt(valStr.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
         return { units, exists: true };
       }
       
       return { units: 0, exists: false };
     };
 
-    const startReading = parseInt(data.presentReading?.toString().replace(/,/g, '').replace(/DF/g, '') || '0') || 0;
+    const startReading = parseInt(data.presentReading?.toString().replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
     readingsMap[`${months[startMonthIndex]} ${startYear}`] = startReading;
 
     // Backward calculation
@@ -186,12 +205,14 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     // If the meter is replaced, the prior units belong to the old meter or a mix,
     // so subtracting them from the new meter's present reading yields incorrect previous readings.
     if (!data.meterStatus?.toUpperCase()?.includes('REPLACED')) {
-      const isPresentDF = data.presentReading?.toString().toUpperCase().includes('DF');
+      const presStr = data.presentReading?.toString().toUpperCase() || '';
+      const isPresentMarker = presStr.includes('DF') || presStr.includes('EST.DEF') || presStr.includes('EST DEF') || presStr.includes('MC');
       for (let i = 0; i < 48; i++) {
         const { units, exists } = getUnitsData(months[bMonth], bYear.toString());
         if (!exists) break;
         
         let prevReading = tempReading - units;
+
         if (prevReading < 0) prevReading = 0;
         
         bMonth--;
@@ -201,9 +222,9 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         }
         if (bYear < 23) break;
 
-        // If present reading was DF, or any month in between was DF, the derived reading is questionable
-        // But for calculation purposes we keep it, however in getReadingVal we will check for DF
-        readingsMap[`${months[bMonth]} ${bYear}`] = isPresentDF && i === 0 ? -1 : prevReading;
+        // If present reading was DF/EX/MC, or any month in between was DF, the derived reading is questionable
+        // But for calculation purposes we keep it, however in getReadingVal we will check for markers
+        readingsMap[`${months[bMonth]} ${bYear}`] = isPresentMarker && i === 0 ? -1 : prevReading;
         tempReading = prevReading;
       }
     }
@@ -396,36 +417,59 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 // Check if this month is marked as "DF" in monthWiseUnits (either reading or units)
                 const u = (data.monthWiseUnits || []).find(item => {
                   if (!item.month) return false;
-                  const parts = item.month.split(/[- ]/);
-                  if (parts.length < 2) return false;
-                  const uMonth = parts[0].trim().toUpperCase();
-                  const uYear = parts[1].trim();
-                  return uMonth.startsWith(month) && (uYear === yearStr || uYear === `20${yearStr}`);
+                  let s = item.month.trim().toUpperCase();
+                  let mMatch = s.match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/);
+                  let numMMatch = !mMatch ? s.match(/^0?([1-9]|1[0-2])[-/]/) : null;
+                  let yMatch = s.match(/(20[2-9][0-9]|[2-9][0-9])/);
+                  
+                  const numberToMonth: Record<string, string> = {
+                    "1": "JAN", "2": "FEB", "3": "MAR",
+                    "4": "APR", "5": "MAY", "6": "JUN",
+                    "7": "JUL", "8": "AUG", "9": "SEP",
+                    "10": "OCT", "11": "NOV", "12": "DEC"
+                  };
+                  
+                  let uMonth = mMatch ? mMatch[1] : (numMMatch ? numberToMonth[numMMatch[1]] : null);
+                  let uYear = yMatch ? yMatch[1].slice(-2) : null;
+                  
+                  return uMonth === month && uYear === yearStr.slice(-2);
                 });
 
-                if (u && (u.units?.toString().toUpperCase().includes('DF') || u.reading?.toString().toUpperCase().includes('DF'))) {
-                  return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                if (u) {
+                  const mU = getMarker(u.units);
+                  const mR = getMarker((u as any).reading);
+                  const mB = getMarker(u.bill);
+                  const mA = getMarker(u.adj);
+                  const mP = getMarker(u.payment);
+                  const marker = mR || mU || mB || mA || mP;
+                  if (marker && marker !== 'EX') {
+                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
+                  }
                 }
 
                 // Check current billing month input
                 if (isMatch(yearStr)) {
-                  const presStr = data.presentReading?.toString().toUpperCase() || '';
-                  if (presStr === 'DF' || presStr.includes('DF')) {
-                    return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  const marker = getMarker(data.presentReading);
+                  if (marker && marker !== 'EX') {
+                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
                   }
                 }
 
                 // Check previous billing month input (if we were on previousReading)
                 if (isPreviousMatch(yearStr)) {
-                  const prevStr = data.previousReading?.toString().toUpperCase() || '';
-                  if (prevStr === 'DF' || prevStr.includes('DF')) {
-                    return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  const marker = getMarker(data.previousReading);
+                  if (marker && marker !== 'EX') {
+                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
                   }
                 }
 
                 const val = calculatedReadings[key];
                 if (val === -1) {
-                  return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  // Fallback marker if calculations resulted in -1 due to present reading marker
+                  let defaultMarker = getMarker(data.presentReading);
+                  if (defaultMarker === 'EX') defaultMarker = null;
+                  const finalMarker = defaultMarker || 'EST.DEF';
+                  return <span className={cn("text-[12px] leading-none whitespace-nowrap", finalMarker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{finalMarker}</span>;
                 }
                 if (val !== undefined && !isNaN(val) && val > 0) {
                   return <span className="text-black font-bold">{Math.round(val).toString()}</span>;
@@ -472,29 +516,38 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
                 if (isMatch(yearStr)) {
                   const val = data.difference;
-                  const valStr = val?.toString().toUpperCase() || '';
-                  if (valStr === 'DF' || valStr.includes('DF')) {
-                    return <span className={cn(baseClasses, "text-black")}>Est. Def.</span>;
+                  const marker = getMarker(val);
+                  if (marker) {
+                    return <span className={cn(baseClasses, marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
                   }
                   return (val === undefined || val === null || val === '' || val.toString() === '0') ? '' : <span className={cn(baseClasses, "text-black")}>{val}</span>;
                 }
                 const u = (data.monthWiseUnits || []).find(item => {
                   if (!item.month) return false;
-                  const parts = item.month.split(/[- ]/);
-                  if (parts.length < 2) return false;
-                  const uMonth = parts[0].trim().toUpperCase();
-                  const uYear = parts[1].trim();
-                  return uMonth.startsWith(month) && (uYear === yearStr || uYear === `20${yearStr}`);
+                  let s = item.month.trim().toUpperCase();
+                  let mMatch = s.match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/);
+                  let numMMatch = !mMatch ? s.match(/^0?([1-9]|1[0-2])[-/]/) : null;
+                  let yMatch = s.match(/(20[2-9][0-9]|[2-9][0-9])/);
+                  
+                  const numberToMonth: Record<string, string> = {
+                    "1": "JAN", "2": "FEB", "3": "MAR",
+                    "4": "APR", "5": "MAY", "6": "JUN",
+                    "7": "JUL", "8": "AUG", "9": "SEP",
+                    "10": "OCT", "11": "NOV", "12": "DEC"
+                  };
+                  
+                  let uMonth = mMatch ? mMatch[1] : (numMMatch ? numberToMonth[numMMatch[1]] : null);
+                  let uYear = yMatch ? yMatch[1].slice(-2) : null;
+                  
+                  return uMonth === month && uYear === yearStr.slice(-2);
                 });
                 
                 if (u) {
                   const unitsStr = u.units?.toString().toUpperCase() || '';
-                  const readingStr = u.reading?.toString().toUpperCase() || '';
-                  if (unitsStr.includes('DF') || readingStr.includes('DF')) {
-                    return <span className={cn(baseClasses, "text-black text-[12px] leading-none whitespace-nowrap")}>Est. Def.</span>;
-                  }
                   if (unitsStr !== '' && unitsStr !== '0' && unitsStr !== 'N/A') {
-                    return <span className={cn(baseClasses, "text-black")}>{u.units}</span>;
+                    // Extract just the number for advance
+                    const justNumber = typeof u.units === 'string' ? u.units.replace(/EST\.?\s*DEF\.?/ig, '').replace(/EX/ig, '').replace(/MC/ig, '').replace(/DF\s*/ig, '').trim() : u.units;
+                    return <span className={cn(baseClasses, "text-black")}>{justNumber || unitsStr}</span>;
                   }
                 }
                 return '';
@@ -568,9 +621,9 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
             <p>Detection Bill for Registered Consumers Clause 9.1.3 (b) (Load*Load Factor*730*Months).</p>
             <p className="mt-1">Load means the connected load or sanctioned load whichever is higher.</p>
           </div>
-          <div className="p-2 flex-1 relative min-h-[180px] flex flex-col overflow-hidden">
+          <div className="p-2 flex-1 relative min-h-[180px] flex flex-col justify-start overflow-hidden">
             <h3 className="font-bold underline text-[9px] font-sans">Remarks : -</h3>
-            <div className="flex-1 overflow-y-auto min-h-[30px] max-h-[100px] mt-1">
+            <div className="overflow-y-auto mt-1 shrink-0">
               {data.remarks?.split('\n').map((line, i) => {
                 const lowerLine = line.toLowerCase();
                 const isSpecial = lowerLine.includes('additional') && lowerLine.includes('units charged') || 
@@ -583,13 +636,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               })}
             </div>
             {data.photoUrl && (
-              <div className="mt-2 flex flex-row items-center justify-center gap-3 border-t border-neutral-200 pt-1">
-                <img 
-                  src={data.photoUrl} 
-                  alt="Detection Evidence" 
-                  className="max-w-full max-h-[100px] w-auto object-contain border border-black shadow-sm"
-                  referrerPolicy="no-referrer"
-                />
+              <div className="mt-2 flex-1 flex flex-col items-center justify-start gap-2 pt-1 min-h-[50px] overflow-hidden">
                 <a 
                   href={data.photoUrl}
                   download={`Discrepancy ${data.referenceNumber || 'evidence'}.jpg`}
@@ -597,11 +644,17 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                     e.stopPropagation();
                     console.log("Download link clicked. photoUrl exists:", !!data.photoUrl);
                   }}
-                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-1 rounded-full text-[8px] font-bold transition-all flex items-center gap-1 shadow-sm border border-neutral-300 cursor-pointer relative z-10 no-underline whitespace-nowrap"
+                  className="print:hidden bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-3 py-1 rounded-full text-[8px] font-bold transition-all flex items-center gap-1 shadow-sm border border-neutral-300 cursor-pointer relative z-10 no-underline whitespace-nowrap shrink-0"
                 >
                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                   Download Photo
                 </a>
+                <img 
+                  src={data.photoUrl} 
+                  alt="Detection Evidence" 
+                  className="max-w-full h-full min-h-0 object-contain object-top border border-black shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
               </div>
             )}
           </div>
