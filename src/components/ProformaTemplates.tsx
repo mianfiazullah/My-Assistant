@@ -267,7 +267,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         </div>
         <div className="flex justify-between gap-4">
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Date of checking : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.dateOfChecking)}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-black"></span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDF(data.presentReadingAtSite)}</span></div>
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter No : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterNumber}</span></div>
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Make : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterMake}</span></div>
         </div>
@@ -467,7 +467,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 const isUnderlined = isInDetectionPeriod(month, yearStr);
                 const baseClasses = cn(
                   "font-bold",
-                  isUnderlined && "underline italic text-[10px]"
+                  isUnderlined && "underline italic text-[13px]"
                 );
 
                 if (isMatch(yearStr)) {
