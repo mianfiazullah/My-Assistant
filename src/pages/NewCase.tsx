@@ -3658,7 +3658,7 @@ export default function NewCase() {
                             type="text"
                             value={billData.referenceNumber || ''}
                             onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 font-mono text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[140px]"
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[140px]"
                             placeholder="Reference No."
                           />
                         </td>
@@ -3667,7 +3667,7 @@ export default function NewCase() {
                             type="text"
                             value={billData.consumerName || ''}
                             onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[150px]"
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[150px]"
                             placeholder="Consumer Name"
                           />
                         </td>
@@ -3676,7 +3676,7 @@ export default function NewCase() {
                             type="text"
                             value={billData.billingMonth || ''}
                             onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
                             placeholder="Bill Month"
                           />
                         </td>
@@ -3687,7 +3687,7 @@ export default function NewCase() {
                               type="number"
                               value={billData.currentBill === 0 ? '' : billData.currentBill || ''}
                               onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
-                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
                               placeholder="0"
                             />
                            </div>
@@ -3699,7 +3699,7 @@ export default function NewCase() {
                               type="number"
                               value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''}
                               onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
-                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]"
+                              className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-black font-bold focus:outline-none focus:border-indigo-500 min-w-[100px]"
                               placeholder="0"
                             />
                            </div>
@@ -3780,7 +3780,6 @@ export default function NewCase() {
                                 <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
                                   <tr>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
-                                    <th className="px-2 py-1 border-r border-neutral-200 w-auto text-indigo-600">Reading</th>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
@@ -3792,21 +3791,6 @@ export default function NewCase() {
                                     <tr key={index}>
                                       <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-auto">
                                         {item.month === 'N/A' ? '' : item.month}
-                                      </td>
-                                      <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold w-auto">
-                                        <input 
-                                          type="text" 
-                                          value={item.reading || ''} 
-                                          onChange={(e) => {
-                                            const newUnits = [...billData.monthWiseUnits!];
-                                            if (newUnits[index]) {
-                                              newUnits[index].reading = e.target.value;
-                                              setBillData({...billData, monthWiseUnits: newUnits});
-                                            }
-                                          }}
-                                          className="w-full bg-transparent focus:outline-none min-w-[50px] text-indigo-600 font-bold"
-                                          placeholder="Reading"
-                                        />
                                       </td>
                                       <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
                                         <input 
@@ -3832,7 +3816,7 @@ export default function NewCase() {
                                           className="w-full bg-transparent focus:outline-none min-w-[50px]"
                                         />
                                       </td>
-                                      <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold w-1 whitespace-nowrap">
+                                      <td className="px-2 py-1 border-r border-neutral-200 text-red-600 font-bold w-1 whitespace-nowrap">
                                         <input 
                                           type="text" 
                                           value={item.adj === 'N/A' ? '' : (item.adj || '')} 
@@ -3842,7 +3826,7 @@ export default function NewCase() {
                                             setBillData({...billData, monthWiseUnits: newUnits});
                                           }}
                                           style={{ width: `${Math.max(3, String(item.adj || '').length)}ch` }}
-                                          className="bg-transparent focus:outline-none text-center font-bold text-indigo-600"
+                                          className="bg-transparent focus:outline-none text-center font-bold text-red-600"
                                         />
                                       </td>
                                       <td className="px-2 py-1 text-neutral-900 w-auto">
@@ -4023,7 +4007,6 @@ export default function NewCase() {
                             <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
                               <tr>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
-                                <th className="px-2 py-1 border-r border-neutral-200 w-auto text-indigo-600">Reading</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
@@ -4035,21 +4018,6 @@ export default function NewCase() {
                                 <tr key={index}>
                                   <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-auto">
                                     {item.month === 'N/A' ? '' : item.month}
-                                  </td>
-                                  <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold w-auto">
-                                    <input 
-                                      type="text" 
-                                      value={item.reading || ''} 
-                                      onChange={(e) => {
-                                        const newUnits = [...billData.monthWiseUnits!];
-                                        if (newUnits[index]) {
-                                          newUnits[index].reading = e.target.value;
-                                          setBillData({...billData, monthWiseUnits: newUnits});
-                                        }
-                                      }}
-                                      className="w-full bg-transparent focus:outline-none min-w-[50px] text-indigo-600 font-bold"
-                                      placeholder="Reading"
-                                    />
                                   </td>
                                   <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
                                     <input 
@@ -4075,7 +4043,7 @@ export default function NewCase() {
                                       className="w-full bg-transparent focus:outline-none min-w-[50px]"
                                     />
                                   </td>
-                                  <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold w-1 whitespace-nowrap">
+                                  <td className="px-2 py-1 border-r border-neutral-200 text-red-600 font-bold w-1 whitespace-nowrap">
                                     <input 
                                       type="text" 
                                       value={item.adj === 'N/A' ? '' : (item.adj || '')} 
@@ -4085,7 +4053,7 @@ export default function NewCase() {
                                         setBillData({...billData, monthWiseUnits: newUnits});
                                       }}
                                       style={{ width: `${Math.max(3, String(item.adj || '').length)}ch` }}
-                                      className="bg-transparent focus:outline-none text-center font-bold text-indigo-600"
+                                      className="bg-transparent focus:outline-none text-center font-bold text-red-600"
                                     />
                                   </td>
                                   <td className="px-2 py-1 text-neutral-900 w-auto">

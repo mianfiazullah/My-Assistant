@@ -243,7 +243,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight p-6 md:p-[20mm]">
       <div className="flex items-center justify-between mb-4 border-b-2 border-black pb-2">
         <div className="text-center flex-1">
-          <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest">DETECTION BILL PROFORMA</h1>
+          <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">DETECTION BILL PROFORMA</h1>
           <p className="text-[9px] font-bold">LAHORE ELECTRIC SUPPLY COMPANY LIMITED</p>
           <p className="text-[8px] font-bold">OFFICE OF THE ASSISTANT MANAGER (OPERATION)</p>
           <p className="text-[8px] font-bold uppercase">KOT RADHA KISHAN-1 SUB DIVISION LESCO</p>
@@ -256,37 +256,36 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
       <div className="space-y-1.5">
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Reference No. : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.referenceNumber}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Customer I.D : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.customerId}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Tariff : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.tariff}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Sanctioned Load : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Reference No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.referenceNumber}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Customer I.D : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.customerId}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Tariff : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.tariff}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Sanctioned Load : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
         </div>
-        <div className="flex gap-3 items-start">
+        <div className="flex gap-3 items-start font-bold">
           <span className="whitespace-nowrap">Consumer Name & Address : -</span>
-          <span className="border-b border-black text-black font-bold inline">{data.name}, {data.address}</span>
+          <span className="border-b border-black text-black inline">{data.name}, {data.address}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Date of checking : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.dateOfChecking)}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Previous Reading : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDF(data.previousReading)}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDF(data.presentReading)}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter No : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.meterNumber}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Make : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.meterMake}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Date of checking : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.dateOfChecking)}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-black"></span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter No : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterNumber}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Make : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterMake}</span></div>
         </div>
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.meterType}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.capacity}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap font-bold", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase() === 'DF') ? "text-red-600" : "text-black")}>{formatDF(data.meterStatus)}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterType}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.capacity}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase() === 'DF') ? "text-red-600" : "text-black")}>{formatDF(data.meterStatus)}</span></div>
         </div>
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.noticeNo}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.noticeDated)}</span></div>
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">FIR Request Vide T/O No. : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.firNo}</span></div>
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">FIR Request T/O Dated : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.firDated)}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.noticeNo}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.noticeDated)}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">FIR Request Vide T/O No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.firNo}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">FIR Request T/O Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.firDated)}</span></div>
         </div>
         <div className="flex justify-start gap-4">
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">Registered FIR No. : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.registeredFirNo}</span></div>
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.registeredFirDated)}</span></div>
-          <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Name Of Police Station : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold overflow-hidden">{(data.firNo && !data.registeredFirNo) ? (
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Registered FIR No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.registeredFirNo}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.registeredFirDated)}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Name Of Police Station : -</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden">{(data.firNo && !data.registeredFirNo) ? (
             <>
               {data.policeStation || '____________________'} <span className="text-red-600">(PENDING FIR)</span>
             </>
@@ -299,7 +298,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         <div className="flex justify-between gap-4">
           {data.noOfAC && parseInt(data.noOfAC) > 0 ? (
             <div className="flex gap-3 items-end">
-              <span className="whitespace-nowrap">NO of AC : -</span>
+              <span className="whitespace-nowrap font-bold">NO of AC : -</span>
               <span className="border-b border-black whitespace-nowrap text-black font-bold">
                 {data.noOfAC} {parseInt(data.noOfAC || '0') === 1 ? 'No.' : 'Nos.'} 
                 {(() => {
@@ -314,37 +313,37 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               </span>
             </div>
           ) : <div />}
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Detection Bill Period : -</span><span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodTo)}</span> (<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.detectionPeriodMonths}</span> Months)</div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap font-bold">Detection Bill Period : -</span><span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodTo)}</span> <span className="font-bold">(<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.detectionPeriodMonths}</span> Months)</span></div>
         </div>
         {data.noOfAC && parseInt(data.noOfAC) > 0 && (data.acPeriodFrom || data.acPeriodTo) && (
           <div className="flex justify-between gap-4">
             <div className="flex gap-3 items-end">
-              <span className="whitespace-nowrap">AC Period : -</span>
-              <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodTo)}</span> (<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.acPeriodMonths}</span> Months)
+              <span className="whitespace-nowrap font-bold">AC Period : -</span>
+              <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodTo)}</span> <span className="font-bold">(<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.acPeriodMonths}</span> Months)</span>
             </div>
           </div>
         )}
       </div>
 
       <div className="mt-2">
-        <h3 className="font-bold text-center mb-1">CONSUMPTION DATA</h3>
-        <table className="w-full border-collapse border border-black text-center text-[8px]">
+        <h3 className="font-bold text-center mb-1 text-[11px] font-sans">CONSUMPTION DATA</h3>
+        <table className="w-full border-collapse border border-black text-center text-[11px] font-bold">
           <thead>
             <tr className="border border-black">
               <th rowSpan={2} className="border border-black w-14">Month</th>
-              <th colSpan={2} className="border border-black">
+              <th colSpan={2} className="border border-black font-bold">
                 {(() => {
                    const y = parseInt(data.billingMonth?.split(/[- ]+/).filter(Boolean)[1] || '2026');
                    return y > 100 ? y - 2 : `20${y - 2}`;
                 })()}
               </th>
-              <th colSpan={2} className="border border-black">
+              <th colSpan={2} className="border border-black font-bold">
                 {(() => {
                    const y = parseInt(data.billingMonth?.split(/[- ]+/).filter(Boolean)[1] || '2026');
                    return y > 100 ? y - 1 : `20${y - 1}`;
                 })()}
               </th>
-              <th colSpan={2} className="border border-black">
+              <th colSpan={2} className="border border-black font-bold">
                 {(() => {
                    const y = parseInt(data.billingMonth?.split(/[- ]+/).filter(Boolean)[1] || '2026');
                    return y > 100 ? y : `20${y}`;
@@ -405,14 +404,14 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 });
 
                 if (u && (u.units?.toString().toUpperCase().includes('DF') || u.reading?.toString().toUpperCase().includes('DF'))) {
-                  return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
                 }
 
                 // Check current billing month input
                 if (isMatch(yearStr)) {
                   const presStr = data.presentReading?.toString().toUpperCase() || '';
                   if (presStr === 'DF' || presStr.includes('DF')) {
-                    return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                    return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
                   }
                 }
 
@@ -420,13 +419,13 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 if (isPreviousMatch(yearStr)) {
                   const prevStr = data.previousReading?.toString().toUpperCase() || '';
                   if (prevStr === 'DF' || prevStr.includes('DF')) {
-                    return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                    return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
                   }
                 }
 
                 const val = calculatedReadings[key];
                 if (val === -1) {
-                  return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  return <span className="text-black font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
                 }
                 if (val !== undefined && !isNaN(val) && val > 0) {
                   return <span className="text-black font-bold">{Math.round(val).toString()}</span>;
@@ -475,7 +474,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   const val = data.difference;
                   const valStr = val?.toString().toUpperCase() || '';
                   if (valStr === 'DF' || valStr.includes('DF')) {
-                    return <span className={cn(baseClasses, "text-red-600")}>Est. Def.</span>;
+                    return <span className={cn(baseClasses, "text-black")}>Est. Def.</span>;
                   }
                   return (val === undefined || val === null || val === '' || val.toString() === '0') ? '' : <span className={cn(baseClasses, "text-black")}>{val}</span>;
                 }
@@ -492,7 +491,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   const unitsStr = u.units?.toString().toUpperCase() || '';
                   const readingStr = u.reading?.toString().toUpperCase() || '';
                   if (unitsStr.includes('DF') || readingStr.includes('DF')) {
-                    return <span className={cn(baseClasses, "text-red-600 text-[12px] leading-none whitespace-nowrap")}>Est. Def.</span>;
+                    return <span className={cn(baseClasses, "text-black text-[12px] leading-none whitespace-nowrap")}>Est. Def.</span>;
                   }
                   if (unitsStr !== '' && unitsStr !== '0' && unitsStr !== 'N/A') {
                     return <span className={cn(baseClasses, "text-black")}>{u.units}</span>;
@@ -525,8 +524,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
       <div className="mt-2 grid grid-cols-[1.5fr_1fr] gap-0 border border-black overflow-hidden">
         <div className="border-r border-black">
-          <h3 className="font-bold text-[10px] text-center py-0.5 border-b border-black">Detail of Connected Load</h3>
-          <table className="w-full text-center text-[8px] border-collapse">
+          <h3 className="font-bold text-[11px] text-center py-0.5 border-b border-black font-sans">Detail of Connected Load</h3>
+          <table className="w-full text-center text-[11px] font-bold border-collapse">
             <thead>
               <tr className="border-b border-black">
                 <th className="border-r border-black font-bold py-0.5">Description</th>
@@ -551,7 +550,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 { name: 'Toka/Heater', watts: '', qty: '', total: '' },
               ]).map((item, idx) => (
                 <tr key={idx} className="border-b border-black h-[18px]">
-                  <td className="border-r border-black text-left pl-2 py-0.5">{item.name}</td>
+                  <td className="border-r border-black text-left pl-2 py-0.5 font-bold">{item.name}</td>
                   <td className="border-r border-black text-black font-bold py-0.5">{item.qty}</td>
                   <td className="border-r border-black text-black font-bold py-0.5">{item.watts}</td>
                   <td className="text-black font-bold py-0.5">{item.total}</td>
@@ -570,14 +569,14 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
             <p className="mt-1">Load means the connected load or sanctioned load whichever is higher.</p>
           </div>
           <div className="p-2 flex-1 relative min-h-[180px] flex flex-col overflow-hidden">
-            <h3 className="font-bold underline text-[9px]">Remarks : -</h3>
+            <h3 className="font-bold underline text-[9px] font-sans">Remarks : -</h3>
             <div className="flex-1 overflow-y-auto min-h-[30px] max-h-[100px] mt-1">
               {data.remarks?.split('\n').map((line, i) => {
                 const lowerLine = line.toLowerCase();
                 const isSpecial = lowerLine.includes('additional') && lowerLine.includes('units charged') || 
                                 lowerLine.includes('detection bill charged as per connected load');
                 return (
-                  <p key={i} className={cn("text-[9px] whitespace-pre-wrap", isSpecial ? "text-red-600 font-bold" : "text-black")}>
+                  <p key={i} className={cn("text-[9px] whitespace-pre-wrap font-bold", isSpecial ? "text-red-600" : "text-black")}>
                     {line}
                   </p>
                 );
@@ -612,12 +611,12 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       <div className="mt-2 space-y-1.5 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex justify-between gap-4">
-            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Connected Load : </span><span className={cn("border-b border-black whitespace-nowrap font-bold", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-black animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
-            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Load Factor : </span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.loadFactor}</span></div>
-            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Units Already Charged : </span><span className="border-b border-black whitespace-nowrap">{parseInt(data.unitsAlreadyCharged || '0').toLocaleString()}</span></div>
+            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap font-bold">Connected Load : - </span><span className={cn("border-b border-black whitespace-nowrap font-bold", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-black animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
+            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap font-bold">Load Factor : - </span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.loadFactor}</span></div>
+            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap font-bold">Units Already Charged : - </span><span className="border-b border-black whitespace-nowrap text-black font-bold">{parseInt(data.unitsAlreadyCharged || '0').toLocaleString()}</span></div>
             <div className="flex gap-1 items-end min-w-0">
-              <span className="whitespace-nowrap">Units Assessed : </span>
-              <span className="border-b border-black whitespace-nowrap">
+              <span className="whitespace-nowrap font-bold">Units Assessed : - </span>
+              <span className="border-b border-black whitespace-nowrap text-black font-bold">
                 {data.unitsAssessed ? (
                   (() => {
                     const isSlowness = data.discrepancy?.includes('Meter Slow By');
@@ -642,8 +641,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   {data.discrepancy?.includes('Meter Slow By') ? `Net units to be charged as per slowness ${data.meterSlowBy || ''}` : 'G. Total units to be charged'} : -
                 </span>
                 <span className={cn(
-                  "text-sm text-black border-b-[3px] border-double border-black",
-                  (data.feederName || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' && "font-bold"
+                  "text-sm text-black border-b-[3px] border-double border-black font-bold"
                 )}>
                   {
                     (data.feederName || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
@@ -693,7 +691,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight flex flex-col p-6 md:p-[20mm]">
         <div className="flex items-center justify-between mb-6 border-b-2 border-black pb-2">
           <div className="text-center flex-1">
-            <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest">NOTICE</h1>
+            <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">NOTICE</h1>
             <p className="text-[9px] font-bold">LAHORE ELECTRIC SUPPLY COMPANY LIMITED</p>
             <p className="text-[8px] font-bold">OFFICE OF THE ASSISTANT MANAGER (OPERATION)</p>
             <p className="text-[8px] font-bold uppercase">KOT RADHA KISHAN-1 SUB DIVISION LESCO</p>
@@ -786,7 +784,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[11px] md:text-[12px] leading-relaxed p-6 md:p-[20mm]">
       <div className="flex items-center justify-between mb-8 border-b-2 border-black pb-4">
         <div className="text-center flex-1">
-          <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest">FIR REQUEST</h1>
+          <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">FIR REQUEST</h1>
           <p className="text-[9px] font-bold">LAHORE ELECTRIC SUPPLY COMPANY LIMITED</p>
           <p className="text-[8px] font-bold">OFFICE OF THE ASSISTANT MANAGER (OPERATION)</p>
           <p className="text-[8px] font-bold uppercase">KOT RADHA KISHAN-1 SUB DIVISION LESCO</p>
@@ -814,7 +812,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       </div>
 
       <div className="text-center mb-8">
-        <h1 className="text-lg md:text-xl font-bold uppercase">Subject : - REQUEST FOR REGISTRATION OF FIR AGAINST ELECTRICITY THEFT</h1>
+        <h1 className="text-lg md:text-xl font-bold uppercase font-sans">Subject : - REQUEST FOR REGISTRATION OF FIR AGAINST ELECTRICITY THEFT</h1>
       </div>
 
       <div className="text-[10px] md:text-sm space-y-6 leading-relaxed">

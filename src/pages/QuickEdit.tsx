@@ -675,6 +675,9 @@ export default function QuickEdit() {
                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
                     <th className="px-2 py-1 border-r border-neutral-200 w-auto text-indigo-600">Reading</th>
                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
+                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
+                    <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap text-red-600">Adj</th>
+                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Payment</th>
                     <th className="px-2 py-1 text-center w-1 whitespace-nowrap">
                       <Plus className="w-3 h-3 cursor-pointer hover:text-indigo-600" onClick={() => {
                         const units = [...(data.billData?.monthWiseUnits || [])];
@@ -724,6 +727,45 @@ export default function QuickEdit() {
                           }}
                           className="w-full bg-transparent focus:outline-none min-w-[40px] font-bold text-neutral-900"
                           placeholder="Units"
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-r border-neutral-200">
+                        <input 
+                          type="text" 
+                          value={item.bill || ''} 
+                          onChange={(e) => {
+                            const newUnits = [...(data.billData?.monthWiseUnits || [])];
+                            newUnits[index].bill = e.target.value;
+                            handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                          }}
+                          className="w-full bg-transparent focus:outline-none min-w-[50px] font-bold text-neutral-900"
+                          placeholder="Bill"
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-r border-neutral-200 text-red-600 font-bold">
+                        <input 
+                          type="text" 
+                          value={item.adj || ''} 
+                          onChange={(e) => {
+                            const newUnits = [...(data.billData?.monthWiseUnits || [])];
+                            newUnits[index].adj = e.target.value;
+                            handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                          }}
+                          className="w-full bg-transparent focus:outline-none min-w-[40px] text-red-600 font-bold text-center"
+                          placeholder="Adj"
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-r border-neutral-200">
+                        <input 
+                          type="text" 
+                          value={item.payment || ''} 
+                          onChange={(e) => {
+                            const newUnits = [...(data.billData?.monthWiseUnits || [])];
+                            newUnits[index].payment = e.target.value;
+                            handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                          }}
+                          className="w-full bg-transparent focus:outline-none min-w-[50px] font-bold text-neutral-900"
+                          placeholder="Payment"
                         />
                       </td>
                       <td className="px-1 py-1 text-center">
