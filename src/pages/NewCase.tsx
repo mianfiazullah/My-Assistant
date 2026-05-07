@@ -499,10 +499,10 @@ export default function NewCase() {
             key="dateOfChecking" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Date Of Checking</p>}
+            label={<p className="text-xs text-black uppercase font-bold tracking-widest">Date Of Checking</p>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")} id="field-dateOfChecking">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
               <input 
                 type="date"
                 value={detectionData.dateOfChecking || ''}
@@ -521,10 +521,10 @@ export default function NewCase() {
             key="noticeNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Notice No.</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Notice No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.noticeNo || ''} onChange={(e) => setDetectionData({...detectionData, noticeNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="text" value={detectionData.noticeNo || ''} onChange={(e) => setDetectionData({...detectionData, noticeNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -535,16 +535,16 @@ export default function NewCase() {
             key="noticeDated" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Notice Dated</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Notice Dated</label>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
               <input 
                 type="date" 
                 value={detectionData.noticeDated || ''} 
                 onChange={(e) => setDetectionData({...detectionData, noticeDated: e.target.value})} 
                 max={today} 
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300" 
+                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-black" 
                 disabled={isDisabled} 
               />
             </div>
@@ -557,10 +557,10 @@ export default function NewCase() {
             key="firNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">FIR Request Vide T/O No.</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">FIR Request Vide T/O No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.firNo || ''} onChange={(e) => setDetectionData({...detectionData, firNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="text" value={detectionData.firNo || ''} onChange={(e) => setDetectionData({...detectionData, firNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -571,16 +571,16 @@ export default function NewCase() {
             key="firDated" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">FIR Request T/O Dated</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">FIR Request T/O Dated</label>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
               <input 
                 type="date" 
                 value={detectionData.firDated || ''} 
                 onChange={(e) => setDetectionData({...detectionData, firDated: e.target.value})} 
                 max={today} 
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300" 
+                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-black" 
                 disabled={isDisabled} 
               />
             </div>
@@ -593,10 +593,10 @@ export default function NewCase() {
             key="registeredFirNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Registered FIR No.</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Registered FIR No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.registeredFirNo || ''} onChange={(e) => setDetectionData({...detectionData, registeredFirNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="text" value={detectionData.registeredFirNo || ''} onChange={(e) => setDetectionData({...detectionData, registeredFirNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -607,16 +607,16 @@ export default function NewCase() {
             key="registeredFirDated" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Registered FIR Dated</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Registered FIR Dated</label>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
               <input 
                 type="date" 
                 value={detectionData.registeredFirDated || ''} 
                 onChange={(e) => setDetectionData({...detectionData, registeredFirDated: e.target.value})} 
                 max={today} 
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300" 
+                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-black" 
                 disabled={isDisabled} 
               />
             </div>
@@ -629,14 +629,14 @@ export default function NewCase() {
             key="policeStation" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Name Of Police Station</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Name Of Police Station</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <select 
                 value={detectionData.policeStation || ''} 
                 onChange={(e) => setDetectionData({...detectionData, policeStation: e.target.value})} 
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-black"
               >
                 <option value="">Select Police Station...</option>
                 <option value="Kot Radha Kishan">Kot Radha Kishan</option>
@@ -657,7 +657,7 @@ export default function NewCase() {
             onSerialNoChange={onSerialNoChange}
             label={
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">No. of AC</label>
+                <label className="text-xs font-bold text-black uppercase tracking-widest">No. of AC</label>
                 {acCount > 0 && (
                   <button
                     type="button"
@@ -716,7 +716,7 @@ export default function NewCase() {
                   )}
                 >
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Split ACs</label>
+                    <label className="text-[10px] font-bold text-black uppercase tracking-wider">Split ACs</label>
                     <input 
                       type="number"
                       min="0"
@@ -734,11 +734,11 @@ export default function NewCase() {
                       }}
                       placeholder="Qty"
                       disabled={isDisabled}
-                      className={cn("w-full border border-neutral-200 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")}
+                      className={cn("w-full border border-neutral-200 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Window ACs</label>
+                    <label className="text-[10px] font-bold text-black uppercase tracking-wider">Window ACs</label>
                     <input 
                       type="number"
                       min="0"
@@ -756,7 +756,7 @@ export default function NewCase() {
                       }}
                       placeholder="Qty"
                       disabled={isDisabled}
-                      className={cn("w-full border border-neutral-200 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")}
+                      className={cn("w-full border border-neutral-200 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")}
                     />
                   </div>
                   {showAcMismatch && (
@@ -802,10 +802,10 @@ export default function NewCase() {
             key="detectionPeriodFrom" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Detection Period From</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period From</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="month" value={detectionData.detectionPeriodFrom || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodFrom: e.target.value})} max={thisMonth} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="month" value={detectionData.detectionPeriodFrom || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodFrom: e.target.value})} max={thisMonth} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -819,9 +819,9 @@ export default function NewCase() {
             onSerialNoChange={onSerialNoChange}
             label={
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Detection Period To</label>
+                <label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period To</label>
                 {isToMonthMissing && (
-                  <p className="text-[10px] text-indigo-500 font-medium ml-1 flex items-center gap-1 animate-blink">
+                  <p className="text-[10px] text-red-600 font-medium ml-1 flex items-center gap-1 animate-blink">
                     <AlertCircle className="w-3 h-3" /> Data for this month not found in scanned bill
                   </p>
                 )}
@@ -836,7 +836,7 @@ export default function NewCase() {
                 max={thisMonth} 
                 className={cn(
                   "w-full bg-white border border-neutral-200 rounded-xl p-3 transition-colors",
-                  isToMonthMissing ? "text-indigo-600 border-indigo-300 bg-indigo-50 font-bold" : "text-black"
+                  isToMonthMissing ? "text-red-600 border-red-300 bg-red-50 font-bold" : "text-black font-bold"
                 )} 
                 disabled={isDisabled} 
               />
@@ -850,10 +850,10 @@ export default function NewCase() {
             key="detectionPeriodMonths" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Detection Period Months</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period Months</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.detectionPeriodMonths || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodMonths: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="text" value={detectionData.detectionPeriodMonths || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodMonths: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -865,7 +865,7 @@ export default function NewCase() {
             key="acPeriodFrom" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">AC Period From</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period From</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -895,7 +895,7 @@ export default function NewCase() {
                 min={acMin}
                 max={acMax} 
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3" 
+                className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" 
               />
             </div>
           </SortableItem>
@@ -908,7 +908,7 @@ export default function NewCase() {
             key="acPeriodTo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">AC Period To</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period To</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -942,7 +942,7 @@ export default function NewCase() {
                 min={acMin}
                 max={acMaxEffective} 
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3" 
+                className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" 
               />
             </div>
           </SortableItem>
@@ -955,7 +955,7 @@ export default function NewCase() {
             key="acPeriodMonths" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">AC Period Months</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period Months</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -963,7 +963,7 @@ export default function NewCase() {
                 value={detectionData.acPeriodMonths || ''} 
                 readOnly
                 disabled={isDisabled}
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 cursor-not-allowed" 
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 cursor-not-allowed font-bold text-black" 
               />
             </div>
           </SortableItem>
@@ -976,10 +976,10 @@ export default function NewCase() {
             key="unitsOfAcPeriod" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Units of AC Period</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units of AC Period</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.unitsOfAcPeriod || ''} onChange={(e) => setDetectionData({...detectionData, unitsOfAcPeriod: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="text" value={detectionData.unitsOfAcPeriod || ''} onChange={(e) => setDetectionData({...detectionData, unitsOfAcPeriod: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -997,14 +997,14 @@ export default function NewCase() {
             key="unitsAssessed" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Units Assessed</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units Assessed</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
                 type="text" 
                 value={displayAssessed} 
                 onChange={(e) => setDetectionData({...detectionData, unitsAssessed: e.target.value})} 
-                className={cn("w-full border border-neutral-200 rounded-xl p-3", isDisabled ? "bg-neutral-100" : "bg-white")} 
+                className={cn("w-full border border-neutral-200 rounded-xl p-3 font-bold text-black", isDisabled ? "bg-neutral-100" : "bg-white")} 
                 disabled={isDisabled} 
                 readOnly={isSlowness}
               />
@@ -1018,10 +1018,10 @@ export default function NewCase() {
             key="unitsAlreadyCharged" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Units Already Charged</label>}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units Already Charged</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.unitsAlreadyCharged || ''} onChange={(e) => setDetectionData({...detectionData, unitsAlreadyCharged: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3" disabled={isDisabled} />
+              <input type="text" value={detectionData.unitsAlreadyCharged || ''} onChange={(e) => setDetectionData({...detectionData, unitsAlreadyCharged: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -1033,7 +1033,7 @@ export default function NewCase() {
             key="netUnitsToBeCharged" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs uppercase tracking-widest text-black">{isSlownessActiveForLabel ? `UNITS TO BE CHARGED AS PER SLOWNESS ${detectionData.meterSlowBy || ''}` : 'UNITS TO BE CHARGED AS PER CONNECTED LOAD'}</label>}
+            label={<label className="text-xs uppercase tracking-widest text-black font-bold">{isSlownessActiveForLabel ? `UNITS TO BE CHARGED AS PER SLOWNESS ${detectionData.meterSlowBy || ''}` : 'UNITS TO BE CHARGED AS PER CONNECTED LOAD'}</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -1041,8 +1041,8 @@ export default function NewCase() {
                 value={detectionData.netUnitsToBeCharged || ''} 
                 onChange={(e) => setDetectionData({...detectionData, netUnitsToBeCharged: e.target.value})} 
                 className={cn(
-                  "w-full bg-white border border-neutral-200 rounded-xl p-3",
-                  detectionData.netUnitsToBeCharged === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' ? "text-indigo-600 font-bold animate-blink" : "text-black"
+                  "w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold",
+                  detectionData.netUnitsToBeCharged?.includes('D.BILL IS NOT JUSTIFIED') ? "text-red-600 animate-blink" : "text-black"
                 )} 
                 disabled={isDisabled} 
               />
@@ -1056,7 +1056,7 @@ export default function NewCase() {
             key="checkedBy" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Checked By (Multiple)</label>}
+            label={<label className="text-xs text-black uppercase font-bold tracking-widest">Checked By (Multiple)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-checkedBy">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1080,9 +1080,9 @@ export default function NewCase() {
                               : prev.checkedBy.filter(item => item !== option)
                           }));
                         }}
-                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                        className="w-4 h-4 text-black rounded focus:ring-black"
                       />
-                      <span className="text-sm font-medium text-neutral-700">{option}</span>
+                      <span className="text-sm font-bold text-black">{option}</span>
                     </label>
                     {option === "Along With" && detectionData.checkedBy.includes("Along With") && (
                       <input
@@ -1091,7 +1091,7 @@ export default function NewCase() {
                         onChange={(e) => setDetectionData({...detectionData, othersCheckedBy: e.target.value})}
                         placeholder="Enter manual checking team..."
                         disabled={isDisabled}
-                        className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black"
                       />
                     )}
                   </div>
@@ -2198,7 +2198,8 @@ export default function NewCase() {
         difference: (() => {
           const present = parseInt(billData.presentReading?.toString().replace(/,/g, '') || '0');
           const previous = parseInt(billData.previousReading?.toString().replace(/,/g, '') || '0');
-          return !isNaN(present) && !isNaN(previous) ? (present - previous).toString() : '0';
+          const diff = present - previous;
+          return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
         })(),
         billingMonth: billData.billingMonth || prev.billingMonth || '',
         presentReading: billData.presentReading || prev.presentReading || '',
@@ -2307,9 +2308,13 @@ export default function NewCase() {
                 presentReading: data.presentReading || "",
                 previousReading: data.previousReading || "",
                 difference: (() => {
+                  if (data.consumedUnits && data.consumedUnits !== "N/A") {
+                    return data.consumedUnits.toString().replace(/[^0-9]/g, '');
+                  }
                   const present = parseInt(data.presentReading?.toString().replace(/[^0-9]/g, '') || '0');
                   const previous = parseInt(data.previousReading?.toString().replace(/[^0-9]/g, '') || '0');
-                  return !isNaN(present) && !isNaN(previous) ? (present - previous).toString() : '0';
+                  const diff = present - previous;
+                  return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
                 })(),
                 monthWiseUnitsConsumed: "",
                 monthWiseUnits: data.monthWiseUnits?.map((item: any) => {
@@ -2319,6 +2324,7 @@ export default function NewCase() {
                   };
                   return {
                     month: cleanValue(item.month),
+                    reading: cleanValue(item.reading),
                     units: cleanValue(item.units),
                     bill: cleanValue(item.bill),
                     adj: cleanValue(item.adj),
@@ -2720,9 +2726,13 @@ export default function NewCase() {
           presentReading: data.presentReading || "",
           previousReading: data.previousReading || "",
           difference: (() => {
+            if (data.consumedUnits && data.consumedUnits !== "N/A") {
+              return data.consumedUnits.toString().replace(/[^0-9]/g, '');
+            }
             const present = parseInt(data.presentReading?.toString().replace(/[^0-9]/g, '') || '0');
             const previous = parseInt(data.previousReading?.toString().replace(/[^0-9]/g, '') || '0');
-            return !isNaN(present) && !isNaN(previous) ? (present - previous).toString() : '0';
+            const diff = present - previous;
+            return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
           })(),
           monthWiseUnitsConsumed: "",
           monthWiseUnits: data.monthWiseUnits?.map((item: any) => {
@@ -2732,6 +2742,7 @@ export default function NewCase() {
             };
             return {
               month: cleanValue(item.month),
+              reading: cleanValue(item.reading),
               units: cleanValue(item.units),
               bill: cleanValue(item.bill),
               adj: cleanValue(item.adj),
@@ -2778,9 +2789,13 @@ export default function NewCase() {
       const billWithDiff = {
         ...data,
         difference: (() => {
+          if (data.unitsConsumed !== undefined && data.unitsConsumed !== null && data.unitsConsumed !== 0) {
+            return data.unitsConsumed.toString();
+          }
           const present = parseInt(data.presentReading?.toString().replace(/[^0-9]/g, '') || '0');
           const previous = parseInt(data.previousReading?.toString().replace(/[^0-9]/g, '') || '0');
-          return !isNaN(present) && !isNaN(previous) ? (present - previous).toString() : '0';
+          const diff = present - previous;
+          return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
         })()
       };
       setBillData(billWithDiff);
@@ -3425,18 +3440,18 @@ export default function NewCase() {
                                       deferredAmount: 0,
                                       monthWiseUnitsConsumed: "",
                                       monthWiseUnits: [
-                                        { month: 'FEB 26', units: '584', bill: '', adj: '', payment: '' },
-                                        { month: 'JAN 26', units: '153', bill: '', adj: '', payment: '' },
-                                        { month: 'DEC 25', units: '0', bill: '', adj: '', payment: '' },
-                                        { month: 'NOV 25', units: '81', bill: '', adj: '', payment: '' },
-                                        { month: 'OCT 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'SEP 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'AUG 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'JUL 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'JUN 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'MAY 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'APR 25', units: '', bill: '', adj: '', payment: '' },
-                                        { month: 'MAR 25', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'FEB 26', reading: '', units: '584', bill: '', adj: '', payment: '' },
+                                        { month: 'JAN 26', reading: '', units: '153', bill: '', adj: '', payment: '' },
+                                        { month: 'DEC 25', reading: '', units: '0', bill: '', adj: '', payment: '' },
+                                        { month: 'NOV 25', reading: '', units: '81', bill: '', adj: '', payment: '' },
+                                        { month: 'OCT 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'SEP 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'AUG 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'JUL 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'JUN 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'MAY 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'APR 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                        { month: 'MAR 25', reading: '', units: '', bill: '', adj: '', payment: '' },
                                       ],
                                     });
                                     setError('');
@@ -3549,18 +3564,18 @@ export default function NewCase() {
                               deferredAmount: 0,
                               monthWiseUnitsConsumed: "",
                               monthWiseUnits: [
-                                { month: 'FEB 26', units: '584', bill: '', adj: '', payment: '' },
-                                { month: 'JAN 26', units: '153', bill: '', adj: '', payment: '' },
-                                { month: 'DEC 25', units: '0', bill: '', adj: '', payment: '' },
-                                { month: 'NOV 25', units: '81', bill: '', adj: '', payment: '' },
-                                { month: 'OCT 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'SEP 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'AUG 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'JUL 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'JUN 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'MAY 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'APR 25', units: '', bill: '', adj: '', payment: '' },
-                                { month: 'MAR 25', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'FEB 26', reading: '', units: '584', bill: '', adj: '', payment: '' },
+                                { month: 'JAN 26', reading: '', units: '153', bill: '', adj: '', payment: '' },
+                                { month: 'DEC 25', reading: '', units: '0', bill: '', adj: '', payment: '' },
+                                { month: 'NOV 25', reading: '', units: '81', bill: '', adj: '', payment: '' },
+                                { month: 'OCT 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'SEP 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'AUG 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'JUL 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'JUN 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'MAY 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'APR 25', reading: '', units: '', bill: '', adj: '', payment: '' },
+                                { month: 'MAR 25', reading: '', units: '', bill: '', adj: '', payment: '' },
                               ],
                             });
                             setError('');
@@ -3741,16 +3756,21 @@ export default function NewCase() {
                             onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
                             className={cn(
                               "w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 font-medium focus:outline-none focus:border-indigo-500 min-w-[100px]",
-                              billData.meterStatus?.toUpperCase() === 'REPLACED' ? "text-red-600" : "text-neutral-900"
+                              billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600" : "text-neutral-900"
                             )}
                             placeholder="Status"
                           />
                         </td>
                         <td className="px-4 py-3 text-neutral-900 font-bold align-top">
                           {billData.difference || (() => {
-                            const present = parseInt(billData.presentReading?.toString().replace(/,/g, '') || '0');
-                            const previous = parseInt(billData.previousReading?.toString().replace(/,/g, '') || '0');
-                            return !isNaN(present) && !isNaN(previous) ? (present - previous).toLocaleString() : '';
+                            const presVal = billData.presentReading?.toString().toUpperCase() || '';
+                            const prevVal = billData.previousReading?.toString().toUpperCase() || '';
+                            if (presVal.includes('DF') || prevVal.includes('DF')) return 'DF';
+                            
+                            const present = parseInt(presVal.replace(/,/g, '') || '0');
+                            const previous = parseInt(prevVal.replace(/,/g, '') || '0');
+                            const diff = present - previous;
+                            return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
                           })()}
                         </td>
                         <td className="px-4 py-3 align-top">
@@ -3760,6 +3780,7 @@ export default function NewCase() {
                                 <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
                                   <tr>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
+                                    <th className="px-2 py-1 border-r border-neutral-200 w-auto text-indigo-600">Reading</th>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
                                     <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
@@ -3771,6 +3792,21 @@ export default function NewCase() {
                                     <tr key={index}>
                                       <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-auto">
                                         {item.month === 'N/A' ? '' : item.month}
+                                      </td>
+                                      <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold w-auto">
+                                        <input 
+                                          type="text" 
+                                          value={item.reading || ''} 
+                                          onChange={(e) => {
+                                            const newUnits = [...billData.monthWiseUnits!];
+                                            if (newUnits[index]) {
+                                              newUnits[index].reading = e.target.value;
+                                              setBillData({...billData, monthWiseUnits: newUnits});
+                                            }
+                                          }}
+                                          className="w-full bg-transparent focus:outline-none min-w-[50px] text-indigo-600 font-bold"
+                                          placeholder="Reading"
+                                        />
                                       </td>
                                       <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
                                         <input 
@@ -3954,7 +3990,7 @@ export default function NewCase() {
                           onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
                           className={cn(
                             "w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 font-medium focus:outline-none focus:border-indigo-500",
-                            billData.meterStatus?.toUpperCase() === 'REPLACED' ? "text-red-600" : "text-neutral-900"
+                            billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600" : "text-neutral-900"
                           )}
                           placeholder="Status"
                         />
@@ -3963,9 +3999,14 @@ export default function NewCase() {
                         <span className="text-xs font-bold text-neutral-400 uppercase">Difference</span>
                         <span className="text-sm font-bold text-neutral-900">
                           {billData.difference || (() => {
-                            const present = parseInt(billData.presentReading?.toString().replace(/,/g, '') || '0');
-                            const previous = parseInt(billData.previousReading?.toString().replace(/,/g, '') || '0');
-                            return !isNaN(present) && !isNaN(previous) ? (present - previous).toLocaleString() : '';
+                            const presVal = billData.presentReading?.toString().toUpperCase() || '';
+                            const prevVal = billData.previousReading?.toString().toUpperCase() || '';
+                            if (presVal.includes('DF') || prevVal.includes('DF')) return 'DF';
+
+                            const present = parseInt(presVal.replace(/,/g, '') || '0');
+                            const previous = parseInt(prevVal.replace(/,/g, '') || '0');
+                            const diff = present - previous;
+                            return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
                           })()}
                         </span>
                       </div>
@@ -3982,6 +4023,7 @@ export default function NewCase() {
                             <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
                               <tr>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
+                                <th className="px-2 py-1 border-r border-neutral-200 w-auto text-indigo-600">Reading</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
                                 <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
@@ -3993,6 +4035,21 @@ export default function NewCase() {
                                 <tr key={index}>
                                   <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-auto">
                                     {item.month === 'N/A' ? '' : item.month}
+                                  </td>
+                                  <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold w-auto">
+                                    <input 
+                                      type="text" 
+                                      value={item.reading || ''} 
+                                      onChange={(e) => {
+                                        const newUnits = [...billData.monthWiseUnits!];
+                                        if (newUnits[index]) {
+                                          newUnits[index].reading = e.target.value;
+                                          setBillData({...billData, monthWiseUnits: newUnits});
+                                        }
+                                      }}
+                                      className="w-full bg-transparent focus:outline-none min-w-[50px] text-indigo-600 font-bold"
+                                      placeholder="Reading"
+                                    />
                                   </td>
                                   <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
                                     <input 
@@ -4342,7 +4399,6 @@ export default function NewCase() {
             data={{
               ...detectionData,
               photoUrl: photo,
-              billData: billData || undefined,
               acType: (() => {
                 const split = parseInt(detectionData.splitAcCount || '0');
                 const window = parseInt(detectionData.windowAcCount || '0');
@@ -4368,7 +4424,7 @@ export default function NewCase() {
                 }
                 return item;
               }),
-              referenceNumber: billData?.referenceNumber || '',
+              referenceNumber: billData?.referenceNumber || detectionData.referenceNumber,
               dateOfChecking: detectionData.dateOfChecking.split('-').reverse().join('-'),
               noticeDated: detectionData.noticeDated ? detectionData.noticeDated.split('-').reverse().join('-') : '',
               firDated: detectionData.firDated ? detectionData.firDated.split('-').reverse().join('-') : '',
@@ -4376,13 +4432,15 @@ export default function NewCase() {
               detectionPeriodTo: detectionData.detectionPeriodTo ? detectionData.detectionPeriodTo.split('-').reverse().join('-') : '',
               acPeriodFrom: detectionData.acPeriodFrom ? detectionData.acPeriodFrom.split('-').reverse().join('-') : '',
               acPeriodTo: detectionData.acPeriodTo ? detectionData.acPeriodTo.split('-').reverse().join('-') : '',
-              monthWiseUnits: billData?.monthWiseUnits,
-              billingMonth: billData?.billingMonth,
-              difference: billData?.difference || '0',
+              monthWiseUnits: billData?.monthWiseUnits || [],
+              billingMonth: billData?.billingMonth || detectionData.billingMonth,
+              presentReading: billData?.presentReading || detectionData.presentReading,
+              previousReading: billData?.previousReading || detectionData.previousReading,
+              difference: billData?.difference || billData?.unitsConsumed?.toString() || detectionData.difference,
               loadItems: detectionData.loadItems,
               subDivisionName: billData?.subDivisionName,
               feederName: detectionData.feederName,
-              meterStatus: billData?.meterStatus
+              meterStatus: billData?.meterStatus || detectionData.meterStatus
             }}
           />
         ))}

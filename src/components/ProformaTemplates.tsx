@@ -124,9 +124,18 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     }).join(', ');
   };
 
+  const formatDF = (val: any) => {
+    if (val === undefined || val === null || val === '') return '';
+    const str = val.toString();
+    if (str.toUpperCase() === 'DF' || str.toUpperCase().includes('DF')) {
+      return <span className="text-red-600 font-bold">Est. Def.</span>;
+    }
+    return val;
+  };
+
   const getCalculatedReadings = () => {
     const readingsMap: Record<string, number> = {};
-    if (!data.billingMonth || !data.presentReading) return readingsMap;
+    if (!data.billingMonth) return readingsMap;
 
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const billingParts = data.billingMonth.toUpperCase().split(/[- ]+/).filter(Boolean);
@@ -151,18 +160,22 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       });
       
       if (u) {
-        return { units: parseInt(u.units?.toString().replace(/,/g, '') || '0') || 0, exists: true };
+        const unitsStr = u.units?.toString().toUpperCase() || '0';
+        const units = parseInt(unitsStr.replace(/,/g, '').replace(/EST. DEF./g, '').replace(/DF/g, '') || '0') || 0;
+        return { units, exists: true };
       }
       
       // If none found in monthWiseUnits, check if it matches the current billing month's difference
       if (m === startMonthName && (y === startYearStr || y === `20${startYearStr}`)) {
-        return { units: parseInt(data.difference?.toString().replace(/,/g, '') || '0') || 0, exists: true };
+        const valStr = data.difference?.toString().toUpperCase() || '0';
+        const units = parseInt(valStr.replace(/,/g, '').replace(/EST. DEF./g, '').replace(/DF/g, '') || '0') || 0;
+        return { units, exists: true };
       }
       
       return { units: 0, exists: false };
     };
 
-    let startReading = parseInt(data.presentReading.toString().replace(/,/g, '')) || 0;
+    const startReading = parseInt(data.presentReading?.toString().replace(/,/g, '').replace(/DF/g, '') || '0') || 0;
     readingsMap[`${months[startMonthIndex]} ${startYear}`] = startReading;
 
     // Backward calculation
@@ -172,12 +185,14 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     
     // If the meter is replaced, the prior units belong to the old meter or a mix,
     // so subtracting them from the new meter's present reading yields incorrect previous readings.
-    if (data.meterStatus?.toUpperCase() !== 'REPLACED') {
+    if (!data.meterStatus?.toUpperCase()?.includes('REPLACED')) {
+      const isPresentDF = data.presentReading?.toString().toUpperCase().includes('DF');
       for (let i = 0; i < 48; i++) {
         const { units, exists } = getUnitsData(months[bMonth], bYear.toString());
         if (!exists) break;
         
-        const prevReading = tempReading - units;
+        let prevReading = tempReading - units;
+        if (prevReading < 0) prevReading = 0;
         
         bMonth--;
         if (bMonth < 0) {
@@ -186,7 +201,9 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         }
         if (bYear < 23) break;
 
-        readingsMap[`${months[bMonth]} ${bYear}`] = prevReading;
+        // If present reading was DF, or any month in between was DF, the derived reading is questionable
+        // But for calculation purposes we keep it, however in getReadingVal we will check for DF
+        readingsMap[`${months[bMonth]} ${bYear}`] = isPresentDF && i === 0 ? -1 : prevReading;
         tempReading = prevReading;
       }
     }
@@ -207,7 +224,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       const { units, exists } = getUnitsData(months[nextMonthIndex], nextYearValue.toString());
       if (!exists) break;
       
-      const nextReadingValue = tempReading + units;
+      const nextReadingValue = Math.max(0, tempReading + units);
       
       fMonth = nextMonthIndex;
       fYear = nextYearValue;
@@ -239,46 +256,51 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
       <div className="space-y-1.5">
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Reference No. : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.referenceNumber}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Customer I.D : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.customerId}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Tariff : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.tariff}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Sanctioned Load : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Reference No. : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.referenceNumber}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Customer I.D : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.customerId}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Tariff : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.tariff}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Sanctioned Load : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
         </div>
         <div className="flex gap-3 items-start">
           <span className="whitespace-nowrap">Consumer Name & Address : -</span>
-          <span className="border-b border-black text-indigo-600 font-bold inline">{data.name}, {data.address}</span>
+          <span className="border-b border-black text-black font-bold inline">{data.name}, {data.address}</span>
         </div>
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Date of checking : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.dateOfChecking)}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.presentReadingAtSite || data.presentReading}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter No : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.meterNumber}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Make : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.meterMake}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Date of checking : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.dateOfChecking)}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Previous Reading : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDF(data.previousReading)}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDF(data.presentReading)}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter No : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.meterNumber}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Make : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.meterMake}</span></div>
         </div>
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.meterType}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.capacity}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap font-bold", data.meterStatus?.toUpperCase() === 'REPLACED' ? "text-red-600" : "text-indigo-600")}>{data.meterStatus}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.meterType}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.capacity}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap font-bold", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase() === 'DF') ? "text-red-600" : "text-black")}>{formatDF(data.meterStatus)}</span></div>
         </div>
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.noticeNo}</span></div>
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.noticeDated)}</span></div>
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">FIR Request Vide T/O No. : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.firNo}</span></div>
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">FIR Request T/O Dated : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.firDated)}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.noticeNo}</span></div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.noticeDated)}</span></div>
+          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">FIR Request Vide T/O No. : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.firNo}</span></div>
+          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">FIR Request T/O Dated : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.firDated)}</span></div>
         </div>
         <div className="flex justify-start gap-4">
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">Registered FIR No. : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.registeredFirNo}</span></div>
-          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.registeredFirDated)}</span></div>
-          <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Name Of Police Station : -</span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold overflow-hidden">{!data.registeredFirNo ? `${data.policeStation || '____________________'} (PENDING FIR)` : data.policeStation}</span></div>
+          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">Registered FIR No. : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.registeredFirNo}</span></div>
+          <div className="flex gap-1 items-end"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold">{formatDate(data.registeredFirDated)}</span></div>
+          <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Name Of Police Station : -</span><span className="border-b border-black whitespace-nowrap text-black font-bold overflow-hidden">{(data.firNo && !data.registeredFirNo) ? (
+            <>
+              {data.policeStation || '____________________'} <span className="text-red-600">(PENDING FIR)</span>
+            </>
+          ) : (data.policeStation || '____________________')}</span></div>
         </div>
         <div className="flex gap-3 items-start">
           <span className="whitespace-nowrap font-bold">Discrepancy : -</span>
-          <span className="border-b border-black text-indigo-600 font-bold inline">{formatDiscrepancies(data.discrepancy)}</span>
+          <span className={cn("border-b border-black font-bold inline", formatDiscrepancies(data.discrepancy).toUpperCase().includes('REPLACED') ? "text-red-600" : "text-black")}>{formatDiscrepancies(data.discrepancy)}</span>
         </div>
         <div className="flex justify-between gap-4">
           {data.noOfAC && parseInt(data.noOfAC) > 0 ? (
             <div className="flex gap-3 items-end">
               <span className="whitespace-nowrap">NO of AC : -</span>
-              <span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">
+              <span className="border-b border-black whitespace-nowrap text-black font-bold">
                 {data.noOfAC} {parseInt(data.noOfAC || '0') === 1 ? 'No.' : 'Nos.'} 
                 {(() => {
                   const split = parseInt(data.splitAcCount || '0');
@@ -292,13 +314,13 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               </span>
             </div>
           ) : <div />}
-          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Detection Bill Period : -</span><span className="border-b border-black text-center whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.detectionPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.detectionPeriodTo)}</span> (<span className="border-b border-black text-center whitespace-nowrap text-indigo-600 font-bold">{data.detectionPeriodMonths}</span> Months)</div>
+          <div className="flex gap-3 items-end"><span className="whitespace-nowrap">Detection Bill Period : -</span><span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodTo)}</span> (<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.detectionPeriodMonths}</span> Months)</div>
         </div>
         {data.noOfAC && parseInt(data.noOfAC) > 0 && (data.acPeriodFrom || data.acPeriodTo) && (
           <div className="flex justify-between gap-4">
             <div className="flex gap-3 items-end">
               <span className="whitespace-nowrap">AC Period : -</span>
-              <span className="border-b border-black text-center whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.acPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-indigo-600 font-bold">{formatDate(data.acPeriodTo)}</span> (<span className="border-b border-black text-center whitespace-nowrap text-indigo-600 font-bold">{data.acPeriodMonths}</span> Months)
+              <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodTo)}</span> (<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.acPeriodMonths}</span> Months)
             </div>
           </div>
         )}
@@ -371,10 +393,43 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
               const getReadingVal = (yearStr: string) => {
                 const key = `${month} ${yearStr}`;
+                
+                // Check if this month is marked as "DF" in monthWiseUnits (either reading or units)
+                const u = (data.monthWiseUnits || []).find(item => {
+                  if (!item.month) return false;
+                  const parts = item.month.split(/[- ]/);
+                  if (parts.length < 2) return false;
+                  const uMonth = parts[0].trim().toUpperCase();
+                  const uYear = parts[1].trim();
+                  return uMonth.startsWith(month) && (uYear === yearStr || uYear === `20${yearStr}`);
+                });
+
+                if (u && (u.units?.toString().toUpperCase().includes('DF') || u.reading?.toString().toUpperCase().includes('DF'))) {
+                  return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                }
+
+                // Check current billing month input
+                if (isMatch(yearStr)) {
+                  const presStr = data.presentReading?.toString().toUpperCase() || '';
+                  if (presStr === 'DF' || presStr.includes('DF')) {
+                    return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  }
+                }
+
+                // Check previous billing month input (if we were on previousReading)
+                if (isPreviousMatch(yearStr)) {
+                  const prevStr = data.previousReading?.toString().toUpperCase() || '';
+                  if (prevStr === 'DF' || prevStr.includes('DF')) {
+                    return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                  }
+                }
+
                 const val = calculatedReadings[key];
-                if (val !== undefined && !isNaN(val)) {
-                  const isBold = isMatch(yearStr) || isPreviousMatch(yearStr);
-                  return <span className={cn(isBold && "text-indigo-600 font-bold")}>{Math.round(val).toLocaleString()}</span>;
+                if (val === -1) {
+                  return <span className="text-red-600 font-bold text-[12px] leading-none whitespace-nowrap">Est. Def.</span>;
+                }
+                if (val !== undefined && !isNaN(val) && val > 0) {
+                  return <span className="text-black font-bold">{Math.round(val).toString()}</span>;
                 }
                 return '';
               };
@@ -411,11 +466,18 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
               const getAdjVal = (yearStr: string) => {
                 const isUnderlined = isInDetectionPeriod(month, yearStr);
-                const classes = isUnderlined ? 'text-indigo-600 underline italic font-bold text-[10px]' : 'text-indigo-600 font-bold';
+                const baseClasses = cn(
+                  "font-bold",
+                  isUnderlined && "underline italic text-[10px]"
+                );
 
                 if (isMatch(yearStr)) {
                   const val = data.difference;
-                  return (val === undefined || val === null || val === '') ? '' : <span className={classes}>{val}</span>;
+                  const valStr = val?.toString().toUpperCase() || '';
+                  if (valStr === 'DF' || valStr.includes('DF')) {
+                    return <span className={cn(baseClasses, "text-red-600")}>Est. Def.</span>;
+                  }
+                  return (val === undefined || val === null || val === '' || val.toString() === '0') ? '' : <span className={cn(baseClasses, "text-black")}>{val}</span>;
                 }
                 const u = (data.monthWiseUnits || []).find(item => {
                   if (!item.month) return false;
@@ -426,8 +488,15 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   return uMonth.startsWith(month) && (uYear === yearStr || uYear === `20${yearStr}`);
                 });
                 
-                if (u?.units !== undefined && u.units !== 'N/A' && u.units !== '') {
-                  return <span className={classes}>{u.units}</span>;
+                if (u) {
+                  const unitsStr = u.units?.toString().toUpperCase() || '';
+                  const readingStr = u.reading?.toString().toUpperCase() || '';
+                  if (unitsStr.includes('DF') || readingStr.includes('DF')) {
+                    return <span className={cn(baseClasses, "text-red-600 text-[12px] leading-none whitespace-nowrap")}>Est. Def.</span>;
+                  }
+                  if (unitsStr !== '' && unitsStr !== '0' && unitsStr !== 'N/A') {
+                    return <span className={cn(baseClasses, "text-black")}>{u.units}</span>;
+                  }
                 }
                 return '';
               };
@@ -483,14 +552,14 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               ]).map((item, idx) => (
                 <tr key={idx} className="border-b border-black h-[18px]">
                   <td className="border-r border-black text-left pl-2 py-0.5">{item.name}</td>
-                  <td className="border-r border-black text-indigo-600 font-bold py-0.5">{item.qty}</td>
-                  <td className="border-r border-black text-indigo-600 font-bold py-0.5">{item.watts}</td>
-                  <td className="text-indigo-600 font-bold py-0.5">{item.total}</td>
+                  <td className="border-r border-black text-black font-bold py-0.5">{item.qty}</td>
+                  <td className="border-r border-black text-black font-bold py-0.5">{item.watts}</td>
+                  <td className="text-black font-bold py-0.5">{item.total}</td>
                 </tr>
               ))}
               <tr className="font-bold">
                 <td className="border-r border-black text-right pr-2 py-1" colSpan={3}>Total C/Load : -</td>
-                <td className={cn("font-bold py-1", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-indigo-600 animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</td>
+                <td className={cn("font-bold py-1", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-black animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</td>
               </tr>
             </tbody>
           </table>
@@ -504,9 +573,11 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
             <h3 className="font-bold underline text-[9px]">Remarks : -</h3>
             <div className="flex-1 overflow-y-auto min-h-[30px] max-h-[100px] mt-1">
               {data.remarks?.split('\n').map((line, i) => {
-                const isSpecial = line.includes('Additional') && line.includes('Units charged');
+                const lowerLine = line.toLowerCase();
+                const isSpecial = lowerLine.includes('additional') && lowerLine.includes('units charged') || 
+                                lowerLine.includes('detection bill charged as per connected load');
                 return (
-                  <p key={i} className={cn("text-[9px] whitespace-pre-wrap", isSpecial ? "text-indigo-600 font-bold" : "text-black")}>
+                  <p key={i} className={cn("text-[9px] whitespace-pre-wrap", isSpecial ? "text-red-600 font-bold" : "text-black")}>
                     {line}
                   </p>
                 );
@@ -541,8 +612,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       <div className="mt-2 space-y-1.5 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex justify-between gap-4">
-            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Connected Load : </span><span className={cn("border-b border-black whitespace-nowrap font-bold", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-indigo-600 animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
-            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Load Factor : </span><span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.loadFactor}</span></div>
+            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Connected Load : </span><span className={cn("border-b border-black whitespace-nowrap font-bold", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-black animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
+            <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Load Factor : </span><span className="border-b border-black whitespace-nowrap text-black font-bold">{data.loadFactor}</span></div>
             <div className="flex gap-1 items-end min-w-0"><span className="whitespace-nowrap">Units Already Charged : </span><span className="border-b border-black whitespace-nowrap">{parseInt(data.unitsAlreadyCharged || '0').toLocaleString()}</span></div>
             <div className="flex gap-1 items-end min-w-0">
               <span className="whitespace-nowrap">Units Assessed : </span>
@@ -571,7 +642,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   {data.discrepancy?.includes('Meter Slow By') ? `Net units to be charged as per slowness ${data.meterSlowBy || ''}` : 'G. Total units to be charged'} : -
                 </span>
                 <span className={cn(
-                  "text-sm text-indigo-600 border-b-[3px] border-double border-black",
+                  "text-sm text-black border-b-[3px] border-double border-black",
                   (data.feederName || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' && "font-bold"
                 )}>
                   {
@@ -581,7 +652,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   }
                 </span>
               </span>
-              <span className="text-[10px] text-indigo-600 flex items-center ml-2">
+              <span className="text-[10px] text-black flex items-center ml-2">
                 <span className="font-bold border-b border-black">
                   = ({parseInt(data.unitsAssessed || '0').toLocaleString()} - {parseInt(data.unitsAlreadyCharged || '0').toLocaleString()}
                   {(!data.unitsOfAcPeriod || parseInt(data.unitsOfAcPeriod) === 0) ? '' : ` + ${parseInt(data.unitsOfAcPeriod).toLocaleString()}`})
@@ -635,8 +706,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
         <div className="space-y-2">
           <div className="flex justify-between border-b border-neutral-100 pb-1 mb-2">
-            <div className="flex gap-2 items-end"><span className="whitespace-nowrap font-bold">Notice No. :</span><span className="border-b border-black text-indigo-600 font-bold px-1">{data.noticeNo || '__________'}</span></div>
-            <div className="flex gap-2 items-end"><span className="whitespace-nowrap font-bold">Dated :</span><span className="border-b border-black text-indigo-600 font-bold px-1">{formatDate(data.noticeDated)}</span></div>
+            <div className="flex gap-2 items-end"><span className="whitespace-nowrap font-bold">Notice No. :</span><span className="border-b border-black text-black font-bold px-1">{data.noticeNo || '__________'}</span></div>
+            <div className="flex gap-2 items-end"><span className="whitespace-nowrap font-bold">Dated :</span><span className="border-b border-black text-black font-bold px-1">{formatDate(data.noticeDated)}</span></div>
           </div>
 
           <div className="font-bold uppercase">
@@ -644,13 +715,13 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           </div>
 
           <div className="flex flex-col items-start gap-1.5">
-            <span className="border-b border-black text-indigo-600 font-bold uppercase">{data.name}</span>
-            <span className="border-b border-black text-indigo-600 font-bold uppercase">{data.address}</span>
+            <span className="border-b border-black text-black font-bold uppercase">{data.name}</span>
+            <span className="border-b border-black text-black font-bold uppercase">{data.address}</span>
           </div>
 
           <div className="flex gap-3 items-end">
             <span className="whitespace-nowrap">Tariff : -</span>
-            <span className="border-b border-black text-indigo-600 font-bold px-1">{data.tariff}</span>
+            <span className="border-b border-black text-black font-bold px-1">{data.tariff}</span>
           </div>
 
           <div className="flex gap-4 items-baseline mt-4">
@@ -663,8 +734,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <div className="space-y-4 text-justify leading-normal mt-4">
             <p className="indent-8">
               The premises of your above Subjected referred no was got checked by the 
-              <span className="border-b border-black font-bold text-indigo-600 mx-1">{Array.isArray(data.checkedBy) && data.checkedBy.length > 0 ? data.checkedBy.join(', ') : '____________________'}</span> on 
-              <span className="border-b border-black font-bold text-indigo-600 mx-1">{data.dateOfChecking ? formatDate(data.dateOfChecking) : '__________'}</span> and it was noticed that you were found dishonestly illegal abstracting of electricity through following method:
+              <span className="border-b border-black font-bold text-black mx-1">{Array.isArray(data.checkedBy) && data.checkedBy.length > 0 ? data.checkedBy.join(', ') : '____________________'}</span> on 
+              <span className="border-b border-black font-bold text-black mx-1">{data.dateOfChecking ? formatDate(data.dateOfChecking) : '__________'}</span> and it was noticed that you were found dishonestly illegal abstracting of electricity through following method:
             </p>
             <div className="text-center w-full my-2">
               <span className="font-bold text-xs uppercase border-b-2 border-black pb-0.5">
@@ -730,7 +801,11 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         <div className="text-[10px] md:text-sm">
           <p>To : -</p>
           <p className="font-bold">The SHO : -</p>
-          <p>Police Station : - <span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{!data.registeredFirNo ? `${data.policeStation || '____________________'} (PENDING FIR)` : (data.policeStation || '____________________')}</span>,</p>
+          <p>Police Station : - <span className="border-b border-black whitespace-nowrap text-black font-bold">{(data.firNo && !data.registeredFirNo) ? (
+            <>
+              {data.policeStation || '____________________'} <span className="text-red-600">(PENDING FIR)</span>
+            </>
+          ) : (data.policeStation || '____________________')}</span>,</p>
           <p>Lahore : -</p>
         </div>
         <div className="text-[10px] md:text-sm text-right">
@@ -746,15 +821,15 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         <p>Respected Sir,</p>
         
         <p className="indent-4 md:indent-8">
-          I, <span className="font-bold border-b border-black text-indigo-600">{data.employeeName}</span>, working as <span className="font-bold border-b border-black text-indigo-600">{data.employeeDesignation}</span> in LESCO, state that on <span className="font-bold border-b border-black text-indigo-600">{formatDate(data.dateOfChecking)}</span>, a checking team comprising of <span className="font-bold border-b border-black text-indigo-600">{Array.isArray(data.checkedBy) ? data.checkedBy.join(', ') : data.checkedBy}</span> visited the premises of <span className="font-bold border-b border-black text-indigo-600">{data.name}</span> located at <span className="font-bold border-b border-black text-indigo-600">{data.address}</span>.
+          I, <span className="font-bold border-b border-black text-black">{data.employeeName}</span>, working as <span className="font-bold border-b border-black text-black">{data.employeeDesignation}</span> in LESCO, state that on <span className="font-bold border-b border-black text-black">{formatDate(data.dateOfChecking)}</span>, a checking team comprising of <span className="font-bold border-b border-black text-black">{Array.isArray(data.checkedBy) ? data.checkedBy.join(', ') : data.checkedBy}</span> visited the premises of <span className="font-bold border-b border-black text-black">{data.name}</span> located at <span className="font-bold border-b border-black text-black">{data.address}</span>.
         </p>
 
         <p className="indent-4 md:indent-8">
-          During the inspection, it was observed that the accused was stealing electricity directly from the LESCO lines/meter by means of: <span className="font-bold border-b border-black text-indigo-600">{formatDiscrepancies(data.discrepancy)}</span>.
+          During the inspection, it was observed that the accused was stealing electricity directly from the LESCO lines/meter by means of: <span className="font-bold border-b border-black text-black">{formatDiscrepancies(data.discrepancy)}</span>.
         </p>
 
         <p className="indent-4 md:indent-8">
-          The connected load at the time of checking was found to be <span className={cn("font-bold border-b border-black whitespace-nowrap", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-indigo-600 animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span> against a sanctioned load of <span className="font-bold border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span>. The meter reading was <span className="font-bold border-b border-black whitespace-nowrap text-indigo-600 font-bold">{data.presentReadingAtSite || data.presentReading}</span>.
+          The connected load at the time of checking was found to be <span className={cn("font-bold border-b border-black whitespace-nowrap", parseFloat(data.connectedLoad?.toString().replace(/[^0-9.]/g, '') || '0') > 6 ? "text-black animate-blink" : "text-black")}>{data.connectedLoad}{data.connectedLoad && !data.connectedLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span> against a sanctioned load of <span className="font-bold border-b border-black whitespace-nowrap text-black font-bold">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span>. The meter reading was <span className="font-bold border-b border-black whitespace-nowrap text-black font-bold">{formatDF(data.presentReadingAtSite || data.presentReading)}</span>.
         </p>
 
         <p className="indent-4 md:indent-8">
@@ -768,7 +843,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         <div className="text-[10px] md:text-sm">
           <p className="font-bold">Witnesses : -</p>
           {data.witnesses.map((w, i) => (
-            <p key={i}>{i + 1}. <span className="border-b border-black whitespace-nowrap text-indigo-600 font-bold">{w || '____________________________'}</span></p>
+            <p key={i}>{i + 1}. <span className="border-b border-black whitespace-nowrap text-black font-bold">{w || '____________________________'}</span></p>
           ))}
           {data.witnesses.length === 0 && (
             <>

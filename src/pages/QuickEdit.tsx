@@ -1,7 +1,7 @@
 import { safeStringify } from "../lib/safeStringify";
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Save, FileText, Activity, ShieldAlert, Eye, Loader2, CheckCircle, AlertCircle, Hash, User, MapPin, Zap, Home, PlusCircle, X, ZoomIn, ZoomOut, RotateCcw, Scan } from 'lucide-react';
+import { ArrowLeft, Printer, Save, FileText, Activity, ShieldAlert, Eye, Loader2, CheckCircle, AlertCircle, Hash, User, MapPin, Zap, Home, PlusCircle, X, ZoomIn, ZoomOut, RotateCcw, Scan, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { DetectionCase, BillData } from '../types';
@@ -79,6 +79,7 @@ export default function QuickEdit() {
       meterMake: baseCase?.meterMake || '',
       meterType: baseCase?.meterType || '',
       capacity: baseCase?.capacity || '',
+      meterStatus: baseCase?.meterStatus || baseCase?.billData?.meterStatus || '',
       noticeNo: baseCase?.noticeNo || '',
       noticeDated: baseCase?.noticeDated || '',
       firNo: baseCase?.firNo || '',
@@ -482,7 +483,7 @@ export default function QuickEdit() {
         {/* Editor Panel */}
         <div className="w-full lg:w-1/3 bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-y-auto p-4 sm:p-6 space-y-8">
           <section className="space-y-4">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-2">Consumer Info</h3>
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest border-b border-neutral-100 pb-2">Consumer Info</h3>
             <div className="grid gap-4">
               <InputField label="Consumer Name : -" value={data.name} onChange={(v) => handleInputChange('name', v)} />
               <InputField label="Address : -" value={data.address} onChange={(v) => handleInputChange('address', v)} />
@@ -499,7 +500,7 @@ export default function QuickEdit() {
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-2">Detection Details</h3>
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest border-b border-neutral-100 pb-2">Detection Details</h3>
             <div className="grid gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Date of Checking : -" type="date" value={data.dateOfChecking} onChange={(v) => handleInputChange('dateOfChecking', v)} />
@@ -515,26 +516,40 @@ export default function QuickEdit() {
                 <InputField label="Capacity : -" value={data.capacity} onChange={(v) => handleInputChange('capacity', v)} />
               </div>
               <div className="grid grid-cols-1 gap-4">
+                <InputField 
+                  label="Meter Status : -" 
+                  value={data.meterStatus} 
+                  onChange={(v) => handleInputChange('meterStatus', v)}
+                  className={cn(data.meterStatus?.toUpperCase()?.includes('REPLACED') && "text-red-600 font-bold")}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4">
                 <InputField label="Present Reading : -" value={data.presentReading} onChange={(v) => handleInputChange('presentReading', v)} />
               </div>
               <InputField 
                 label="Difference : -" 
                 value={(() => {
-                  const present = parseInt(data.presentReading?.toString().replace(/,/g, '') || '0');
-                  const previous = parseInt(data.previousReading?.toString().replace(/,/g, '') || '0');
-                  return !isNaN(present) && !isNaN(previous) ? (present - previous).toLocaleString() : '0';
+                  const presVal = data.presentReading?.toString().toUpperCase() || '';
+                  const prevVal = data.previousReading?.toString().toUpperCase() || '';
+                  if (presVal.includes('DF') || prevVal.includes('DF')) return 'DF';
+
+                  const present = parseInt(presVal.replace(/,/g, '') || '0');
+                  const previous = parseInt(prevVal.replace(/,/g, '') || '0');
+                  const diff = present - previous;
+                  return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
                 })()} 
                 onChange={() => {}}
                 readOnly 
+                className="font-bold text-black"
               />
               <InputField label="Discrepancy : -" value={data.discrepancy?.join(', ')} onChange={(v) => handleInputChange('discrepancy', v.split(',').map((s: string) => s.trim()))} />
               {data.discrepancy?.includes('Meter Slow By') && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">Meter Slow By Percentage : -</label>
+                  <label className="text-[10px] font-bold text-black uppercase tracking-wider ml-1">Meter Slow By Percentage : -</label>
                   <select
                     value={data.meterSlowBy || ''}
                     onChange={(e) => handleInputChange('meterSlowBy', e.target.value)}
-                    className="w-full bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black font-bold text-black transition-all"
                   >
                     <option value="">Select Percentage...</option>
                     {Array.from({ length: 100 }, (_, i) => i + 1).map(num => (
@@ -555,7 +570,7 @@ export default function QuickEdit() {
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-2">Billing & Notices</h3>
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest border-b border-neutral-100 pb-2">Billing & Notices</h3>
             <div className="grid gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Notice No : -" value={data.noticeNo} onChange={(v) => handleInputChange('noticeNo', v)} />
@@ -571,11 +586,11 @@ export default function QuickEdit() {
               </div>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">Name Of Police Station : -</label>
+                  <label className="text-[10px] font-bold text-black uppercase tracking-wider ml-1">Name Of Police Station : -</label>
                   <select 
                     value={data.policeStation} 
                     onChange={(e) => handleInputChange('policeStation', e.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black transition-all"
                   >
                     <option value="">Select Police Station...</option>
                     <option value="Kot Radha Kishan">Kot Radha Kishan</option>
@@ -612,7 +627,7 @@ export default function QuickEdit() {
                     )}
                   />
                   {data.detectionPeriodTo && !isMonthAvailableInBill(data.detectionPeriodTo) && (
-                    <p className="text-[9px] text-indigo-500 font-medium ml-1 flex items-center gap-1">
+                    <p className="text-[9px] text-red-600 font-bold ml-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" /> Month data missing in bill
                     </p>
                   )}
@@ -644,7 +659,7 @@ export default function QuickEdit() {
                   value={data.netUnitsToBeCharged} 
                   onChange={(v) => handleInputChange('netUnitsToBeCharged', v)} 
                   className={cn(
-                    data.netUnitsToBeCharged === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' ? "text-indigo-600 font-bold" : "text-black"
+                    data.netUnitsToBeCharged === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' ? "text-red-600 font-bold" : "text-black"
                   )} 
                 />
               </div>
@@ -652,11 +667,84 @@ export default function QuickEdit() {
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-2">Remarks</h3>
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest border-b border-neutral-100 pb-2">Consumption History</h3>
+            <div className="overflow-x-auto rounded-xl border border-neutral-200">
+              <table className="w-full text-[10px]">
+                <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
+                  <tr>
+                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
+                    <th className="px-2 py-1 border-r border-neutral-200 w-auto text-indigo-600">Reading</th>
+                    <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
+                    <th className="px-2 py-1 text-center w-1 whitespace-nowrap">
+                      <Plus className="w-3 h-3 cursor-pointer hover:text-indigo-600" onClick={() => {
+                        const units = [...(data.billData?.monthWiseUnits || [])];
+                        units.unshift({ month: '', reading: '', units: '', bill: '', adj: '', payment: '' });
+                        handleInputChange('billData', { ...data.billData, monthWiseUnits: units });
+                      }} />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {(data.billData?.monthWiseUnits || []).map((item, index) => (
+                    <tr key={index}>
+                      <td className="px-2 py-1 border-r border-neutral-200">
+                        <input 
+                          type="text" 
+                          value={item.month || ''} 
+                          onChange={(e) => {
+                            const newUnits = [...(data.billData?.monthWiseUnits || [])];
+                            newUnits[index].month = e.target.value;
+                            handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                          }}
+                          className="w-full bg-transparent focus:outline-none min-w-[50px] font-bold text-neutral-700"
+                          placeholder="Month"
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-r border-neutral-200 text-indigo-600 font-bold">
+                        <input 
+                          type="text" 
+                          value={item.reading || ''} 
+                          onChange={(e) => {
+                            const newUnits = [...(data.billData?.monthWiseUnits || [])];
+                            newUnits[index].reading = e.target.value;
+                            handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                          }}
+                          className="w-full bg-transparent focus:outline-none min-w-[50px] text-indigo-600 font-bold"
+                          placeholder="Reading"
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-r border-neutral-200">
+                        <input 
+                          type="text" 
+                          value={item.units || ''} 
+                          onChange={(e) => {
+                            const newUnits = [...(data.billData?.monthWiseUnits || [])];
+                            newUnits[index].units = e.target.value;
+                            handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                          }}
+                          className="w-full bg-transparent focus:outline-none min-w-[40px] font-bold text-neutral-900"
+                          placeholder="Units"
+                        />
+                      </td>
+                      <td className="px-1 py-1 text-center">
+                        <Trash2 className="w-3 h-3 text-red-400 cursor-pointer hover:text-red-600" onClick={() => {
+                          const newUnits = (data.billData?.monthWiseUnits || []).filter((_, i) => i !== index);
+                          handleInputChange('billData', { ...data.billData, monthWiseUnits: newUnits });
+                        }} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h3 className="text-xs font-bold text-black uppercase tracking-widest border-b border-neutral-100 pb-2">Remarks</h3>
             <textarea
               value={data.remarks}
               onChange={(e) => handleInputChange('remarks', e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 min-h-[100px]"
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-sm focus:outline-none focus:border-black min-h-[100px] font-bold text-black"
               placeholder="Enter additional remarks..."
             />
           </section>
@@ -714,7 +802,14 @@ export default function QuickEdit() {
               <ProformaTemplates
                 ref={printRef}
                 type={activeTemplate}
-                data={data as any}
+                data={{
+                  ...data,
+                  monthWiseUnits: data.billData?.monthWiseUnits || [],
+                  billingMonth: data.billData?.billingMonth || '',
+                  difference: data.billData?.unitsConsumed?.toString() || data.billData?.difference || data.difference,
+                  presentReading: data.presentReading || data.billData?.presentReading || '',
+                  previousReading: data.previousReading || data.billData?.previousReading || '',
+                } as any}
               />
             </motion.div>
           </div>
@@ -731,14 +826,14 @@ function InputField({ label, value, onChange, type = "text", readOnly = false, m
 
   return (
     <div className="space-y-1">
-      <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">{label}</label>
+      <label className="text-[10px] font-bold text-black uppercase tracking-wider ml-1">{label}</label>
       {type === 'date' ? (
         <CustomDatePicker
           selected={value}
           onChange={onChange}
           maxDate={max ? new Date(max) : new Date()}
           disabled={readOnly}
-          className={className}
+          className={cn("font-bold text-black", className)}
         />
       ) : (
         <input
@@ -749,7 +844,7 @@ function InputField({ label, value, onChange, type = "text", readOnly = false, m
           min={min}
           max={max || defaultMax}
           className={cn(
-            "w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-all",
+            "w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-black transition-all font-bold text-black",
             readOnly ? "bg-neutral-100 cursor-not-allowed" : "bg-neutral-50",
             className
           )}

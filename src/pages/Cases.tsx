@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, RefObject } from 'react';
+import React, { useEffect, useState, useRef, RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Download, FileText, ChevronRight, Hash, Calendar, User, Loader2, X, MapPin, Zap, Activity, Home, ShieldAlert, ExternalLink, Users, Printer, Eye, Trash2, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -48,6 +48,15 @@ export default function Cases() {
     if (ref) {
         printTemplate(ref);
     }
+  };
+
+  const formatDF = (val: any) => {
+    if (val === undefined || val === null || val === '') return '';
+    const str = val.toString();
+    if (str.toUpperCase() === 'DF') {
+      return <span className="text-red-700 font-bold">Est. Def.</span>;
+    }
+    return val;
   };
 
   useEffect(() => {
@@ -350,6 +359,18 @@ export default function Cases() {
                     <DetailItem icon={Users} label="Checked By : -" value={Array.isArray(selectedCase.checkedBy) ? selectedCase.checkedBy.join(', ') : selectedCase.checkedBy} />
                     <DetailItem icon={Activity} label="Type : -" value={selectedCase.meterType} />
                     <DetailItem icon={Home} label="Capacity : -" value={selectedCase.capacity} />
+                    <DetailItem 
+                      icon={Activity} 
+                      label="Meter Status : -" 
+                      value={formatDF(selectedCase.meterStatus || selectedCase.billData?.meterStatus || 'N/A')} 
+                      className={cn(
+                        (selectedCase.meterStatus?.toUpperCase()?.includes('REPLACED') || 
+                         selectedCase.billData?.meterStatus?.toUpperCase()?.includes('REPLACED') ||
+                         selectedCase.meterStatus?.toUpperCase() === 'DF' ||
+                         selectedCase.billData?.meterStatus?.toUpperCase() === 'DF') && 
+                        "text-red-600 font-bold"
+                      )}
+                    />
                     <DetailItem icon={Zap} label="Present Reading : -" value={selectedCase.presentReading} />
                     <DetailItem icon={Zap} label="Present Reading at Site : -" value={selectedCase.presentReadingAtSite || 'N/A'} />
                     <DetailItem icon={Hash} label="Meter No. : -" value={selectedCase.meterNumber || 'N/A'} />
@@ -360,7 +381,11 @@ export default function Cases() {
                     <DetailItem icon={Activity} label="AC Period To : -" value={selectedCase.acPeriodTo || 'N/A'} />
                     <DetailItem icon={Activity} label="AC Period Months : -" value={selectedCase.acPeriodMonths || 'N/A'} />
                     <DetailItem icon={Activity} label="Units of AC Period : -" value={selectedCase.unitsOfAcPeriod || 'N/A'} />
-                    <DetailItem icon={MapPin} label="Police Station : -" value={!selectedCase.registeredFirNo ? `${selectedCase.policeStation || 'N/A'} (PENDING FIR)` : (selectedCase.policeStation || 'N/A')} />
+                    <DetailItem icon={MapPin} label="Police Station : -" value={(selectedCase.firNo && !selectedCase.registeredFirNo) ? (
+                      <>
+                        {selectedCase.policeStation || 'N/A'} <span className="text-red-100 bg-red-600 px-1 rounded ml-1 animate-pulse">(PENDING FIR)</span>
+                      </>
+                    ) : (selectedCase.policeStation || 'N/A')} />
                   </div>
                 </div>
               </div>
@@ -539,15 +564,15 @@ export default function Cases() {
   );
 }
 
-function DetailItem({ icon: Icon, label, value }: { icon: any, label: string, value: string }) {
+function DetailItem({ icon: Icon, label, value, className }: { icon: any, label: string, value: React.ReactNode, className?: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="bg-neutral-50 p-2 rounded-lg text-neutral-400">
+      <div className="bg-neutral-50 p-2 rounded-lg text-black">
         <Icon className="w-4 h-4" />
       </div>
-      <div>
-        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-medium text-neutral-900 border-b border-neutral-200 inline-block whitespace-nowrap">{value}</p>
+      <div className="min-w-0">
+        <p className="text-[10px] text-black font-bold uppercase tracking-wider">{label}</p>
+        <p className={cn("text-sm font-bold text-black border-b border-neutral-200 inline-block whitespace-nowrap", className)}>{value}</p>
       </div>
     </div>
   );

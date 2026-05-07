@@ -40,6 +40,7 @@ export async function extractBillData(base64Image: string) {
 - customerId: e.g., "01-12345-6789123"
 - tariff: e.g., "A-1a(01)"
 - billingMonth: month and year, e.g., "MAR 26"
+- consumedUnits: number only (Total units consumed in this month)
 - currentBill: numeric value only (preserve decimals, e.g. 36032.31)
 - deferredAmount: numeric value only (preserve decimals, e.g. 0.00)
 - presentReading: number only
@@ -52,6 +53,7 @@ export async function extractBillData(base64Image: string) {
 
 === RULES ===
 - If a field is missing, use "N/A".
+- The "consumedUnits" field is very important. It is usually labeled as "Units" or "Consumed Units" for the current billing month.
 - Return ONLY the JSON object. Do not include any commentary or other text.` }
           ]
         }
@@ -68,6 +70,7 @@ export async function extractBillData(base64Image: string) {
             customerId: { type: Type.STRING },
             tariff: { type: Type.STRING },
             billingMonth: { type: Type.STRING },
+            consumedUnits: { type: Type.STRING },
             currentBill: { type: Type.STRING },
             deferredAmount: { type: Type.STRING },
             presentReading: { type: Type.STRING },

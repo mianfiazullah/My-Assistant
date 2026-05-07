@@ -22,6 +22,7 @@ export interface MonthWiseUnit {
   bill?: number | string;
   adj?: string | number;
   payment?: number | string;
+  reading?: string | number;
 }
 
 export interface BillData {
@@ -69,6 +70,7 @@ export interface DetectionCase {
   checkedBy: string[];
   meterType: string;
   capacity: string;
+  meterStatus?: string;
   presentReading: string;
   presentReadingAtSite?: string;
   previousReading: string;

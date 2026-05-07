@@ -234,8 +234,8 @@ export default function Dashboard() {
               </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live</span>
             </div>
-            <p className="text-sm font-bold text-slate-500 mb-1">{stat.label}</p>
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-slate-900">{stat.value}</h3>
+            <p className="text-sm font-bold text-black mb-1">{stat.label}</p>
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-black">{stat.value}</h3>
           </motion.div>
         ))}
       </div>
@@ -255,7 +255,7 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left whitespace-nowrap">
                 <thead>
-                  <tr className="bg-slate-50/50 text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold">
+                  <tr className="bg-slate-50/50 text-black text-[10px] uppercase tracking-[0.2em] font-bold">
                     <th className="px-8 py-5">Ref Number</th>
                     <th className="px-8 py-5">Consumer</th>
                     <th className="px-8 py-5">Date</th>
@@ -280,12 +280,12 @@ export default function Dashboard() {
                   ) : (
                     recentCases.map((item, i) => (
                       <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-8 py-5 font-mono text-xs font-bold text-slate-900">{item.billData.referenceNumber}</td>
+                        <td className="px-8 py-5 font-mono text-xs font-bold text-black">{item.billData.referenceNumber}</td>
                         <td className="px-8 py-5">
-                          <p className="text-sm font-bold text-slate-900">{item.billData.consumerName}</p>
-                          <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{item.billData.address}</p>
+                          <p className="text-sm font-bold text-black">{item.billData.consumerName}</p>
+                          <p className="text-[10px] text-black font-medium truncate max-w-[200px]">{item.billData.address}</p>
                         </td>
-                        <td className="px-8 py-5 text-sm font-medium text-slate-500">{format(new Date(item.createdAt), 'MMM d, yyyy')}</td>
+                        <td className="px-8 py-5 text-sm font-bold text-black">{format(new Date(item.createdAt), 'MMM d, yyyy')}</td>
                         <td className="px-8 py-5">
                           <span className={cn(
                             "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
@@ -708,11 +708,11 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-6">
-                      <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Consumer & Detection Details</h3>
+                      <h3 className="text-xs font-bold text-black uppercase tracking-widest">Consumer & Detection Details</h3>
                       <div className="grid grid-cols-1 gap-4">
                         {/* Consumer Info */}
                         <div className="space-y-3">
-                          <p className="text-[10px] font-bold text-neutral-400 uppercase">Consumer Info</p>
+                          <p className="text-[10px] font-bold text-black uppercase">Consumer Info</p>
                           {[
                             { key: 'name', label: 'Consumer Name' },
                             { key: 'address', label: 'Address' },
@@ -723,7 +723,7 @@ export default function Dashboard() {
                             { key: 'sanctionLoad', label: 'Sanction Load' },
                           ].map((field) => (
                             <div key={field.key}>
-                              <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">{field.label}</label>
+                              <label className="block text-[10px] font-bold text-black uppercase mb-1">{field.label}</label>
                               <input
                                 type="text"
                                 value={previewDoc.data[field.key] || ''}
@@ -731,7 +731,7 @@ export default function Dashboard() {
                                   ...previewDoc,
                                   data: { ...previewDoc.data, [field.key]: e.target.value }
                                 })}
-                                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
                               />
                             </div>
                           ))}
@@ -745,7 +745,7 @@ export default function Dashboard() {
                             { key: 'employeeDesignation', label: 'Designation' },
                           ].map((field) => (
                             <div key={field.key}>
-                              <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">{field.label}</label>
+                              <label className="block text-[10px] font-bold text-black uppercase mb-1">{field.label}</label>
                               <input
                                 type="text"
                                 value={previewDoc.data[field.key] || ''}
@@ -753,7 +753,7 @@ export default function Dashboard() {
                                   ...previewDoc,
                                   data: { ...previewDoc.data, [field.key]: e.target.value }
                                 })}
-                                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
                               />
                             </div>
                           ))}
@@ -761,9 +761,10 @@ export default function Dashboard() {
 
                         {/* Detection Info */}
                         <div className="space-y-3 pt-4 border-t border-neutral-100">
-                          <p className="text-[10px] font-bold text-neutral-400 uppercase">Detection Info</p>
+                          <p className="text-[10px] font-bold text-black uppercase">Detection Info</p>
                           {[
                             { key: 'dateOfChecking', label: 'Date of Checking', type: 'date' },
+                            { key: 'meterStatus', label: 'Meter Status' },
                             { key: 'checkedBy', label: 'Checked By' },
                             { key: 'meterType', label: 'Meter Type' },
                             { key: 'capacity', label: 'Capacity' },
@@ -779,7 +780,8 @@ export default function Dashboard() {
                               getValue: (data: any) => {
                                 const present = parseInt(data.presentReading?.toString().replace(/,/g, '') || '0');
                                 const previous = parseInt(data.previousReading?.toString().replace(/,/g, '') || '0');
-                                return !isNaN(present) && !isNaN(previous) ? (present - previous).toLocaleString() : '0';
+                                const diff = present - previous;
+                                return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
                               }
                             },
                             { key: 'connectedLoad', label: 'Connected Load' },
@@ -800,7 +802,7 @@ export default function Dashboard() {
                             },
                           ].map((field) => (
                             <div key={field.key}>
-                              <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">{field.label}</label>
+                              <label className="block text-[10px] font-bold text-black uppercase mb-1">{field.label}</label>
                               {field.type === 'select' ? (
                                 <select
                                   value={previewDoc.data[field.key] || ''}
@@ -808,7 +810,7 @@ export default function Dashboard() {
                                     ...previewDoc,
                                     data: { ...previewDoc.data, [field.key]: e.target.value }
                                   })}
-                                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
                                 >
                                   <option value="">Select...</option>
                                   {field.options?.map(opt => (
@@ -869,7 +871,11 @@ export default function Dashboard() {
                                       data: newData
                                     });
                                   }}
-                                  className={`w-full ${field.readOnly ? 'bg-neutral-100 cursor-not-allowed' : 'bg-neutral-50'} border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all`}
+                                  className={cn(
+                                    "w-full border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black",
+                                    field.readOnly ? "bg-neutral-100 cursor-not-allowed" : "bg-neutral-50",
+                                    field.key === 'meterStatus' && previewDoc.data.meterStatus?.toUpperCase()?.includes('REPLACED') && "text-red-600"
+                                  )}
                                 />
                               )}
                             </div>
@@ -878,20 +884,20 @@ export default function Dashboard() {
 
                         {/* Discrepancy */}
                         <div className="pt-4 border-t border-neutral-100">
-                          <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Discrepancy (Comma Separated)</label>
+                          <label className="block text-[10px] font-bold text-black uppercase mb-1">Discrepancy (Comma Separated)</label>
                           <textarea
                             value={(Array.isArray(previewDoc.data.discrepancy) ? previewDoc.data.discrepancy : []).join(', ')}
                             onChange={(e) => setPreviewDoc({
                               ...previewDoc,
                               data: { ...previewDoc.data, discrepancy: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
                             })}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all h-20"
+                            className="w-full bg-white border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all h-20 font-bold text-black"
                           />
                         </div>
 
                         {/* Witnesses */}
                         <div className="pt-4 border-t border-neutral-100">
-                          <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Witnesses (Comma Separated)</label>
+                          <label className="block text-[10px] font-bold text-black uppercase mb-1">Witnesses (Comma Separated)</label>
                           <input
                             type="text"
                             value={(Array.isArray(previewDoc.data.witnesses) ? previewDoc.data.witnesses : []).join(', ')}
@@ -899,7 +905,7 @@ export default function Dashboard() {
                               ...previewDoc,
                               data: { ...previewDoc.data, witnesses: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
                             })}
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
                           />
                         </div>
                       </div>
