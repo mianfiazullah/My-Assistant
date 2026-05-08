@@ -47,6 +47,7 @@ export interface BillData {
   subDivisionName?: string;
   feederName?: string;
   meterStatus?: string;
+  advanceUnits?: number;
 }
 
 export interface LoadItem {
@@ -70,7 +71,6 @@ export interface DetectionCase {
   checkedBy: string[];
   meterType: string;
   capacity: string;
-  meterStatus?: string;
   presentReading: string;
   presentReadingAtSite?: string;
   previousReading: string;
@@ -91,7 +91,6 @@ export interface DetectionCase {
   createdAt: string;
   updatedAt?: string;
   firNumber: string;
-  billingMonth?: string;
   noticeNo?: string;
   noticeDated?: string;
   firNo?: string;
@@ -114,6 +113,14 @@ export interface DetectionCase {
   unitsAlreadyCharged?: string;
   netUnitsToBeCharged?: string;
   feederName?: string;
+  grandTotalUnits?: string;
+  referenceNo?: string;
+  billingMonth?: string;
+  subDivisionName?: string;
+  meterStatus?: string;
+  currentBill?: number;
+  deferredAmount?: number;
+  advanceUnits?: number;
   meterSlowBy?: string;
   loadItems?: LoadItem[];
 }

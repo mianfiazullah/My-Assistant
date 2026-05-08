@@ -56,15 +56,18 @@ interface ProformaProps {
     billingMonth?: string;
     photoUrl?: string;
     difference: string;
-    monthWiseUnits?: MonthWiseUnit[];
-    loadItems?: LoadItem[];
+    grandTotalUnits?: string;
+    referenceNo?: string;
     subDivisionName?: string;
     feederName?: string;
-    billData?: BillData;
     meterStatus?: string;
+    advanceUnits?: number;
     currentBill?: number;
     deferredAmount?: number;
     meterNoOnBill?: string;
+    monthWiseUnits?: MonthWiseUnit[];
+    loadItems?: LoadItem[];
+    billData?: BillData;
   };
 }
 
@@ -128,15 +131,16 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     if (val === undefined || val === null || val === '') return null;
     const str = val.toString().toUpperCase();
     if (str.includes('EX')) return 'EX';
-    if (str.includes('MC')) return 'MC';
-    if (str.includes('DF') || str.includes('EST.DEF') || str.includes('EST DEF')) return 'EST.DEF';
+    if (str.includes('MC')) return 'MCO';
+    if (str.includes('EST.DEF') || str.includes('EST DEF') || str.includes('DF')) return 'Est. Def';
+    if (str.includes('P-DISC') || str.includes('PD')) return 'P-DISC';
     return null;
   };
 
   const formatDF = (val: any) => {
     const marker = getMarker(val);
     if (marker) {
-      return <span className={marker === 'EST.DEF' ? 'text-red-600 font-bold' : 'text-black font-bold'}>{marker}</span>;
+      return <span className={['Est. Def', 'MCO', 'P-DISC'].includes(marker) ? 'text-red-600 font-bold' : 'text-black font-bold'}>{marker}</span>;
     }
     return val !== undefined && val !== null ? val : '';
   };
@@ -180,21 +184,28 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       
       if (u) {
         const unitsStr = u.units?.toString().toUpperCase() || '0';
+        const readingStr = u.reading?.toString().toUpperCase() || '';
+        const isEstDef = unitsStr.includes('DF') || unitsStr.includes('EST.DEF') || unitsStr.includes('EST DEF') ||
+                        readingStr.includes('DF') || readingStr.includes('EST.DEF') || readingStr.includes('EST DEF');
+        
         const units = parseInt(unitsStr.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
-        return { units, exists: true };
+        return { units, exists: true, isEstDef };
       }
       
       // If none found in monthWiseUnits, check if it matches the current billing month's difference
       if (m === startMonthName && (y === startYearStr || y === `20${startYearStr}`)) {
         const valStr = data.difference?.toString().toUpperCase() || '0';
         const units = parseInt(valStr.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
-        return { units, exists: true };
+        const isEstDef = valStr.includes('DF') || valStr.includes('EST.DEF') || valStr.includes('EST DEF');
+        return { units, exists: true, isEstDef };
       }
       
-      return { units: 0, exists: false };
+      return { units: 0, exists: false, isEstDef: false };
     };
 
-    const startReading = parseInt(data.presentReading?.toString().replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
+    const presReadStr = data.presentReading?.toString().toUpperCase() || '';
+    const isStartEstDef = presReadStr.includes('DF') || presReadStr.includes('EST.DEF') || presReadStr.includes('EST DEF');
+    const startReading = parseInt(presReadStr.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0') || 0;
     readingsMap[`${months[startMonthIndex]} ${startYear}`] = startReading;
 
     // Backward calculation
@@ -204,12 +215,12 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     
     // If the meter is replaced, the prior units belong to the old meter or a mix,
     // so subtracting them from the new meter's present reading yields incorrect previous readings.
-    if (!data.meterStatus?.toUpperCase()?.includes('REPLACED')) {
+    if (!data.meterStatus?.toUpperCase()?.includes('REPLACED') && !isStartEstDef) {
       const presStr = data.presentReading?.toString().toUpperCase() || '';
       const isPresentMarker = presStr.includes('DF') || presStr.includes('EST.DEF') || presStr.includes('EST DEF') || presStr.includes('MC');
       for (let i = 0; i < 48; i++) {
-        const { units, exists } = getUnitsData(months[bMonth], bYear.toString());
-        if (!exists) break;
+        const { units, exists, isEstDef } = getUnitsData(months[bMonth], bYear.toString());
+        if (!exists || isEstDef) break;
         
         let prevReading = tempReading - units;
 
@@ -277,9 +288,13 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
       <div className="space-y-1.5">
         <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Reference No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.referenceNumber}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Reference No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.referenceNo || data.referenceNumber}</span></div>
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Customer I.D : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.customerId}</span></div>
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Tariff : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.tariff}</span></div>
+        </div>
+        <div className="flex justify-between gap-4">
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Feeder Name : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.feederName}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Sub Division : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.subDivisionName}</span></div>
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Sanctioned Load : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.sanctionLoad}{data.sanctionLoad && !data.sanctionLoad.toString().toUpperCase().includes('KW') ? '-KW' : ''}</span></div>
         </div>
         <div className="flex gap-3 items-start font-bold">
@@ -295,7 +310,10 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         <div className="flex justify-between gap-4">
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterType}</span></div>
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.capacity}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase() === 'DF') ? "text-red-600" : "text-black")}>{formatDF(data.meterStatus)}</span></div>
+          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase().includes('DF') || data.meterStatus?.toUpperCase().includes('MC')) ? "text-red-600" : "text-black")}>{formatDF(data.meterStatus)}</span></div>
+          {data.advanceUnits !== undefined && data.advanceUnits !== 0 && (
+            <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Adv Units : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.advanceUnits}</span></div>
+          )}
         </div>
         <div className="flex justify-between gap-4">
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.noticeNo}</span></div>
@@ -443,7 +461,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   const mP = getMarker(u.payment);
                   const marker = mR || mU || mB || mA || mP;
                   if (marker && marker !== 'EX') {
-                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
+                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", ['Est. Def', 'MCO', 'P-DISC'].includes(marker) ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
                   }
                 }
 
@@ -451,7 +469,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 if (isMatch(yearStr)) {
                   const marker = getMarker(data.presentReading);
                   if (marker && marker !== 'EX') {
-                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
+                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", ['Est. Def', 'MCO', 'P-DISC'].includes(marker) ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
                   }
                 }
 
@@ -459,7 +477,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 if (isPreviousMatch(yearStr)) {
                   const marker = getMarker(data.previousReading);
                   if (marker && marker !== 'EX') {
-                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
+                    return <span className={cn("text-[12px] leading-none whitespace-nowrap", ['Est. Def', 'MCO', 'P-DISC'].includes(marker) ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
                   }
                 }
 
@@ -468,8 +486,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   // Fallback marker if calculations resulted in -1 due to present reading marker
                   let defaultMarker = getMarker(data.presentReading);
                   if (defaultMarker === 'EX') defaultMarker = null;
-                  const finalMarker = defaultMarker || 'EST.DEF';
-                  return <span className={cn("text-[12px] leading-none whitespace-nowrap", finalMarker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{finalMarker}</span>;
+                  const finalMarker = defaultMarker || 'Est. Def';
+                  return <span className={cn("text-[12px] leading-none whitespace-nowrap", ['Est. Def', 'MCO', 'P-DISC'].includes(finalMarker) ? "text-red-600 font-bold" : "text-black font-bold")}>{finalMarker}</span>;
                 }
                 if (val !== undefined && !isNaN(val) && val > 0) {
                   return <span className="text-black font-bold">{Math.round(val).toString()}</span>;
@@ -514,11 +532,31 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   isUnderlined && "underline italic text-[13px]"
                 );
 
+                const isEstDefStatus = data.meterStatus?.toUpperCase().includes('DF') || 
+                                       data.meterStatus?.toUpperCase().includes('EST.DEF') || 
+                                       data.meterStatus?.toUpperCase().includes('EST DEF');
+                
+                const hasEstDefInHistory = (data.monthWiseUnits || []).some(mwu => {
+                  const u = mwu.units?.toString().toUpperCase() || '';
+                  const r = (mwu as any).reading?.toString().toUpperCase() || '';
+                  return u.includes('DF') || u.includes('EST.DEF') || u.includes('EST DEF') ||
+                         r.includes('DF') || r.includes('EST.DEF') || r.includes('EST DEF');
+                });
+
+                const isEstDefCase = isEstDefStatus || hasEstDefInHistory;
+                const isSpecialMonth = (month === 'NOV' || month === 'DEC') && yearStr.slice(-2) === '25';
+
                 if (isMatch(yearStr)) {
                   const val = data.difference;
                   const marker = getMarker(val);
+                  
+                  if (isSpecialMonth && isEstDefCase) {
+                    return <span className={cn(baseClasses, "text-black")}>0</span>;
+                  }
+
                   if (marker) {
-                    return <span className={cn(baseClasses, marker === 'EST.DEF' ? "text-red-600 font-bold" : "text-black font-bold")}>{marker}</span>;
+                    const justNumber = typeof val === 'string' ? val.replace(/EST\.?\s*DEF\.?/ig, '').replace(/EX/ig, '').replace(/MC/ig, '').replace(/DF\s*/ig, '').replace(/SS\s*/ig, '').trim() : val;
+                    return <span className={cn(baseClasses, ['Est. Def', 'MCO', 'P-DISC'].includes(marker) ? "text-red-600" : "text-black")}>{justNumber || '0'}</span>;
                   }
                   return (val === undefined || val === null || val === '' || val.toString() === '0') ? '' : <span className={cn(baseClasses, "text-black")}>{val}</span>;
                 }
@@ -543,11 +581,17 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 });
                 
                 if (u) {
+                  const marker = getMarker(u.units);
                   const unitsStr = u.units?.toString().toUpperCase() || '';
+                  
+                  if (isSpecialMonth && isEstDefCase) {
+                    return <span className={cn(baseClasses, "text-black")}>0</span>;
+                  }
+
                   if (unitsStr !== '' && unitsStr !== '0' && unitsStr !== 'N/A') {
                     // Extract just the number for advance
-                    const justNumber = typeof u.units === 'string' ? u.units.replace(/EST\.?\s*DEF\.?/ig, '').replace(/EX/ig, '').replace(/MC/ig, '').replace(/DF\s*/ig, '').trim() : u.units;
-                    return <span className={cn(baseClasses, "text-black")}>{justNumber || unitsStr}</span>;
+                    const justNumber = typeof u.units === 'string' ? u.units.replace(/EST\.?\s*DEF\.?/ig, '').replace(/EX/ig, '').replace(/MC/ig, '').replace(/DF\s*/ig, '').replace(/SS\s*/ig, '').trim() : u.units;
+                    return <span className={cn(baseClasses, marker && ['Est. Def', 'MCO', 'P-DISC'].includes(marker) ? "text-red-600" : "text-black")}>{justNumber || '0'}</span>;
                   }
                 }
                 return '';
@@ -639,7 +683,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
               <div className="mt-2 flex-1 flex flex-col items-center justify-start gap-2 pt-1 min-h-[50px] overflow-hidden">
                 <a 
                   href={data.photoUrl}
-                  download={`Discrepancy ${data.referenceNumber || 'evidence'}.jpg`}
+                  download={`Discrepancy ${data.referenceNo || data.referenceNumber || 'evidence'}.jpg`}
                   onClick={(e) => {
                     e.stopPropagation();
                     console.log("Download link clicked. photoUrl exists:", !!data.photoUrl);
@@ -697,9 +741,9 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   "text-sm text-black border-b-[3px] border-double border-black font-bold"
                 )}>
                   {
-                    (data.feederName || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
+                    (data.grandTotalUnits || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
                       ? 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
-                      : (data.feederName || (parseInt(data.netUnitsToBeCharged || '0').toLocaleString()))
+                      : (data.grandTotalUnits || (parseInt(data.netUnitsToBeCharged || '0').toLocaleString()))
                   }
                 </span>
               </span>
@@ -778,7 +822,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <div className="flex gap-4 items-baseline mt-4">
             <span className="font-bold text-xs whitespace-nowrap">SUBJECT:</span>
             <span className="font-bold text-xs uppercase border-b-2 border-black pb-0.5">
-              NOTICE AGAINST REFERENCE NO. {data.referenceNumber}
+              NOTICE AGAINST REFERENCE NO. {data.referenceNo || data.referenceNumber}
             </span>
           </div>
 

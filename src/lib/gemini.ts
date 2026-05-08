@@ -49,6 +49,7 @@ export async function extractBillData(base64Image: string) {
 - subDivisionName: e.g., "FATEH SHER"
 - feederName: e.g., "CIVIL LINES"
 - meterStatus: e.g., "NORMAL"
+- advanceUnits: numeric value only (often labeled as "Advance Units" or "ADJ" if it relates to units)
 - monthWiseUnits: Array of { month, reading, units, bill, adj, payment } (extract last 12-13 months if table present. IMPORTANT: If 'DF' or 'Est. Def.' or any alphabetic prefix/suffix is present with the reading or units, you MUST include it in the 'reading' OR 'units' string, e.g., "DF 81" or "81 DF").
 
 === RULES ===
@@ -79,6 +80,7 @@ export async function extractBillData(base64Image: string) {
             subDivisionName: { type: Type.STRING },
             feederName: { type: Type.STRING },
             meterStatus: { type: Type.STRING },
+            advanceUnits: { type: Type.STRING },
             monthWiseUnits: {
               type: Type.ARRAY,
               items: {
