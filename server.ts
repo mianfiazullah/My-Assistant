@@ -10,6 +10,7 @@ import * as cheerio from "cheerio";
 import admin from 'firebase-admin';
 import multer from 'multer';
 import { GoogleGenAI, Type } from "@google/genai";
+import { google } from "googleapis";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,7 +74,7 @@ async function startServer() {
         return res.status(400).json({ error: `Missing image data. Body keys: ${req.body ? Object.keys(req.body).join(", ") : 'none'}` });
       }
 
-      const modelName = "gemini-3-flash-preview";
+      const modelName = "gemini-3.1-pro-preview";
       const ai = getAI();
       
       console.log(`Analyzing bill using model: ${modelName}, data length: ${imgData.length}`);
@@ -85,31 +86,45 @@ async function startServer() {
             role: "user",
             parts: [
               { inlineData: { mimeType: "image/jpeg", data: imgData } },
-              { text: `Extract the following details from this electricity bill image into a valid JSON object.
-            
+              { text: `Extract all electricity bill details from this image into a JSON object.
+          
+=== IMPORTANT: ACCURACY ===
+- DO NOT hallucinate values. If a number is unclear or NOT VISIBLE in the screenshot, use an empty string "" instead of "N/A" where possible, especially for numeric fields.
+- DO NOT repeat values (like "55") across months if they are different on the bill.
+- For historical tables, extract EXACTLY what is written in each row.
+- Ensure the 'Month' and 'Year' match the table rows precisely (e.g., "MAR 25").
+- SPECIFIC GUARD: The status code "SS" (Status Same) is frequently misread as "55". If you see "SS" or something looking like "55" in a column where it could be a status code (like Units or Reading), verify carefully. If it is a status code, output "SS".
+- DO NOT fill in months that are not present in the image table. If only 10 months are visible, output only those 10 months.
+
+=== MONTH WISE UNITS TABLE (CONSUMPTION DATA) ===
+- If a value in the table is "N/A", empty, or unclear, use an empty string "" for that specific field (units, bill, adj, or payment). 
+- DO NOT combine multiple fields into one. Each field must be its own value in the object.
+- If a row is partially unreadable, still extract the readable parts (like Month and Units).
+
 === FIELDS TO EXTRACT ===
-- referenceNumber: exact 14 digits (often in a prominent box)
+- referenceNumber: exact 14 digits
 - consumerName: full name
 - address: full address
 - sanctionedLoad: e.g., "1.00 kW"
 - customerId: e.g., "01-12345-6789123"
 - tariff: e.g., "A-1a(01)"
 - billingMonth: month and year, e.g., "MAR 26"
-- consumedUnits: number only (Total units consumed in this month)
-- currentBill: numeric value only (preserve decimals, e.g. 36032.31)
-- deferredAmount: numeric value only (preserve decimals, e.g. 0.00)
-- presentReading: number only
-- previousReading: number only
-- meterNoOnBill: serial number
+- consumedUnits: Total units consumed this month
+- currentBill: monthly bill amount
+- deferredAmount: deferred amount if any
+- presentReading: latest index reading
+- previousReading: previous index reading
+- meterNoOnBill: meter serial number
 - subDivisionName: e.g., "FATEH SHER"
 - feederName: e.g., "CIVIL LINES"
 - meterStatus: e.g., "NORMAL"
-- monthWiseUnits: Array of { month, units, bill, adj, payment } (extract last 12-13 months if table present)
+- monthWiseUnits: Array of { month, reading, units, bill, adj, payment }
+  (Extract from the consumption history table. Usually 12-13 months are visible.
+   Columns are usually: Month, Units, Bill, Adj, Payment/Balance.
+   If 'DF', 'SS', or 'Est. Def.' is present with a value, include it, e.g., "DF 81").
 
-=== RULES ===
-- If a field is missing, use "N/A".
-- The "consumedUnits" field is very important. It is usually labeled as "Units" or "Consumed Units" for the current billing month.
-- Return ONLY the JSON object. Do not include any commentary or other text.` }
+=== RESPONSE ===
+Return ONLY JSON.` }
             ]
           }
         ],
@@ -140,6 +155,7 @@ async function startServer() {
                   type: Type.OBJECT,
                   properties: {
                     month: { type: Type.STRING },
+                    reading: { type: Type.STRING },
                     units: { type: Type.STRING },
                     bill: { type: Type.STRING },
                     adj: { type: Type.STRING },
@@ -254,6 +270,68 @@ async function startServer() {
     });
 
     blobStream.end(file.buffer);
+  });
+
+  // Google Sheets Helper
+  async function getSheetsClient() {
+    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+    if (!email || !key) {
+      throw new Error("Google Sheets credentials are not configured.");
+    }
+
+    const auth = new google.auth.JWT({
+      email,
+      key,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
+
+    return google.sheets({ version: "v4", auth });
+  }
+
+  app.post("/api/save-to-sheets", async (req, res) => {
+    try {
+      const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+      if (!spreadsheetId) {
+        return res.status(400).json({ error: "GOOGLE_SHEETS_ID is not configured." });
+      }
+
+      const { data } = req.body;
+      if (!data) {
+        return res.status(400).json({ error: "No data provided to save." });
+      }
+
+      const sheets = await getSheetsClient();
+      
+      // Prepare row data - flatten the case object into an array
+      // Order: Timestamp, Ref #, Name, Address, Billing Month, Units, Bill Amount, Sanctioned Load, Status
+      const row = [
+        new Date().toLocaleString(),
+        data.referenceNumber || "N/A",
+        data.consumerName || "N/A",
+        data.address || "N/A",
+        data.billingMonth || "N/A",
+        data.consumedUnits || "0",
+        data.currentBill || "0",
+        data.sanctionedLoad || "N/A",
+        data.meterStatus || "NORMAL"
+      ];
+
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: "Sheet1!A:I", // Appends to the first sheet
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [row],
+        },
+      });
+
+      res.json({ success: true, message: "Data saved to Google Sheets successfully." });
+    } catch (error: any) {
+      console.error("Sheets Error:", error);
+      res.status(500).json({ error: error.message || "Failed to save to Google Sheets." });
+    }
   });
 
   // Real LESCO Bill Scraping Endpoint

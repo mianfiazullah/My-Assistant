@@ -282,6 +282,30 @@ export default function QuickEdit() {
           firNumber: `FIR-${Math.floor(100000 + Math.random() * 900000)}`,
         });
       }
+
+      // 3. Save to Google Sheets (Parallel/Async)
+      try {
+        fetch("/api/save-to-sheets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            data: {
+              referenceNumber: data.referenceNumber,
+              consumerName: data.name,
+              address: data.address,
+              billingMonth: data.billingMonth,
+              consumedUnits: data.netUnitsToBeCharged,
+              currentBill: data.billData?.currentBill,
+              sanctionedLoad: data.sanctionLoad,
+              meterStatus: data.meterStatus
+            }
+          })
+        }).then(res => res.json()).then(result => {
+          if (result.success) console.log("Saved to Google Sheets (QuickEdit)");
+        }).catch(e => console.error("Sheets Background Error (QuickEdit):", e));
+      } catch (sheetsErr) {
+        console.error("Failed to initiate Sheets save (QuickEdit):", sheetsErr);
+      }
       
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);

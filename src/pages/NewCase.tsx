@@ -21,6 +21,7 @@ import {
   ShieldAlert, 
   ExternalLink, 
   Check, 
+  Plus,
   PlusCircle, 
   X, 
   Save, 
@@ -304,12 +305,11 @@ export default function NewCase() {
 
   const defaultFieldOrder = [
     'dateOfChecking', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'registeredFirNo', 'registeredFirDated', 'policeStation',
-    'noOfAC', 'grandTotalUnits', 'feederName', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
-    'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'checkedBy', 'referenceNo',
+    'noOfAC', 'feederName', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
+    'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
     'consumerName', 'address', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
     'meterType', 'capacity', 'discrepancy', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod',
-    'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks',
-    'billingMonth', 'subDivisionName', 'meterStatus', 'currentBill', 'deferredAmount'
+    'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks'
   ];
 
   const defaultFieldSerials = {
@@ -318,8 +318,7 @@ export default function NewCase() {
     unitsAssessed: '34', unitsAlreadyCharged: '33', netUnitsToBeCharged: '35', checkedBy: '16', referenceNo: '17',
     consumerName: '18', address: '19', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
     meterType: '25', capacity: '26', discrepancy: '27', acPeriodFrom: '28', acPeriodTo: '29', acPeriodMonths: '30', unitsOfAcPeriod: '31',
-    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', 
-    feederName: '13.1', grandTotalUnits: '36', billingMonth: '13.2', subDivisionName: '13.3', meterStatus: '13.4', currentBill: '13.5', deferredAmount: '13.6'
+    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36'
   };
 
   const [fieldOrder, setFieldOrder] = useState(() => {
@@ -402,12 +401,27 @@ export default function NewCase() {
       setFieldOrder(sorted);
     }
   }, [fieldSerials, fieldOrder]);
-  const [templateOrder, setTemplateOrder] = useState(() => getInitialState('lesco_template_order', [
-    'DETECTION BILL PROFORMA',
-    'NOTICE',
-    'FIR Request',
-    'Detection Register'
-  ]));
+  const [templateOrder, setTemplateOrder] = useState(() => {
+    const saved = getInitialState<string[]>('lesco_template_order', [
+      'DETECTION BILL PROFORMA',
+      'NOTICE',
+      'FIR Request',
+      'FIR Urdu',
+      'Detection Register'
+    ]);
+    // Migration: Ensure 'FIR Urdu' is present if missing from saved state
+    if (!saved.includes('FIR Urdu')) {
+      const newOrder = [...saved];
+      const firRequestIndex = newOrder.indexOf('FIR Request');
+      if (firRequestIndex !== -1) {
+        newOrder.splice(firRequestIndex + 1, 0, 'FIR Urdu');
+      } else {
+        newOrder.push('FIR Urdu');
+      }
+      return newOrder;
+    }
+    return saved;
+  });
 
   useEffect(() => {
     localStorage.setItem('lesco_template_order', safeStringify(templateOrder));
@@ -491,7 +505,8 @@ export default function NewCase() {
     // Freeze fields only if there is an active AC mismatch
     const isAcField = ['noOfAC', 'splitAcCount', 'windowAcCount', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod'].includes(id);
     const isNetPositive = detectionData.netUnitsToBeCharged && !isNaN(Number(detectionData.netUnitsToBeCharged)) && Number(detectionData.netUnitsToBeCharged) >= 0;
-    const isDisabled = (showAcMismatch && !isAcField) || (isSlownessActive && isAcField);
+    // Relaxed freezing: Detection Details should be editable as per user request
+    const isDisabled = false; 
 
     switch (id) {
       case 'dateOfChecking':
@@ -499,7 +514,6 @@ export default function NewCase() {
           <SortableItem 
             id="dateOfChecking" 
             key="dateOfChecking" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<p className="text-xs text-black uppercase font-bold tracking-widest">Date Of Checking</p>}
@@ -603,6 +617,62 @@ export default function NewCase() {
             </div>
           </SortableItem>
         );
+      case 'lossAmount':
+        return (
+          <SortableItem 
+            id="lossAmount" 
+            key="lossAmount" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Loss Amount</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input type="text" value={detectionData.lossAmount || ''} onChange={(e) => setDetectionData({...detectionData, lossAmount: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+            </div>
+          </SortableItem>
+        );
+      case 'seizureCableSize':
+        return (
+          <SortableItem 
+            id="seizureCableSize" 
+            key="seizureCableSize" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Size</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input type="text" value={detectionData.seizureCableSize || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableSize: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+            </div>
+          </SortableItem>
+        );
+      case 'seizureCableColor':
+        return (
+          <SortableItem 
+            id="seizureCableColor" 
+            key="seizureCableColor" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Color</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input type="text" value={detectionData.seizureCableColor || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableColor: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+            </div>
+          </SortableItem>
+        );
+      case 'seizureCableLength':
+        return (
+          <SortableItem 
+            id="seizureCableLength" 
+            key="seizureCableLength" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Length</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input type="text" value={detectionData.seizureCableLength || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableLength: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+            </div>
+          </SortableItem>
+        );
       case 'registeredFirDated':
         return (
           <SortableItem 
@@ -630,7 +700,6 @@ export default function NewCase() {
           <SortableItem 
             id="policeStation" 
             key="policeStation" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">Name Of Police Station</label>}
@@ -657,7 +726,6 @@ export default function NewCase() {
           <SortableItem 
             id="noOfAC" 
             key="noOfAC" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={
@@ -780,29 +848,6 @@ export default function NewCase() {
           <SortableItem 
             id="feederName" 
             key="feederName" 
-            className="md:col-span-2"
-            serialNo={serialNo} 
-            onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs uppercase tracking-widest text-neutral-500 font-bold">Feeder Name</label>}
-          >
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input 
-                type="text" 
-                value={detectionData.feederName || ''} 
-                onChange={(e) => setDetectionData({...detectionData, feederName: e.target.value})}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black"
-                disabled={isDisabled} 
-                placeholder="Enter Feeder Name"
-              />
-            </div>
-          </SortableItem>
-        );
-      case 'grandTotalUnits':
-        return (
-          <SortableItem 
-            id="grandTotalUnits" 
-            key="grandTotalUnits" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs uppercase tracking-widest text-black">G. Total Units TO BE CHARGED</label>}
@@ -810,11 +855,11 @@ export default function NewCase() {
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
                 type="text" 
-                value={detectionData.grandTotalUnits || ''} 
-                onChange={(e) => setDetectionData({...detectionData, grandTotalUnits: e.target.value})}
+                value={detectionData.feederName || ''} 
+                readOnly
                 className={cn(
-                  "w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold",
-                  detectionData.grandTotalUnits?.includes('D.BILL IS NOT JUSTIFIED') ? "text-indigo-600 animate-blink" : "text-black"
+                  "w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 font-bold",
+                  detectionData.feederName?.includes('D.BILL IS NOT JUSTIFIED') ? "text-indigo-600 animate-blink" : "text-black"
                 )} 
                 disabled={isDisabled} 
               />
@@ -828,7 +873,6 @@ export default function NewCase() {
           <SortableItem 
             id="detectionPeriodFrom" 
             key="detectionPeriodFrom" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period From</label>}
@@ -844,7 +888,6 @@ export default function NewCase() {
           <SortableItem 
             id="detectionPeriodTo" 
             key="detectionPeriodTo" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={
@@ -893,7 +936,6 @@ export default function NewCase() {
           <SortableItem 
             id="acPeriodFrom" 
             key="acPeriodFrom" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period From</label>}
@@ -937,7 +979,6 @@ export default function NewCase() {
           <SortableItem 
             id="acPeriodTo" 
             key="acPeriodTo" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period To</label>}
@@ -985,7 +1026,6 @@ export default function NewCase() {
           <SortableItem 
             id="acPeriodMonths" 
             key="acPeriodMonths" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period Months</label>}
@@ -994,9 +1034,9 @@ export default function NewCase() {
               <input 
                 type="text" 
                 value={detectionData.acPeriodMonths || ''} 
-                onChange={(e) => setDetectionData({...detectionData, acPeriodMonths: e.target.value})}
+                readOnly
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" 
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 cursor-not-allowed font-bold text-black" 
               />
             </div>
           </SortableItem>
@@ -1007,7 +1047,6 @@ export default function NewCase() {
           <SortableItem 
             id="unitsOfAcPeriod" 
             key="unitsOfAcPeriod" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units of AC Period</label>}
@@ -1029,7 +1068,6 @@ export default function NewCase() {
           <SortableItem 
             id="unitsAssessed" 
             key="unitsAssessed" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units Assessed</label>}
@@ -1041,6 +1079,7 @@ export default function NewCase() {
                 onChange={(e) => setDetectionData({...detectionData, unitsAssessed: e.target.value})} 
                 className={cn("w-full border border-neutral-200 rounded-xl p-3 font-bold text-black", isDisabled ? "bg-neutral-100" : "bg-white")} 
                 disabled={isDisabled} 
+                readOnly={isSlowness}
               />
             </div>
           </SortableItem>
@@ -1050,7 +1089,6 @@ export default function NewCase() {
           <SortableItem 
             id="unitsAlreadyCharged" 
             key="unitsAlreadyCharged" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units Already Charged</label>}
@@ -1066,7 +1104,6 @@ export default function NewCase() {
           <SortableItem 
             id="netUnitsToBeCharged" 
             key="netUnitsToBeCharged" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs uppercase tracking-widest text-black font-bold">{isSlownessActiveForLabel ? `UNITS TO BE CHARGED AS PER SLOWNESS ${detectionData.meterSlowBy || ''}` : 'UNITS TO BE CHARGED AS PER CONNECTED LOAD'}</label>}
@@ -1090,7 +1127,6 @@ export default function NewCase() {
           <SortableItem 
             id="checkedBy" 
             key="checkedBy" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-black uppercase font-bold tracking-widest">Checked By (Multiple)</label>}
@@ -1142,7 +1178,6 @@ export default function NewCase() {
           <SortableItem 
             id="referenceNo" 
             key="referenceNo" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Reference Number</label>}
@@ -1150,11 +1185,10 @@ export default function NewCase() {
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
                 type="text"
-                value={detectionData.referenceNo || ''}
-                onChange={(e) => setDetectionData({...detectionData, referenceNo: e.target.value})}
+                value={billData?.referenceNumber || ''}
+                readOnly
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-base sm:text-lg font-bold text-neutral-900 font-mono focus:outline-none focus:border-indigo-500"
-                placeholder="Enter Reference No."
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-2 px-3 text-base sm:text-lg font-bold text-neutral-900 font-mono focus:outline-none"
               />
             </div>
           </SortableItem>
@@ -1164,7 +1198,6 @@ export default function NewCase() {
           <SortableItem 
             id="consumerName" 
             key="consumerName" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Consumer Name</label>}
@@ -1208,7 +1241,6 @@ export default function NewCase() {
           <SortableItem 
             id="customerId" 
             key="customerId" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">CUSTOMER ID</label>}
@@ -1230,7 +1262,6 @@ export default function NewCase() {
           <SortableItem 
             id="tariff" 
             key="tariff" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Tariff</label>}
@@ -1258,7 +1289,6 @@ export default function NewCase() {
           <SortableItem 
             id="sanctionLoad" 
             key="sanctionLoad" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Sanction Load</label>}
@@ -1280,7 +1310,6 @@ export default function NewCase() {
           <SortableItem 
             id="meterNo" 
             key="meterNo" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Meter No.</label>}
@@ -1492,7 +1521,6 @@ export default function NewCase() {
           <SortableItem 
             id="presentReadingAtSite" 
             key="presentReadingAtSite" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Present Reading at Site</label>}
@@ -1561,7 +1589,6 @@ export default function NewCase() {
           <SortableItem 
             id="email" 
             key="email" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">E Mail Address</label>}
@@ -1583,7 +1610,6 @@ export default function NewCase() {
           <SortableItem 
             id="mobileNo" 
             key="mobileNo" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Mobile Number</label>}
@@ -1672,7 +1698,6 @@ export default function NewCase() {
           <SortableItem 
             id="loadFactor" 
             key="loadFactor" 
-            className="md:col-span-2"
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Load Factor</label>}
@@ -1722,7 +1747,6 @@ export default function NewCase() {
                       <th className="px-3 py-2 w-20">Qty</th>
                       <th className="px-3 py-2 w-24">Watts</th>
                       <th className="px-3 py-2 w-24">Total</th>
-                      <th className="px-3 py-2 w-10"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200 bg-white">
@@ -1779,19 +1803,6 @@ export default function NewCase() {
                         <td className="px-3 py-2 font-bold text-neutral-900">
                           {item.total}
                         </td>
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            disabled={isDisabled || isSlownessActive}
-                            onClick={() => {
-                              const newItems = (detectionData.loadItems || []).filter((_, i) => i !== index);
-                              setDetectionData({ ...detectionData, loadItems: newItems });
-                            }}
-                            className="text-indigo-500 hover:text-indigo-700"
-                          >
-                            X
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1837,46 +1848,6 @@ export default function NewCase() {
                 )}
                 placeholder="Enter any additional observations..."
               />
-            </div>
-          </SortableItem>
-        );
-      case 'billingMonth':
-        return (
-          <SortableItem id="billingMonth" key="billingMonth" className="md:col-span-2" serialNo={serialNo} onSerialNoChange={onSerialNoChange} label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Billing Month</label>}>
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.billingMonth || ''} onChange={(e) => setDetectionData({...detectionData, billingMonth: e.target.value})} disabled={isDisabled} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold" />
-            </div>
-          </SortableItem>
-        );
-      case 'subDivisionName':
-        return (
-          <SortableItem id="subDivisionName" key="subDivisionName" className="md:col-span-2" serialNo={serialNo} onSerialNoChange={onSerialNoChange} label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Sub Division</label>}>
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.subDivisionName || ''} onChange={(e) => setDetectionData({...detectionData, subDivisionName: e.target.value})} disabled={isDisabled} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold" />
-            </div>
-          </SortableItem>
-        );
-      case 'meterStatus':
-        return (
-          <SortableItem id="meterStatus" key="meterStatus" className="md:col-span-2" serialNo={serialNo} onSerialNoChange={onSerialNoChange} label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Meter Status</label>}>
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.meterStatus || ''} onChange={(e) => setDetectionData({...detectionData, meterStatus: e.target.value})} disabled={isDisabled} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold" />
-            </div>
-          </SortableItem>
-        );
-      case 'currentBill':
-        return (
-          <SortableItem id="currentBill" key="currentBill" className="md:col-span-2" serialNo={serialNo} onSerialNoChange={onSerialNoChange} label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Current Bill</label>}>
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="number" value={detectionData.currentBill || 0} onChange={(e) => setDetectionData({...detectionData, currentBill: parseFloat(e.target.value) || 0})} disabled={isDisabled} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold" />
-            </div>
-          </SortableItem>
-        );
-      case 'deferredAmount':
-        return (
-          <SortableItem id="deferredAmount" key="deferredAmount" className="md:col-span-2" serialNo={serialNo} onSerialNoChange={onSerialNoChange} label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Deferred Amount</label>}>
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="number" value={detectionData.deferredAmount || 0} onChange={(e) => setDetectionData({...detectionData, deferredAmount: parseFloat(e.target.value) || 0})} disabled={isDisabled} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold" />
             </div>
           </SortableItem>
         );
@@ -1938,13 +1909,6 @@ export default function NewCase() {
     connectedLoad: '',
     loadFactor: '',
     feederName: '',
-    grandTotalUnits: '',
-    referenceNo: '',
-    billingMonth: '',
-    subDivisionName: '',
-    meterStatus: '',
-    currentBill: 0,
-    deferredAmount: 0,
     customerId: '',
     tariff: '',
     meterNumber: '',
@@ -1986,7 +1950,7 @@ export default function NewCase() {
       { name: 'Water Pump', qty: '', watts: 746, total: 0 },
       { name: 'Iron', qty: '', watts: 1000, total: 0 },
       { name: 'UPS', qty: '', watts: 1000, total: 0 },
-      { name: 'Toka/Heater', qty: '', watts: '', total: 0 },
+      { name: 'Toka/Heat', qty: '', watts: '', total: 0 },
     ] as LoadItem[],
   };
 
@@ -2166,12 +2130,10 @@ export default function NewCase() {
         let totalUnits = 0;
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         
-        // Iterate backwards from toDate to fromDate
-        let currentDate = new Date(to.getFullYear(), to.getMonth(), 1);
-        const fromDateLimit = new Date(from.getFullYear(), from.getMonth(), 1);
-        let stopCalculation = false;
+        let currentDate = new Date(from.getFullYear(), from.getMonth(), 1);
+        const toDate = new Date(to.getFullYear(), to.getMonth(), 1);
         
-        while (currentDate >= fromDateLimit && !stopCalculation) {
+        while (currentDate <= toDate) {
           const monthName = monthNames[currentDate.getMonth()];
           const year = currentDate.getFullYear();
           
@@ -2191,17 +2153,8 @@ export default function NewCase() {
           }
 
           if (isBillingMonth) {
-            const presVal = billData.presentReading?.toString().toUpperCase() || '';
-            const prevVal = billData.previousReading?.toString().toUpperCase() || '';
-            const isEstDef = presVal.includes('DF') || presVal.includes('EST.DEF') || presVal.includes('EST DEF') || 
-                            prevVal.includes('DF') || prevVal.includes('EST.DEF') || prevVal.includes('EST DEF');
-            
-            if (isEstDef) {
-              stopCalculation = true;
-            } else {
-              const diffVal = parseInt(billData.difference?.toString().replace(/,/g, '') || '0') || 0;
-              totalUnits += diffVal;
-            }
+            const diffVal = parseInt(billData.difference?.toString().replace(/,/g, '') || '0') || 0;
+            totalUnits += diffVal;
           } else {
             const unitsForMonth = billData.monthWiseUnits.filter(u => {
               if (!u.month) return false;
@@ -2212,34 +2165,28 @@ export default function NewCase() {
               
               if (!uMonth || !uYear) return false;
               
+              // Handle Year-Month format (e.g., "26-Jan")
               if (!isNaN(parseInt(uMonth)) && isNaN(parseInt(uYear))) {
                 const temp = uMonth;
                 uMonth = uYear;
                 uYear = temp;
               }
               
+              // Robust month matching: compare first 3 characters
               const matchesMonth = uMonth.toUpperCase().substring(0, 3) === monthName.toUpperCase();
+              
+              // Check if year matches
               const matchesYear = uYear === year.toString() || uYear === (year % 100).toString();
               
               return matchesMonth && matchesYear;
             });
             
-            for (const unitData of unitsForMonth) {
-              const readingStr = unitData.reading?.toString().toUpperCase() || '';
-              const unitsStr = unitData.units?.toString().toUpperCase() || '';
-              const isEstDef = readingStr.includes('DF') || readingStr.includes('EST.DEF') || readingStr.includes('EST DEF') || 
-                              unitsStr.includes('DF') || unitsStr.includes('EST.DEF') || unitsStr.includes('EST DEF');
-              
-              if (isEstDef) {
-                stopCalculation = true;
-                break;
-              } else {
-                const units = parseInt(unitData.units?.toString().replace(/,/g, '') || '0') || 0;
-                totalUnits += units;
-              }
-            }
+            unitsForMonth.forEach(unitData => {
+              const units = parseInt(unitData.units?.toString().replace(/,/g, '') || '0') || 0;
+              totalUnits += units;
+            });
           }
-          currentDate.setMonth(currentDate.getMonth() - 1);
+          currentDate.setMonth(currentDate.getMonth() + 1);
         }
         
         let assessed = parseInt(detectionData.unitsAssessed) || 0;
@@ -2299,10 +2246,10 @@ export default function NewCase() {
       grandTotalStr = (netUnits + acUnits).toLocaleString();
     }
 
-    if (detectionData.grandTotalUnits !== grandTotalStr) {
+    if (detectionData.feederName !== grandTotalStr) {
       setDetectionData(prev => ({
         ...prev,
-        grandTotalUnits: grandTotalStr
+        feederName: grandTotalStr
       }));
     }
   }, [detectionData.netUnitsToBeCharged, detectionData.unitsOfAcPeriod]);
@@ -2319,13 +2266,6 @@ export default function NewCase() {
         name: billData.consumerName || prev.name,
         address: billData.address || prev.address,
         sanctionLoad: billData.sanctionedLoad || prev.sanctionLoad,
-        referenceNo: billData.referenceNumber || prev.referenceNo || '',
-        feederName: billData.feederName || prev.feederName || '',
-        subDivisionName: billData.subDivisionName || prev.subDivisionName || '',
-        meterStatus: billData.meterStatus || prev.meterStatus || '',
-        billingMonth: billData.billingMonth || prev.billingMonth || '',
-        currentBill: billData.currentBill || prev.currentBill || 0,
-        deferredAmount: billData.deferredAmount || prev.deferredAmount || 0,
         customerId: billData.customerId || prev.customerId || '',
         tariff: newTariff || prev.tariff,
         loadFactor: newLoadFactor || prev.loadFactor,
@@ -2336,6 +2276,7 @@ export default function NewCase() {
           const diff = present - previous;
           return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
         })(),
+        billingMonth: billData.billingMonth || prev.billingMonth || '',
         presentReading: billData.presentReading || prev.presentReading || '',
       }));
     }
@@ -2435,7 +2376,6 @@ export default function NewCase() {
                 subDivisionName: data.subDivisionName || "",
                 feederName: data.feederName || "",
                 meterStatus: data.meterStatus || "",
-                advanceUnits: parseFloat(data.advanceUnits?.toString().replace(/[^0-9.]/g, '')) || 0,
                 customerId: data.customerId || "",
                 tariff: data.tariff || "",
                 currentBill: parseFloat(data.currentBill?.toString().replace(/[^0-9.]/g, '')) || 0,
@@ -2490,6 +2430,7 @@ export default function NewCase() {
   const printRefDetectionBill = useRef<HTMLDivElement>(null);
   const printRefNotice = useRef<HTMLDivElement>(null);
   const printRefFIR = useRef<HTMLDivElement>(null);
+  const printRefFIRUrdu = useRef<HTMLDivElement>(null);
   const printRefRegister = useRef<HTMLDivElement>(null);
 
   const printTemplate = (ref: React.RefObject<HTMLDivElement>, shouldPrint: boolean = true, type?: string) => {
@@ -2666,6 +2607,7 @@ export default function NewCase() {
     if (type === 'DETECTION BILL PROFORMA') ref = printRefDetectionBill;
     else if (type === 'NOTICE') ref = printRefNotice;
     else if (type === 'FIR Request') ref = printRefFIR;
+    else if (type === 'FIR Urdu') ref = printRefFIRUrdu;
     else if (type === 'Detection Register') ref = printRefRegister;
     
     if (ref) {
@@ -2678,6 +2620,7 @@ export default function NewCase() {
     if (type === 'DETECTION BILL PROFORMA') ref = printRefDetectionBill;
     else if (type === 'NOTICE') ref = printRefNotice;
     else if (type === 'FIR Request') ref = printRefFIR;
+    else if (type === 'FIR Urdu') ref = printRefFIRUrdu;
     else if (type === 'Detection Register') ref = printRefRegister;
 
     if (ref && ref.current) {
@@ -2854,7 +2797,6 @@ export default function NewCase() {
           subDivisionName: data.subDivisionName || "",
           feederName: data.feederName || "",
           meterStatus: data.meterStatus || "",
-          advanceUnits: parseFloat(data.advanceUnits?.toString().replace(/[^0-9.]/g, '')) || 0,
           customerId: data.customerId || "",
           tariff: data.tariff || "",
           currentBill: parseFloat(data.currentBill?.toString().replace(/[^0-9.]/g, '')) || 0,
@@ -2873,8 +2815,17 @@ export default function NewCase() {
           monthWiseUnitsConsumed: "",
           monthWiseUnits: data.monthWiseUnits?.map((item: any) => {
             const cleanValue = (val: any) => {
-              const str = val?.toString()?.trim() || '';
-              return str.toUpperCase() === 'N/A' ? '' : str;
+              let str = val?.toString()?.trim() || '';
+              // If it's a JSON-like fragment or contains "N/A" with garbage
+              if (str.toUpperCase().includes('N/A') || (str.includes('"') && str.includes(':'))) {
+                // If it looks like a JSON string from a hallucinating AI
+                if (str.includes('"') && str.includes(':')) {
+                   const parts = str.split(',');
+                   str = parts[0].replace(/[":{}]/g, '').replace(/Units/i, '').replace(/Bill/i, '').replace(/Adj/i, '').replace(/Payment/i, '').trim();
+                }
+                if (str.toUpperCase() === 'N/A' || str.toUpperCase().includes('N/A')) return '';
+              }
+              return str;
             };
             return {
               month: cleanValue(item.month),
@@ -3048,7 +2999,6 @@ export default function NewCase() {
         createdAt: new Date().toISOString(),
         firNumber: `FIR-${Math.floor(100000 + Math.random() * 900000)}`,
         billingMonth: billData.billingMonth,
-        advanceUnits: billData.advanceUnits,
         noticeNo: detectionData.noticeNo,
         noticeDated: detectionData.noticeDated,
         firNo: detectionData.firNo,
@@ -3082,6 +3032,31 @@ export default function NewCase() {
 
       await addDoc(collection(db, 'cases'), newCase);
       
+      // 3. Save to Google Sheets (Parallel/Async)
+      try {
+        fetch("/api/save-to-sheets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            data: {
+              referenceNumber: sanitizedBillData.referenceNumber,
+              consumerName: detectionData.name,
+              address: detectionData.address,
+              billingMonth: sanitizedBillData.billingMonth,
+              consumedUnits: detectionData.netUnitsToBeCharged,
+              currentBill: sanitizedBillData.currentBill,
+              sanctionedLoad: detectionData.sanctionLoad,
+              meterStatus: sanitizedBillData.meterStatus
+            }
+          })
+        }).then(res => res.json()).then(result => {
+          if (result.success) console.log("Saved to Google Sheets");
+          else console.warn("Google Sheets Save Warning:", result.error);
+        }).catch(e => console.error("Sheets Background Error:", e));
+      } catch (sheetsErr) {
+        console.error("Failed to initiate Sheets save:", sheetsErr);
+      }
+
       // Clear persistence after successful save
       const keysToClear = [
         'lesco_new_case_step',
@@ -3510,7 +3485,7 @@ export default function NewCase() {
                                 <button
                                   onClick={fetchBill}
                                   disabled={isFetching || isScanning || referenceNumber.replace(/[^0-9]/g, '').length !== 14}
-                                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-200 text-white px-4 py-2 text-sm rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 relative overflow-hidden group h-full"
+                                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-200 text-white px-4 sm:px-8 py-3 sm:py-4 text-sm sm:text-base rounded-2xl font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 relative overflow-hidden group h-full"
                                 >
                                   {isFetching ? (
                                     <>
@@ -3534,7 +3509,7 @@ export default function NewCase() {
                                   <button
                                     onClick={() => screenshotInputRef.current?.click()}
                                     disabled={isScanning || isFetching}
-                                    className="bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-200 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2 relative overflow-hidden group h-full text-sm"
+                                    className="bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-200 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2 relative overflow-hidden group h-full"
                                     title="Upload Screenshot"
                                   >
                                     {isScanning ? (
@@ -3547,7 +3522,7 @@ export default function NewCase() {
                                   <button
                                     onClick={() => startCamera(true)}
                                     disabled={isScanning || isFetching}
-                                    className="bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-200 text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2 relative overflow-hidden group h-full text-sm"
+                                    className="bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-200 text-white px-6 py-4 rounded-2xl font-bold shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2 relative overflow-hidden group h-full"
                                     title="Take Photo of Bill"
                                   >
                                     <Camera className="w-5 h-5" />
@@ -3594,7 +3569,7 @@ export default function NewCase() {
                                     setError('');
                                     setStep(3);
                                   }}
-                                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-4 py-2 rounded-xl font-bold transition-all h-full text-sm"
+                                  className="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 px-6 py-4 rounded-2xl font-bold transition-all h-full"
                                 >
                                   Skip & Enter Manually
                                 </button>
@@ -3750,7 +3725,7 @@ export default function NewCase() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <div className="bg-white p-5 rounded-3xl border border-neutral-100 shadow-sm space-y-4">
+            <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm space-y-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <h2 className="text-2xl font-bold text-neutral-900">Step 3: Verify & Details</h2>
@@ -3769,165 +3744,163 @@ export default function NewCase() {
                 </h3>
                 
                 {/* Consumer Bill Details Grid Layout */}
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Reference Number</label>
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Reference Number</label>
                     <input
                       type="text"
                       value={billData.referenceNumber || ''}
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Reference No."
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-8 lg:col-span-6">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Consumer Name</label>
+                  <div className="flex flex-col gap-1 md:col-span-4">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Consumer Name</label>
                     <input
                       type="text"
                       value={billData.consumerName || ''}
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Consumer Name"
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Bill Month</label>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Bill Month</label>
                     <input
                       type="text"
                       value={billData.billingMonth || ''}
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Bill Month"
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Payable Within Due Date</label>
-                    <div className="flex flex-row items-center gap-1.5">
-                       <span className="text-[10px] text-neutral-500 font-medium">Rs.</span>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Payable Within Due Date</label>
+                    <div className="flex flex-row items-center gap-2">
+                       <span className="text-neutral-500 font-medium">Rs.</span>
                        <input
                         type="number"
                         value={billData.currentBill === 0 ? '' : billData.currentBill || ''}
-                        readOnly
-                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                        onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
+                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                         placeholder="0"
+                        readOnly
                       />
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Deferred Amount</label>
-                    <div className="flex flex-row items-center gap-1.5">
-                       <span className="text-[10px] text-neutral-500 font-medium">Rs.</span>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Deferred Amount</label>
+                    <div className="flex flex-row items-center gap-2">
+                       <span className="text-neutral-500 font-medium">Rs.</span>
                        <input
                         type="number"
                         value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''}
-                        readOnly
-                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                        onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
+                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                         placeholder="0"
+                        readOnly
                       />
                     </div>
                   </div>
-
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Advance Units</label>
-                    <input
-                      type="number"
-                      value={billData.advanceUnits || ''}
-                      onChange={(e) => setBillData({...billData, advanceUnits: parseFloat(e.target.value) || 0})}
-                      className="w-full bg-white border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none focus:border-indigo-500"
-                      placeholder="0"
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Meter No. On Bill</label>
+ 
+                   <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Meter No. On Bill</label>
                     <input 
                       type="text" 
                       value={billData.meterNoOnBill || ''} 
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, meterNoOnBill: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Enter Meter No."
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Sub Division</label>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Sub Division</label>
                     <input 
                       type="text" 
                       value={billData.subDivisionName || ''} 
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, subDivisionName: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Sub Division"
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Feeder Name</label>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Feeder Name</label>
                     <input 
                       type="text" 
                       value={billData.feederName || ''} 
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, feederName: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Feeder Name"
+                      readOnly
                     />
                   </div>
-
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Meter Status</label>
+ 
+                   <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Meter Status</label>
                     <input 
                       type="text" 
                       value={billData.meterStatus || ''} 
-                      readOnly
+                      onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
                       className={cn(
-                        "w-full border border-neutral-200 rounded-lg py-1 px-2 font-bold focus:outline-none text-xs",
-                        billData.meterStatus?.toUpperCase()?.includes('REPLACED') || billData.meterStatus?.toUpperCase()?.includes('MC') || billData.meterStatus?.toUpperCase()?.includes('DF') || billData.meterStatus?.toUpperCase()?.includes('P-DISC') || billData.meterStatus?.toUpperCase()?.includes('PD') ? "bg-red-50 text-red-600" : "bg-neutral-50 text-neutral-900"
+                        "w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed",
+                        billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600 font-bold" : "text-neutral-900"
                       )}
                       placeholder="Status"
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Previous Reading</label>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Previous Reading</label>
                     <input
                       type="text"
                       value={billData.previousReading || ''}
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, previousReading: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Prev Rdg"
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Present Reading</label>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Present Reading</label>
                      <input
                       type="text"
                       value={billData.presentReading || ''}
-                      readOnly
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold focus:outline-none"
+                      onChange={(e) => setBillData({...billData, presentReading: e.target.value})}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Pres Rdg"
+                      readOnly
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-1 col-span-12 sm:col-span-4 lg:col-span-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Difference</label>
-                    <div className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1 px-2 text-xs text-neutral-900 font-bold flex items-center h-[26px]">
-                      {billData.difference || (() => {
-                        const presVal = billData.presentReading?.toString().toUpperCase() || '';
-                        const prevVal = billData.previousReading?.toString().toUpperCase() || '';
-                        
-                        const presMarker = presVal.includes('EX') ? 'EX' : presVal.includes('MC') ? 'MC' : (presVal.includes('DF') || presVal.includes('EST.DEF') || presVal.includes('EST DEF') ? 'EST.DEF' : null);
-                        if (presMarker) return presMarker;
-                        const prevMarker = prevVal.includes('EX') ? 'EX' : prevVal.includes('MC') ? 'MC' : (prevVal.includes('DF') || prevVal.includes('EST.DEF') || prevVal.includes('EST DEF') ? 'EST.DEF' : null);
-                        if (prevMarker) return prevMarker;
-                        
-                        const present = parseInt(presVal.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0');
-                        const previous = parseInt(prevVal.replace(/,/g, '').replace(/EST\.?\s*DEF\.?/g, '').replace(/EX/g, '').replace(/MC/g, '').replace(/DF/g, '') || '0');
-                        const diff = present - previous;
-                        return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
-                      })()}
+                  <div className="flex flex-col gap-1 md:col-span-6">
+                    <label className="text-xs font-bold text-neutral-500 uppercase">Difference</label>
+                    <div className="w-full bg-neutral-100 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold flex items-center h-[38px] cursor-not-allowed">
+                      {(() => {
+                         const presVal = billData.presentReading?.toString().toUpperCase() || '';
+                         const prevVal = billData.previousReading?.toString().toUpperCase() || '';
+                         if (presVal.includes('DF') || prevVal.includes('DF')) return 'DF';
+                         if (presVal.includes('EX') || prevVal.includes('EX')) return 'EX';
+                         if (presVal.includes('MC') || prevVal.includes('MC')) return 'MC';
+                         
+                         const present = parseInt(presVal.replace(/,/g, '') || '0');
+                         const previous = parseInt(prevVal.replace(/,/g, '') || '0');
+                         const diff = present - previous;
+                         return !isNaN(present) && !isNaN(previous) ? (diff <= 0 ? '' : diff.toString()) : '';
+                       })()}
                     </div>
                   </div>
                 </div>
@@ -3936,112 +3909,118 @@ export default function NewCase() {
 
                 {/* Month Wise Detail */}
                 <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3">
-                  <span className="text-xs font-bold text-neutral-400 uppercase">Month Wise Detail</span>
-                  <div className="overflow-x-auto">
-                      {billData.monthWiseUnits && billData.monthWiseUnits.length > 0 ? (
-                        <div className="rounded-lg border border-neutral-200 overflow-hidden inline-block min-w-full">
-                          <table className="w-full text-[10px] text-left table-auto whitespace-nowrap">
-                            <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
-                              <tr>
-                                <th className="px-2 py-1 border-r border-neutral-200 w-auto">Month</th>
-                                <th className="px-2 py-1 border-r border-neutral-200 w-auto">Reading</th>
-                                <th className="px-2 py-1 border-r border-neutral-200 w-auto">Units</th>
-                                <th className="px-2 py-1 border-r border-neutral-200 w-auto">Bill</th>
-                                <th className="px-2 py-1 border-r border-neutral-200 w-1 whitespace-nowrap">Adj</th>
-                                <th className="px-2 py-1 w-auto">Payment</th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-neutral-200">
-                              {billData.monthWiseUnits.map((item, index) => (
-                                <tr key={index}>
-                                  <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-auto">
-                                    {item.month === 'N/A' ? '' : item.month}
-                                  </td>
-                                  <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
-                                    <input 
-                                      type="text" 
-                                      value={item.reading === 'N/A' || item.reading === undefined ? '' : item.reading} 
-                                      onChange={(e) => {
-                                        const newUnits = [...billData.monthWiseUnits!];
-                                        newUnits[index].reading = e.target.value;
-                                        setBillData({...billData, monthWiseUnits: newUnits});
-                                      }}
-                                      className={cn(
-                                        "w-full bg-transparent focus:outline-none min-w-[40px]",
-                                        (item.reading?.toString().toUpperCase().includes('DF') || item.reading?.toString().toUpperCase().includes('EST.DEF') || item.reading?.toString().toUpperCase().includes('MC') || item.reading?.toString().toUpperCase().includes('P-DISC') || item.reading?.toString().toUpperCase().includes('PD')) && "text-red-600 font-bold"
-                                      )}
-                                      placeholder="Reading"
-                                    />
-                                  </td>
-                                  <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
-                                    <input 
-                                      type="text" 
-                                      value={item.units === 'N/A' ? '' : item.units} 
-                                      onChange={(e) => {
-                                        const newUnits = [...billData.monthWiseUnits!];
-                                        newUnits[index].units = e.target.value;
-                                        setBillData({...billData, monthWiseUnits: newUnits});
-                                      }}
-                                      className={cn(
-                                        "w-full bg-transparent focus:outline-none min-w-[40px]",
-                                        (item.units?.toString().toUpperCase().includes('DF') || item.units?.toString().toUpperCase().includes('EST.DEF') || item.units?.toString().toUpperCase().includes('MC') || item.units?.toString().toUpperCase().includes('P-DISC') || item.units?.toString().toUpperCase().includes('PD')) && "text-red-600 font-bold"
-                                      )}
-                                    />
-                                  </td>
-                                  <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-auto">
-                                    <input 
-                                      type="text" 
-                                      value={item.bill === 'N/A' ? '' : (item.bill || '')} 
-                                      onChange={(e) => {
-                                        const newUnits = [...billData.monthWiseUnits!];
-                                        newUnits[index].bill = e.target.value;
-                                        setBillData({...billData, monthWiseUnits: newUnits});
-                                      }}
-                                      className={cn(
-                                        "w-full bg-transparent focus:outline-none min-w-[50px]",
-                                        (item.bill?.toString().toUpperCase().includes('DF') || item.bill?.toString().toUpperCase().includes('EST.DEF') || item.bill?.toString().toUpperCase().includes('MC') || item.bill?.toString().toUpperCase().includes('P-DISC') || item.bill?.toString().toUpperCase().includes('PD')) && "text-red-600 font-bold"
-                                      )}
-                                    />
-                                  </td>
-                                  <td className="px-2 py-1 border-r border-neutral-200 text-red-600 font-bold w-1 whitespace-nowrap">
-                                    <input 
-                                      type="text" 
-                                      value={item.adj === 'N/A' ? '' : (item.adj || '')} 
-                                      onChange={(e) => {
-                                        const newUnits = [...billData.monthWiseUnits!];
-                                        newUnits[index].adj = e.target.value;
-                                        setBillData({...billData, monthWiseUnits: newUnits});
-                                      }}
-                                      style={{ width: `${Math.max(3, String(item.adj || '').length)}ch` }}
-                                      className="bg-transparent focus:outline-none text-center font-bold text-red-600"
-                                    />
-                                  </td>
-                                  <td className="px-2 py-1 text-neutral-900 w-auto">
-                                    <input 
-                                      type="text" 
-                                      value={item.payment === 'N/A' ? '' : (item.payment || '')} 
-                                      onChange={(e) => {
-                                        const newUnits = [...billData.monthWiseUnits!];
-                                        newUnits[index].payment = e.target.value;
-                                        setBillData({...billData, monthWiseUnits: newUnits});
-                                      }}
-                                      className={cn(
-                                        "w-full bg-transparent focus:outline-none min-w-[50px]",
-                                        (item.payment?.toString().toUpperCase().includes('DF') || item.payment?.toString().toUpperCase().includes('EST.DEF') || item.payment?.toString().toUpperCase().includes('MC') || item.payment?.toString().toUpperCase().includes('P-DISC') || item.payment?.toString().toUpperCase().includes('PD')) && "text-red-600 font-bold"
-                                      )}
-                                    />
-                                  </td>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-neutral-400 uppercase">Month Wise Detail</span>
+                      <button
+                        onClick={() => {
+                          const newUnits = [...(billData.monthWiseUnits || [])];
+                          newUnits.push({ 
+                            month: '', 
+                            reading: '', 
+                            units: '', 
+                            bill: '', 
+                            adj: '', 
+                            payment: '' 
+                          });
+                          setBillData({...billData, monthWiseUnits: newUnits});
+                        }}
+                        className="text-[10px] bg-neutral-100 hover:bg-neutral-200 text-neutral-600 px-2 py-1 rounded font-bold transition-colors flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Add Month
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        {billData.monthWiseUnits && billData.monthWiseUnits.length > 0 ? (
+                          <div className="rounded-lg border border-neutral-200 overflow-hidden inline-block min-w-full">
+                            <table className="w-full text-[10px] text-left table-auto whitespace-nowrap">
+                              <thead className="bg-neutral-50 border-b border-neutral-200 uppercase font-bold text-neutral-500">
+                                <tr>
+                                  <th className="px-2 py-1 border-r border-neutral-200 w-24">Month</th>
+                                  <th className="px-2 py-1 border-r border-neutral-200 w-24">Units</th>
+                                  <th className="px-2 py-1 border-r border-neutral-200 w-24">Bill</th>
+                                  <th className="px-2 py-1 border-r border-neutral-200 w-44">Adj</th>
+                                  <th className="px-2 py-1 border-l border-neutral-200 w-24">Payment</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <span className="text-neutral-500 text-sm">{billData.monthWiseUnitsConsumed || 'No month wise details available'}</span>
-                      )}
+                              </thead>
+                              <tbody className="bg-white divide-y divide-neutral-200">
+                                {billData.monthWiseUnits.map((item, index) => (
+                                  <tr key={index}>
+                                    <td className="px-2 py-1 bg-neutral-50 border-r border-neutral-200 font-medium text-neutral-700 w-24">
+                                      <input 
+                                        type="text" 
+                                        value={item.month?.toString().toUpperCase().includes('N/A') ? '' : item.month} 
+                                        onChange={(e) => {
+                                          const newUnits = [...billData.monthWiseUnits!];
+                                          newUnits[index].month = e.target.value;
+                                          setBillData({...billData, monthWiseUnits: newUnits});
+                                        }}
+                                        className="w-full bg-transparent focus:outline-none font-bold uppercase"
+                                        placeholder="MMM YY"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-24">
+                                      <input 
+                                        type="text" 
+                                        value={item.units?.toString().toUpperCase().includes('N/A') ? '' : item.units} 
+                                        onChange={(e) => {
+                                          const newUnits = [...billData.monthWiseUnits!];
+                                          newUnits[index].units = e.target.value;
+                                          setBillData({...billData, monthWiseUnits: newUnits});
+                                        }}
+                                        className="w-full bg-white border border-neutral-100 rounded focus:border-indigo-500 focus:outline-none min-w-[50px] px-1"
+                                        placeholder="Units"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-1 border-r border-neutral-200 text-neutral-900 w-24">
+                                      <input 
+                                        type="text" 
+                                        value={item.bill?.toString().toUpperCase().includes('N/A') ? '' : (item.bill || '')} 
+                                        onChange={(e) => {
+                                          const newUnits = [...billData.monthWiseUnits!];
+                                          newUnits[index].bill = e.target.value;
+                                          setBillData({...billData, monthWiseUnits: newUnits});
+                                        }}
+                                        className="w-full bg-white border border-neutral-100 rounded focus:border-indigo-500 focus:outline-none min-w-[60px] px-1"
+                                        placeholder="Bill"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-1 border-r border-neutral-200 text-red-600 font-bold w-44">
+                                      <input 
+                                        type="text" 
+                                        value={item.adj?.toString().toUpperCase().includes('N/A') ? '' : (item.adj || '')} 
+                                        onChange={(e) => {
+                                          const newUnits = [...billData.monthWiseUnits!];
+                                          newUnits[index].adj = e.target.value;
+                                          setBillData({...billData, monthWiseUnits: newUnits});
+                                        }}
+                                        className="w-full bg-white border border-neutral-100 rounded focus:border-indigo-500 focus:outline-none text-center font-bold text-red-600 px-1"
+                                        placeholder="Adj"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-1 text-neutral-900 w-24">
+                                      <input 
+                                        type="text" 
+                                        value={item.payment?.toString().toUpperCase().includes('N/A') ? '' : (item.payment || '')} 
+                                        onChange={(e) => {
+                                          const newUnits = [...billData.monthWiseUnits!];
+                                          newUnits[index].payment = e.target.value;
+                                          setBillData({...billData, monthWiseUnits: newUnits});
+                                        }}
+                                        className="w-full bg-white border border-neutral-100 rounded focus:border-indigo-500 focus:outline-none min-w-[60px] px-1"
+                                        placeholder="Payment"
+                                      />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <span className="text-neutral-500 text-sm">{billData.monthWiseUnitsConsumed || 'No month wise details available'}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-              </div>
 
               {/* Detection Details Section */}
               <div className="space-y-6">
@@ -4177,6 +4156,7 @@ export default function NewCase() {
                         { name: 'DETECTION BILL PROFORMA', desc: 'Official proforma for penalty billing', icon: FileText },
                         { name: 'NOTICE', desc: 'Legal notice for electricity theft', icon: AlertCircle },
                         { name: 'FIR Request', desc: 'First Information Report for police submission', icon: ShieldAlert },
+                        { name: 'FIR Urdu', desc: 'First Information Report in Urdu', icon: ShieldAlert },
                         { name: 'Detection Register', desc: 'Entry for sub-division detection register', icon: FileText },
                       ].find(t => t.name === templateName)!;
 
@@ -4225,7 +4205,7 @@ export default function NewCase() {
                                   triggerPrint(template.name, true);
                                   setHasGenerated(true);
                                 }}
-                                className="flex-1 min-w-[100px] bg-neutral-900 hover:bg-neutral-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all shadow-lg"
+                                className="flex-[2] sm:flex-1 w-full sm:w-auto min-w-[120px] bg-neutral-900 hover:bg-neutral-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all shadow-lg"
                               >
                                 <Printer className="w-4 h-4" /> Print PDF
                               </button>
@@ -4320,6 +4300,7 @@ export default function NewCase() {
           { type: 'DETECTION BILL PROFORMA', ref: printRefDetectionBill },
           { type: 'NOTICE', ref: printRefNotice },
           { type: 'FIR Request', ref: printRefFIR },
+          { type: 'FIR Urdu', ref: printRefFIRUrdu },
           { type: 'Detection Register', ref: printRefRegister },
         ].map(({ type, ref }) => (
           <ProformaTemplates 
@@ -4370,8 +4351,7 @@ export default function NewCase() {
               loadItems: detectionData.loadItems,
               subDivisionName: billData?.subDivisionName,
               feederName: detectionData.feederName,
-              meterStatus: billData?.meterStatus || detectionData.meterStatus,
-              advanceUnits: billData?.advanceUnits
+              meterStatus: billData?.meterStatus || detectionData.meterStatus
             }}
           />
         ))}

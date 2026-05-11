@@ -24,38 +24,46 @@ export async function extractBillData(base64Image: string) {
   try {
     const ai = getAI();
     const result = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-pro-preview", // Upgraded for better table extraction accuracy
       contents: [
         {
           role: "user",
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-            { text: `Extract the following details from this electricity bill image into a valid JSON object.
+            { text: `Extract all electricity bill details from this image into a JSON object.
           
+=== IMPORTANT: ACCURACY ===
+- DO NOT hallucinate values. If a number is unclear or NOT VISIBLE in the screenshot, use "N/A".
+- DO NOT repeat values (like "55") across months if they are different on the bill.
+- For historical tables, extract EXACTLY what is written in each row.
+- Ensure the 'Month' matches the table row (e.g., "MAR 25").
+- SPECIFIC GUARD: The status code "SS" (Status Same) is frequently misread as "55". If you see "SS" or something looking like "55" in a column where it could be a status code (like Units or Reading), verify carefully. If it is a status code, output "SS".
+- DO NOT fill in months that are not present in the image table. If only 10 months are visible, output only those 10 months.
+
 === FIELDS TO EXTRACT ===
-- referenceNumber: exact 14 digits (often in a prominent box)
+- referenceNumber: exact 14 digits
 - consumerName: full name
 - address: full address
 - sanctionedLoad: e.g., "1.00 kW"
 - customerId: e.g., "01-12345-6789123"
 - tariff: e.g., "A-1a(01)"
 - billingMonth: month and year, e.g., "MAR 26"
-- consumedUnits: number only (Total units consumed in this month)
-- currentBill: numeric value only (preserve decimals, e.g. 36032.31)
-- deferredAmount: numeric value only (preserve decimals, e.g. 0.00)
-- presentReading: number only
-- previousReading: number only
-- meterNoOnBill: serial number
+- consumedUnits: Total units consumed this month
+- currentBill: monthly bill amount
+- deferredAmount: deferred amount if any
+- presentReading: latest index reading
+- previousReading: previous index reading
+- meterNoOnBill: meter serial number
 - subDivisionName: e.g., "FATEH SHER"
 - feederName: e.g., "CIVIL LINES"
 - meterStatus: e.g., "NORMAL"
-- advanceUnits: numeric value only (often labeled as "Advance Units" or "ADJ" if it relates to units)
-- monthWiseUnits: Array of { month, reading, units, bill, adj, payment } (extract last 12-13 months if table present. IMPORTANT: If 'DF' or 'Est. Def.' or any alphabetic prefix/suffix is present with the reading or units, you MUST include it in the 'reading' OR 'units' string, e.g., "DF 81" or "81 DF").
+- monthWiseUnits: Array of { month, reading, units, bill, adj, payment }
+  (From the CONSUMPTION DATA table. Extract last 12-13 months. 
+   IMPORTANT: If 'DF', 'SS', or 'Est. Def.' is present with a value, include it, e.g., "DF 81". 
+   NOTE: 'SS' is a common status code on these bills; do NOT misread it as '55').
 
-=== RULES ===
-- If a field is missing, use "N/A".
-- The "consumedUnits" field is very important. It is usually labeled as "Units" or "Consumed Units" for the current billing month.
-- Return ONLY the JSON object. Do not include any commentary or other text.` }
+=== RESPONSE ===
+Return ONLY JSON.` }
           ]
         }
       ],
@@ -80,7 +88,6 @@ export async function extractBillData(base64Image: string) {
             subDivisionName: { type: Type.STRING },
             feederName: { type: Type.STRING },
             meterStatus: { type: Type.STRING },
-            advanceUnits: { type: Type.STRING },
             monthWiseUnits: {
               type: Type.ARRAY,
               items: {
@@ -95,7 +102,8 @@ export async function extractBillData(base64Image: string) {
                 }
               }
             }
-          }
+          },
+          required: ["referenceNumber", "consumerName"],
         }
       }
     });
