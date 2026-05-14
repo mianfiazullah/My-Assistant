@@ -46,13 +46,22 @@ export default class ErrorBoundary extends Component<Props, State> {
         const errorMsg = state.error?.message;
         if (errorMsg && typeof errorMsg === "string" && errorMsg.trim() !== "" && errorMsg !== "undefined" && errorMsg !== "null") {
           // Try to parse if it's a FirestoreErrorInfo JSON string
-          try {
-            const parsed = JSON.parse(errorMsg);
-            if (parsed && typeof parsed === 'object' && parsed.error && parsed.operationType) {
-              errorMessage = `Firestore ${parsed.operationType} error: ${parsed.error}`;
+          if (errorMsg.includes('{') && errorMsg.includes('}')) {
+            try {
+              const parsed = JSON.parse(errorMsg);
+              if (parsed && typeof parsed === 'object' && parsed.error && parsed.operationType) {
+                errorMessage = `Firestore ${parsed.operationType} error: ${parsed.error}`;
+                if (parsed.error.includes('offline')) {
+                  errorMessage = "The connection to the database was lost. Please check your internet connection.";
+                }
+              } else if (parsed && parsed.message) {
+                errorMessage = parsed.message;
+              }
+            } catch (e) {
+              // Not a JSON string, check if it's a regular error message
+              errorMessage = errorMsg;
             }
-          } catch (e) {
-            // Not a JSON string, check if it's a regular error message
+          } else {
             errorMessage = errorMsg;
           }
         }

@@ -488,10 +488,31 @@
         // Save Draft
         function saveDraft() {
             const data = {};
-            document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+            document.querySelectorAll('input[type="text"], input[type="month"], textarea').forEach(el => {
                 data[el.id] = el.value;
             });
-            localStorage.setItem('detectionBillDraft', JSON.stringify(data));
+            // Also save dynamic consumption inputs
+            document.querySelectorAll('input[id^="c_dyn_"]').forEach(el => {
+                data[el.id] = el.value;
+            });
+            
+            // Basic safe stringify for the simple object we have here
+            const safeStringifyLocally = (obj) => {
+                try {
+                    return JSON.stringify(obj);
+                } catch (e) {
+                    const cache = new Set();
+                    return JSON.stringify(obj, (key, value) => {
+                        if (typeof value === 'object' && value !== null) {
+                            if (cache.has(value)) return '[Circular]';
+                            cache.add(value);
+                        }
+                        return value;
+                    });
+                }
+            };
+
+            localStorage.setItem('detectionBillDraft', safeStringifyLocally(data));
             alert('Draft saved successfully!');
         }
 
@@ -519,18 +540,19 @@
                             }
                         }
                         updateDetectionPeriod();
-                    
-                    // Now that dynamic inputs are generated, restore their values
-                    for (const id in data) {
-                        if (id.startsWith('c_dyn_')) {
-                            const el = document.getElementById(id);
-                            if (el) el.value = data[id];
+                        
+                        // Now that dynamic inputs are generated, restore their values
+                        for (const id in data) {
+                            if (id.startsWith('c_dyn_')) {
+                                const el = document.getElementById(id);
+                                if (el) el.value = data[id];
+                            }
                         }
+                        updateDynamicCons();
+                        updateLoad();
+                    } catch (e) {
+                        console.error("Error parsing draft data:", e);
                     }
-                    updateDynamicCons();
-                    updateLoad();
-                } catch (e) {
-                    console.error("Error parsing draft data:", e);
                 }
             } else {
                 alert('No saved draft found.');

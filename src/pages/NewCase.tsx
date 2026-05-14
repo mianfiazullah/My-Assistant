@@ -1,6 +1,6 @@
 import { safeStringify } from "../lib/safeStringify";
 import { safeFetchJson } from "../lib/safeFetch";
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, 
@@ -31,7 +31,9 @@ import {
   GripVertical,
   Activity,
   Trash2,
-  Calendar
+  Calendar,
+  Languages,
+  ChevronDown
 } from 'lucide-react';
 import { 
   DndContext, 
@@ -63,7 +65,8 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 
-import { extractBillData } from '../lib/gemini';
+import { extractBillData, translateToUrduAI } from '../lib/gemini';
+import { translateToUrdu } from '../lib/urduUtils';
 import { toast } from 'sonner';
 
 function SortableItem(props: { 
@@ -173,16 +176,17 @@ export default function NewCase() {
   };
 
   // Load initial state from localStorage
-  const getInitialState = (key: string, defaultValue: any) => {
+  const getInitialState = <T,>(key: string, defaultValue: T): T => {
     try {
       const saved = localStorage.getItem(key);
-      if (!saved) return defaultValue;
+      if (!saved || saved === 'undefined' || saved === 'null') return defaultValue;
       const trimmed = saved.trim();
       if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
       try {
-        return JSON.parse(trimmed);
+        return JSON.parse(trimmed) as T;
       } catch (err) {
-        return defaultValue; // Handle invalid JSON stored in localStorage
+        console.warn(`JSON parse error for key "${key}":`, err);
+        return defaultValue;
       }
     } catch (e) {
       return defaultValue;
@@ -197,6 +201,99 @@ export default function NewCase() {
   const [referenceNumber, setReferenceNumber] = useState(() => {
     const saved = localStorage.getItem('lesco_new_case_ref');
     return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
+  });
+
+  const [billData, setBillData] = useState<BillData | null>(() => getInitialState('lesco_bill_data', null));
+  const [error, setError] = useState('');
+  const defaultDetectionData = {
+    dateOfChecking: '',
+    employeeName: user?.name || '',
+    employeeDesignation: 'Assistant Manager (Operation)',
+    employeeCnic: '35102-0565965-3',
+    employeeMobile: '0370-4991751',
+    discrepancy: [] as string[],
+    othersDiscrepancy: '',
+    checkedBy: [] as string[],
+    othersCheckedBy: '',
+    meterType: '',
+    capacity: '',
+    presentReading: '',
+    presentReadingAtSite: '',
+    previousReading: '',
+    difference: '',
+    email: '',
+    mobileNo: '+92',
+    meterMake: '',
+    name: '',
+    address: '',
+    sanctionLoad: '',
+    connectedLoad: '',
+    loadFactor: '',
+    feederName: '',
+    customerId: '',
+    tariff: '',
+    meterNumber: '',
+    witnesses: ['', ''],
+    remarks: '',
+    noticeNo: '',
+    noticeDated: '',
+    firNo: '',
+    firDated: '',
+    registeredFirNo: '',
+    registeredFirDated: '',
+    policeStation: '',
+    noOfAC: '',
+    photoUrl: '',
+    splitAcCount: '',
+    windowAcCount: '',
+    acType: '' as any,
+    othersAcType: '',
+    detectionPeriodFrom: '',
+    detectionPeriodTo: '',
+    detectionPeriodMonths: '',
+    acPeriodFrom: '',
+    acPeriodTo: '',
+    acPeriodMonths: '',
+    unitsOfAcPeriod: '',
+    unitsAssessed: '',
+    unitsAlreadyCharged: '',
+    netUnitsToBeCharged: '',
+    meterSlowBy: '',
+    lossAmount: '',
+    seizureCableSize: '',
+    seizureCableColor: '',
+    seizureCableLength: '',
+    nameUrdu: '',
+    addressUrdu: '',
+    employeeNameUrdu: '',
+    loadItems: [
+      { name: 'E/Saver', qty: '', watts: 18, total: 0 },
+      { name: 'Tube Light', qty: '', watts: 40, total: 0 },
+      { name: 'Fan', qty: '', watts: 80, total: 0 },
+      { name: 'TV', qty: '', watts: 150, total: 0 },
+      { name: 'Computer', qty: '', watts: 200, total: 0 },
+      { name: 'Refrigerator', qty: '', watts: 250, total: 0 },
+      { name: 'Freezer', qty: '', watts: 350, total: 0 },
+      { name: 'W/Machine', qty: '', watts: 373, total: 0 },
+      { name: 'Water Pump', qty: '', watts: 746, total: 0 },
+      { name: 'Iron', qty: '', watts: 1000, total: 0 },
+      { name: 'UPS', qty: '', watts: 1000, total: 0 },
+      { name: 'Toka/Heat', qty: '', watts: '', total: 0 },
+    ] as LoadItem[],
+    billingMonth: '',
+    id: '',
+    userId: user?.uid || '',
+    firNumber: '',
+    detectionDate: '',
+    createdAt: '',
+    billData: {} as BillData,
+    referenceNumber: '',
+    meterStatus: '',
+  };
+
+  const [detectionData, setDetectionData] = useState<DetectionCase>(() => {
+    const saved = getInitialState<Partial<DetectionCase>>('lesco_detection_data', defaultDetectionData as any);
+    return { ...defaultDetectionData, ...saved } as DetectionCase;
   });
   const [isFetching, setIsFetching] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -303,22 +400,50 @@ export default function NewCase() {
     }
   };
 
+  const [aiUrduTranslations, setAiUrduTranslations] = useState<Record<string, string>>({});
+  const [isTranslating, setIsTranslating] = useState<string | null>(null);
+
+  const handleTranslateField = async (fieldName: string, text: string) => {
+    if (!text) return;
+    setIsTranslating(fieldName);
+    try {
+      const translated = await translateToUrduAI(text);
+      if (translated) {
+        setAiUrduTranslations(prev => ({ ...prev, [fieldName]: translated }));
+        // Also update persistent detectionData if the field corresponds
+        const urduField = `${fieldName}Urdu`;
+        if (urduField in detectionData) {
+          setDetectionData(prev => ({ ...prev, [urduField]: translated }));
+        }
+        toast.success(`Translated to: ${translated}`);
+      } else {
+        toast.error('Failed to translate');
+      }
+    } catch (err) {
+      toast.error('Translation error');
+    } finally {
+      setIsTranslating(null);
+    }
+  };
+
   const defaultFieldOrder = [
     'dateOfChecking', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'registeredFirNo', 'registeredFirDated', 'policeStation',
     'noOfAC', 'feederName', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
     'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
-    'consumerName', 'address', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
+    'consumerName', 'nameUrdu', 'address', 'addressUrdu', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
     'meterType', 'capacity', 'discrepancy', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod',
-    'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks'
+    'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks',
+    'employeeName', 'employeeNameUrdu', 'employeeDesignation', 'employeeCnic', 'employeeMobile'
   ];
 
   const defaultFieldSerials = {
     dateOfChecking: '1', noticeNo: '2', noticeDated: '3', firNo: '4', firDated: '5', registeredFirNo: '6', registeredFirDated: '7', policeStation: '8',
     noOfAC: '9', detectionPeriodFrom: '10', detectionPeriodTo: '11', detectionPeriodMonths: '12',
     unitsAssessed: '34', unitsAlreadyCharged: '33', netUnitsToBeCharged: '35', checkedBy: '16', referenceNo: '17',
-    consumerName: '18', address: '19', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
+    consumerName: '18', nameUrdu: '18U', address: '19', addressUrdu: '19U', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
     meterType: '25', capacity: '26', discrepancy: '27', acPeriodFrom: '28', acPeriodTo: '29', acPeriodMonths: '30', unitsOfAcPeriod: '31',
-    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36'
+    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36',
+    employeeName: '40', employeeNameUrdu: '40U', employeeDesignation: '41', employeeCnic: '42', employeeMobile: '43'
   };
 
   const [fieldOrder, setFieldOrder] = useState(() => {
@@ -501,7 +626,12 @@ export default function NewCase() {
   const acMax = `${currentYear}-09`;
   const acMaxEffective = thisMonth < acMax ? thisMonth : acMax;
 
-  const renderField = (id: string, serialNo: string = '', onSerialNoChange: (val: string) => void = () => {}) => {
+  const handleSerialNoChange = useCallback((id: string, val: string) => {
+    setFieldSerials(prev => ({ ...prev, [id]: val }));
+  }, []);
+
+  const renderField = useCallback((id: string, serialNo: string = '') => {
+    const onSerialNoChange = (val: string) => handleSerialNoChange(id, val);
     // Freeze fields only if there is an active AC mismatch
     const isAcField = ['noOfAC', 'splitAcCount', 'windowAcCount', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod'].includes(id);
     const isNetPositive = detectionData.netUnitsToBeCharged && !isNaN(Number(detectionData.netUnitsToBeCharged)) && Number(detectionData.netUnitsToBeCharged) >= 0;
@@ -668,8 +798,35 @@ export default function NewCase() {
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Length</label>}
           >
-            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.seizureCableLength || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableLength: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+            <div className={cn("flex gap-2", isDisabled && "opacity-50 pointer-events-none")}>
+              <div className="relative flex-1">
+                <input 
+                  type="text" 
+                  value={detectionData.seizureCableLength?.replace(/(Foot|Meter)/g, '').trim() || ''} 
+                  onChange={(e) => {
+                    const unit = detectionData.seizureCableLength?.includes('Meter') ? 'Meter' : 'Foot';
+                    setDetectionData({...detectionData, seizureCableLength: `${e.target.value} ${unit}`.trim()});
+                  }} 
+                  placeholder="Enter length"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black focus:outline-none focus:border-indigo-500" 
+                  disabled={isDisabled} 
+                />
+              </div>
+              <div className="relative min-w-[120px]">
+                <select 
+                  value={detectionData.seizureCableLength?.includes('Meter') ? 'Meter' : 'Foot'} 
+                  onChange={(e) => {
+                    const val = detectionData.seizureCableLength?.replace(/(Foot|Meter)/g, '').trim() || '';
+                    setDetectionData({...detectionData, seizureCableLength: `${val} ${e.target.value}`.trim()});
+                  }}
+                  className="w-full appearance-none bg-indigo-50 border border-indigo-200 rounded-xl p-3 pr-10 font-bold text-indigo-700 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  disabled={isDisabled}
+                >
+                  <option value="Foot">Foot</option>
+                  <option value="Meter">Meter</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 pointer-events-none" />
+              </div>
             </div>
           </SortableItem>
         );
@@ -1135,7 +1292,8 @@ export default function NewCase() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
                   "Sub Divisional Checking Team",
-                  "M&T With Team",
+                  "M&T Representative",
+                  "M&S Team",
                   "Along With"
                 ].map((option) => (
                   <div key={option} className="space-y-2">
@@ -1203,13 +1361,72 @@ export default function NewCase() {
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Consumer Name</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-name">
+              <div className="relative group/field">
+                <input
+                  type="text"
+                  value={detectionData.name || ''}
+                  onChange={(e) => {
+                    setDetectionData({...detectionData, name: e.target.value});
+                    if (aiUrduTranslations['name']) {
+                      setAiUrduTranslations(prev => {
+                        const next = { ...prev };
+                        delete next['name'];
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Enter Consumer Name"
+                  disabled={isDisabled}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={() => handleTranslateField('name', detectionData.name)}
+                  disabled={isDisabled || !detectionData.name || isTranslating === 'name'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  title="Translate to Urdu"
+                >
+                  {isTranslating === 'name' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
+                </button>
+              </div>
+              <AnimatePresence mode="wait">
+                {(detectionData.name || aiUrduTranslations['name'] || isTranslating === 'name') && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="mt-1 flex justify-end items-center gap-2 pb-1" 
+                    dir="rtl"
+                  >
+                    <span className={cn(
+                      "text-sm font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 urdu-font transition-colors",
+                      isTranslating === 'name' ? "text-neutral-400 animate-pulse" : "text-indigo-600"
+                    )}>
+                      {isTranslating === 'name' ? 'ترجمہ ہو رہا ہے...' : (detectionData.nameUrdu || aiUrduTranslations['name'] || translateToUrdu(detectionData.name))}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </SortableItem>
+        );
+      case 'nameUrdu':
+        return (
+          <SortableItem 
+            id="nameUrdu" 
+            key="nameUrdu" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">Consumer Name (Urdu)</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
                 type="text"
-                value={detectionData.name || ''}
-                onChange={(e) => setDetectionData({...detectionData, name: e.target.value})}
-                placeholder="Enter Consumer Name"
+                value={detectionData.nameUrdu || ''}
+                onChange={(e) => setDetectionData({...detectionData, nameUrdu: e.target.value})}
+                placeholder="نام منتخب کریں"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                dir="rtl"
+                className="w-full bg-indigo-50/30 border border-indigo-100 rounded-xl py-2 px-3 text-neutral-900 font-bold urdu-font focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1225,13 +1442,73 @@ export default function NewCase() {
             label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Address</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-address">
+              <div className="relative group/field">
+                <input
+                  type="text"
+                  value={detectionData.address || ''}
+                  onChange={(e) => {
+                    setDetectionData({...detectionData, address: e.target.value});
+                    if (aiUrduTranslations['address']) {
+                      setAiUrduTranslations(prev => {
+                        const next = { ...prev };
+                        delete next['address'];
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Enter Address"
+                  disabled={isDisabled}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-700 focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={() => handleTranslateField('address', detectionData.address)}
+                  disabled={isDisabled || !detectionData.address || isTranslating === 'address'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  title="Translate to Urdu"
+                >
+                  {isTranslating === 'address' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
+                </button>
+              </div>
+              <AnimatePresence mode="wait">
+                {(detectionData.address || aiUrduTranslations['address'] || isTranslating === 'address') && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="mt-1 flex justify-end items-center gap-2 pb-1" 
+                    dir="rtl"
+                  >
+                    <span className={cn(
+                      "text-sm font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 urdu-font transition-colors",
+                      isTranslating === 'address' ? "text-neutral-400 animate-pulse" : "text-indigo-600"
+                    )}>
+                      {isTranslating === 'address' ? 'ترجمہ ہو رہا ہے...' : (detectionData.addressUrdu || aiUrduTranslations['address'] || translateToUrdu(detectionData.address))}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </SortableItem>
+        );
+      case 'addressUrdu':
+        return (
+          <SortableItem 
+            id="addressUrdu" 
+            key="addressUrdu" 
+            className="md:col-span-2"
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">Address (Urdu)</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
                 type="text"
-                value={detectionData.address || ''}
-                onChange={(e) => setDetectionData({...detectionData, address: e.target.value})}
-                placeholder="Enter Address"
+                value={detectionData.addressUrdu || ''}
+                onChange={(e) => setDetectionData({...detectionData, addressUrdu: e.target.value})}
+                placeholder="پتہ درج کریں"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-700 focus:outline-none focus:border-indigo-500"
+                dir="rtl"
+                className="w-full bg-indigo-50/30 border border-indigo-100 rounded-xl py-2 px-3 text-neutral-900 font-bold urdu-font focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1661,32 +1938,53 @@ export default function NewCase() {
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-witnesses">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-transparent">
                 {detectionData.witnesses.map((witness, index) => (
-                  <div key={index} className="relative group">
-                    <input
-                      type="text"
-                      value={witness}
-                      onChange={(e) => {
-                        const newWitnesses = [...detectionData.witnesses];
-                        newWitnesses[index] = e.target.value;
-                        setDetectionData({...detectionData, witnesses: newWitnesses});
-                      }}
-                      placeholder={`Witness ${index + 1} Name`}
-                      disabled={isDisabled}
-                      className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
-                    />
-                    {detectionData.witnesses.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newWitnesses = detectionData.witnesses.filter((_, i) => i !== index);
+                  <div key={index} className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        value={witness}
+                        onChange={(e) => {
+                          const newWitnesses = [...detectionData.witnesses];
+                          newWitnesses[index] = e.target.value;
                           setDetectionData({...detectionData, witnesses: newWitnesses});
                         }}
+                        placeholder={`Witness ${index + 1} Name & Designation`}
                         disabled={isDisabled}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-neutral-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
+                        className="w-full bg-white border border-neutral-200 rounded-lg py-2 px-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 shadow-sm"
+                      />
+                      {detectionData.witnesses.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newWitnesses = detectionData.witnesses.filter((_, i) => i !== index);
+                            setDetectionData({...detectionData, witnesses: newWitnesses});
+                          }}
+                          disabled={isDisabled}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Acting Meter Inspector', 'LS-I', 'LS-II', 'LM-I', 'LM-II', 'MS-I', 'MS-II', 'Lorry Driver', 'LS', 'LM', 'ALM', 'BD', 'MS', 'M/R', 'JE', 'SDO'].map(desig => (
+                        <button
+                          key={desig}
+                          type="button"
+                          onClick={() => {
+                            const newWitnesses = [...detectionData.witnesses];
+                            const current = newWitnesses[index].trim();
+                            if (!current.toUpperCase().includes(desig.toUpperCase())) {
+                              newWitnesses[index] = current ? `${current} ${desig}` : desig;
+                              setDetectionData({...detectionData, witnesses: newWitnesses});
+                            }
+                          }}
+                          className="text-[10px] px-2 py-1 bg-white border border-neutral-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 rounded-md text-neutral-500 transition-all font-bold shadow-sm"
+                        >
+                          + {desig}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1851,10 +2149,153 @@ export default function NewCase() {
             </div>
           </SortableItem>
         );
+      case 'employeeName':
+        return (
+          <SortableItem 
+            id="employeeName" 
+            key="employeeName" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee Name</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <div className="relative group/field">
+                <input
+                  type="text"
+                  value={detectionData.employeeName || ''}
+                  onChange={(e) => {
+                    setDetectionData({...detectionData, employeeName: e.target.value});
+                    if (aiUrduTranslations['employeeName']) {
+                      setAiUrduTranslations(prev => {
+                        const next = { ...prev };
+                        delete next['employeeName'];
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Enter Employee Name"
+                  disabled={isDisabled}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={() => handleTranslateField('employeeName', detectionData.employeeName)}
+                  disabled={isDisabled || !detectionData.employeeName || isTranslating === 'employeeName'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  title="Translate to Urdu"
+                >
+                  {isTranslating === 'employeeName' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
+                </button>
+              </div>
+              <AnimatePresence mode="wait">
+                {(detectionData.employeeName || aiUrduTranslations['employeeName'] || isTranslating === 'employeeName') && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="mt-1 flex justify-end items-center gap-2 pb-1" 
+                    dir="rtl"
+                  >
+                    <span className={cn(
+                      "text-sm font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 urdu-font transition-colors",
+                      isTranslating === 'employeeName' ? "text-neutral-400 animate-pulse" : "text-indigo-600"
+                    )}>
+                      {isTranslating === 'employeeName' ? 'ترجمہ ہو رہا ہے...' : (detectionData.employeeNameUrdu || aiUrduTranslations['employeeName'] || translateToUrdu(detectionData.employeeName))}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </SortableItem>
+        );
+      case 'employeeNameUrdu':
+        return (
+          <SortableItem 
+            id="employeeNameUrdu" 
+            key="employeeNameUrdu" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">Employee Name (Urdu)</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input
+                type="text"
+                value={detectionData.employeeNameUrdu || ''}
+                onChange={(e) => setDetectionData({...detectionData, employeeNameUrdu: e.target.value})}
+                placeholder="ملازم کا نام"
+                disabled={isDisabled}
+                dir="rtl"
+                className="w-full bg-indigo-50/30 border border-indigo-100 rounded-xl py-2 px-3 text-neutral-900 font-bold urdu-font focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </SortableItem>
+        );
+      case 'employeeDesignation':
+        return (
+          <SortableItem 
+            id="employeeDesignation" 
+            key="employeeDesignation" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee Designation</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input
+                type="text"
+                value={detectionData.employeeDesignation || ''}
+                onChange={(e) => setDetectionData({...detectionData, employeeDesignation: e.target.value})}
+                placeholder="Enter Employee Designation"
+                disabled={isDisabled}
+                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </SortableItem>
+        );
+      case 'employeeCnic':
+        return (
+          <SortableItem 
+            id="employeeCnic" 
+            key="employeeCnic" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee CNIC</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input
+                type="text"
+                value={detectionData.employeeCnic || ''}
+                onChange={(e) => setDetectionData({...detectionData, employeeCnic: e.target.value})}
+                placeholder="Enter Employee CNIC (e.g. 35404-1234567-1)"
+                disabled={isDisabled}
+                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </SortableItem>
+        );
+      case 'employeeMobile':
+        return (
+          <SortableItem 
+            id="employeeMobile" 
+            key="employeeMobile" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee Mobile</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input
+                type="text"
+                value={detectionData.employeeMobile || ''}
+                onChange={(e) => setDetectionData({...detectionData, employeeMobile: e.target.value})}
+                placeholder="Enter Employee Mobile (e.g. 0321-1234567)"
+                disabled={isDisabled}
+                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </SortableItem>
+        );
       default:
         return null;
     }
-  };
+  }, [detectionData, handleSerialNoChange, billData, acMaxEffective, acMin, isSaving, isFetching, showMeterMismatch, showReadingMismatch, isMeterVerified, isReadingVerified, acMin, acMaxEffective]);
   const isMonthAvailableInBill = (monthStr: string) => {
     if (!monthStr || !billData) return true;
     const date = new Date(monthStr);
@@ -1884,87 +2325,19 @@ export default function NewCase() {
     return false;
   };
 
-  const [billData, setBillData] = useState<BillData | null>(() => getInitialState('lesco_bill_data', null));
-  const [error, setError] = useState('');
-  const defaultDetectionData = {
-    dateOfChecking: '',
-    employeeName: user?.name || '',
-    employeeDesignation: 'Line Superintendent',
-    discrepancy: [] as string[],
-    othersDiscrepancy: '',
-    checkedBy: [] as string[],
-    othersCheckedBy: '',
-    meterType: '',
-    capacity: '',
-    presentReading: '',
-    presentReadingAtSite: '',
-    previousReading: '',
-    difference: '',
-    email: '',
-    mobileNo: '+92',
-    meterMake: '',
-    name: '',
-    address: '',
-    sanctionLoad: '',
-    connectedLoad: '',
-    loadFactor: '',
-    feederName: '',
-    customerId: '',
-    tariff: '',
-    meterNumber: '',
-    witnesses: ['', ''],
-    remarks: '',
-    noticeNo: '',
-    noticeDated: '',
-    firNo: '',
-    firDated: '',
-    registeredFirNo: '',
-    registeredFirDated: '',
-    policeStation: '',
-    noOfAC: '',
-    photoUrl: '',
-    splitAcCount: '',
-    windowAcCount: '',
-    acType: '' as any,
-    othersAcType: '',
-    detectionPeriodFrom: '',
-    detectionPeriodTo: '',
-    detectionPeriodMonths: '',
-    acPeriodFrom: '',
-    acPeriodTo: '',
-    acPeriodMonths: '',
-    unitsOfAcPeriod: '',
-    unitsAssessed: '',
-    unitsAlreadyCharged: '',
-    netUnitsToBeCharged: '',
-    meterSlowBy: '',
-    loadItems: [
-      { name: 'E/Saver', qty: '', watts: 18, total: 0 },
-      { name: 'Tube Light', qty: '', watts: 40, total: 0 },
-      { name: 'Fan', qty: '', watts: 80, total: 0 },
-      { name: 'TV', qty: '', watts: 150, total: 0 },
-      { name: 'Computer', qty: '', watts: 200, total: 0 },
-      { name: 'Refrigerator', qty: '', watts: 250, total: 0 },
-      { name: 'Freezer', qty: '', watts: 350, total: 0 },
-      { name: 'W/Machine', qty: '', watts: 373, total: 0 },
-      { name: 'Water Pump', qty: '', watts: 746, total: 0 },
-      { name: 'Iron', qty: '', watts: 1000, total: 0 },
-      { name: 'UPS', qty: '', watts: 1000, total: 0 },
-      { name: 'Toka/Heat', qty: '', watts: '', total: 0 },
-    ] as LoadItem[],
-  };
-
-  const [detectionData, setDetectionData] = useState(() => {
-    const saved = getInitialState('lesco_detection_data', defaultDetectionData);
-    return { ...defaultDetectionData, ...saved };
-  });
 
   useEffect(() => {
-    localStorage.setItem('lesco_bill_data', safeStringify(billData));
+    const timer = setTimeout(() => {
+      localStorage.setItem('lesco_bill_data', safeStringify(billData));
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [billData]);
 
   useEffect(() => {
-    localStorage.setItem('lesco_detection_data', safeStringify(detectionData));
+    const timer = setTimeout(() => {
+      localStorage.setItem('lesco_detection_data', safeStringify(detectionData));
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [detectionData]);
 
   const isSlownessActive = detectionData.discrepancy.includes('Meter Slow By');
@@ -2239,20 +2612,26 @@ export default function NewCase() {
     const acUnits = parseInt(detectionData.unitsOfAcPeriod) || 0;
     
     let grandTotalStr = '';
+    let totalUnitsForLoss = 0;
     if (netUnitsStr === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD') {
       grandTotalStr = acUnits > 0 ? `0 + ${acUnits} = ${acUnits.toLocaleString()}` : '0';
+      totalUnitsForLoss = acUnits;
     } else {
       const netUnits = parseInt(netUnitsStr) || 0;
       grandTotalStr = (netUnits + acUnits).toLocaleString();
+      totalUnitsForLoss = netUnits + acUnits;
     }
 
-    if (detectionData.feederName !== grandTotalStr) {
+    const calculatedLossAmount = (totalUnitsForLoss * 60).toString();
+
+    if (detectionData.feederName !== grandTotalStr || detectionData.lossAmount !== calculatedLossAmount) {
       setDetectionData(prev => ({
         ...prev,
-        feederName: grandTotalStr
+        feederName: grandTotalStr,
+        lossAmount: calculatedLossAmount
       }));
     }
-  }, [detectionData.netUnitsToBeCharged, detectionData.unitsOfAcPeriod]);
+  }, [detectionData.netUnitsToBeCharged, detectionData.unitsOfAcPeriod, detectionData.lossAmount, detectionData.feederName]);
 
   React.useEffect(() => {
     if (billData) {
@@ -2998,6 +3377,7 @@ export default function NewCase() {
         remarks: detectionData.remarks || '',
         createdAt: new Date().toISOString(),
         firNumber: `FIR-${Math.floor(100000 + Math.random() * 900000)}`,
+        referenceNumber: detectionData.referenceNumber || billData.referenceNumber || '',
         billingMonth: billData.billingMonth,
         noticeNo: detectionData.noticeNo,
         noticeDated: detectionData.noticeDated,
@@ -3037,7 +3417,7 @@ export default function NewCase() {
         fetch("/api/save-to-sheets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          body: safeStringify({
             data: {
               referenceNumber: sanitizedBillData.referenceNumber,
               consumerName: detectionData.name,
@@ -4049,7 +4429,7 @@ export default function NewCase() {
                       strategy={rectSortingStrategy}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {fieldOrder.map(id => renderField(id, fieldSerials[id], (val: string) => setFieldSerials(prev => ({ ...prev, [id]: val }))))}
+                        {fieldOrder.map(id => renderField(id, fieldSerials[id]))}
                       </div>
                     </SortableContext>
                   </DndContext>
@@ -4294,20 +4674,11 @@ export default function NewCase() {
         </div>
       </div>
 
-      {/* Hidden Print Templates */}
-      <div className="fixed top-0 left-[-9999px]">
-        {[
-          { type: 'DETECTION BILL PROFORMA', ref: printRefDetectionBill },
-          { type: 'NOTICE', ref: printRefNotice },
-          { type: 'FIR Request', ref: printRefFIR },
-          { type: 'FIR Urdu', ref: printRefFIRUrdu },
-          { type: 'Detection Register', ref: printRefRegister },
-        ].map(({ type, ref }) => (
-          <ProformaTemplates 
-            key={type}
-            ref={ref}
-            type={type as any}
-            data={{
+      {/* Hidden Print Templates - Only render in Step 4 to improve performance */}
+      {step === 4 && (
+        <div className="fixed top-0 left-[-9999px]">
+          {(() => {
+            const commonData = {
               ...detectionData,
               photoUrl: photo,
               acType: (() => {
@@ -4352,10 +4723,26 @@ export default function NewCase() {
               subDivisionName: billData?.subDivisionName,
               feederName: detectionData.feederName,
               meterStatus: billData?.meterStatus || detectionData.meterStatus
-            }}
-          />
-        ))}
-      </div>
+            };
+
+            return [
+              { type: 'DETECTION BILL PROFORMA', ref: printRefDetectionBill },
+              { type: 'NOTICE', ref: printRefNotice },
+              { type: 'FIR Request', ref: printRefFIR },
+              { type: 'FIR Urdu', ref: printRefFIRUrdu },
+              { type: 'Detection Register', ref: printRefRegister },
+            ].map(({ type, ref }) => (
+              <ProformaTemplates 
+                key={type}
+                ref={ref}
+                type={type as any}
+                data={commonData as any}
+                aiUrduTranslations={aiUrduTranslations}
+              />
+            ));
+          })()}
+        </div>
+      )}
       {showMeterMismatch && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-900/90 p-4">
           <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-2xl w-full text-center">

@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { cn } from '../lib/utils';
 import { BillData, MonthWiseUnit, LoadItem } from '../types';
 import { QRCodeSVG } from 'qrcode.react';
+import { translateToUrdu } from '../lib/urduUtils';
 
 interface ProformaProps {
   type: 'DETECTION BILL PROFORMA' | 'NOTICE' | 'FIR Request' | 'FIR Urdu' | 'Detection Register';
@@ -30,6 +31,8 @@ interface ProformaProps {
     email: string;
     employeeName: string;
     employeeDesignation: string;
+    employeeCnic?: string;
+    employeeMobile?: string;
     witnesses: string[];
     noticeNo?: string;
     noticeDated?: string;
@@ -52,6 +55,9 @@ interface ProformaProps {
     seizureCableSize?: string;
     seizureCableColor?: string;
     seizureCableLength?: string;
+    nameUrdu?: string;
+    addressUrdu?: string;
+    employeeNameUrdu?: string;
     meterSlowBy?: string;
     acPeriodFrom?: string;
     acPeriodTo?: string;
@@ -70,9 +76,10 @@ interface ProformaProps {
     deferredAmount?: number;
     meterNoOnBill?: string;
   };
+  aiUrduTranslations?: Record<string, string>;
 }
 
-export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ type, data }, ref) => {
+export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ type, data, aiUrduTranslations }, ref) => {
   const caseUrl = `${window.location.origin}/cases?id=${data.id}`;
   const isNetPositive = data.netUnitsToBeCharged && !isNaN(Number(data.netUnitsToBeCharged)) && Number(data.netUnitsToBeCharged) >= 0;
 
@@ -302,7 +309,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
   const calculatedReadings = getCalculatedReadings();
 
   const renderDetectionBill = () => (
-    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight p-6 md:p-[20mm]">
+    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight p-6 md:p-[20mm]">
       <div className="flex items-center justify-between mb-4 border-b-2 border-black pb-2">
         <div className="text-center flex-1">
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">DETECTION BILL PROFORMA</h1>
@@ -310,7 +317,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <p className="text-[8px] font-bold">OFFICE OF THE ASSISTANT MANAGER (OPERATION)</p>
           <p className="text-[8px] font-bold uppercase">KOT RADHA KISHAN-1 SUB DIVISION LESCO</p>
           <p className="font-bold text-[9px] flex items-center justify-center gap-1">
-            <span className="text-xs">☎</span> 049-2382776
+            <span className="text-xs">☎</span> <span dir="ltr">049-2382776</span>
           </p>
         </div>
         {renderQRCode()}
@@ -349,7 +356,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.registeredFirDated)}</span></div>
           <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Name Of Police Station : -</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden">{(data.firNo && !data.registeredFirNo) ? (
             <>
-              {data.policeStation || '____________________'} <span className="text-red-600">(PENDING FIR)</span>
+              {data.policeStation || '____________________'}
             </>
           ) : (data.policeStation || '____________________')}</span></div>
         </div>
@@ -816,7 +823,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
   const renderNotice = () => {
     return (
-      <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight flex flex-col p-6 md:p-[20mm]">
+      <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight flex flex-col p-6 md:p-[20mm]">
         <div className="flex items-center justify-between mb-6 border-b-2 border-black pb-2">
           <div className="text-center flex-1">
             <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">NOTICE</h1>
@@ -824,7 +831,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
             <p className="text-[8px] font-bold">OFFICE OF THE ASSISTANT MANAGER (OPERATION)</p>
             <p className="text-[8px] font-bold uppercase">KOT RADHA KISHAN-1 SUB DIVISION LESCO</p>
             <p className="font-bold text-[9px] flex items-center justify-center gap-1">
-              <span className="text-xs">☎</span> 049-2382776
+              <span className="text-xs">☎</span> <span dir="ltr">049-2382776</span>
             </p>
           </div>
           {renderQRCode()}
@@ -908,52 +915,643 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     );
   };
 
-  const renderFIRUrdu = () => (
-    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[12px] leading-relaxed p-6 md:p-[20mm]" dir="rtl">
-        <div className="text-center font-bold mb-6">
-            <h1 className="text-xl">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h1>
-            <p>دفتر اِسسٹنٹ مینیجر (آپریشن ) لیسکو کوٹ رادھا کشن سب ڈویژن نمبر۔۱</p>
-            <p>0492-382776, 0492-385671, sdokrk1@gmail.com</p>
-        </div>
-        
-        <div className="text-right space-y-2">
-            <p>چھٹی نمبری: <span className="border-b border-black">{data.firNo || '۔۔۔۔۔۔'}</span></p>
-            <p>بتاریخ: <span className="border-b border-black">{formatDate(data.firDated)}</span></p>
-            <p>از طرف: اِسسٹنٹ مینیجر آپریشن لیسکو کوٹ رادھا کشن سب ڈویژن نمبر۔۱</p>
-            <p>بطرف: جناب ایس۔ایچ ۔ او صاحب تھانہ {data.policeStation || '۔۔۔۔۔۔'} ضلع قصور</p>
-            <p className="font-bold border-b border-black">عنوان: اندراج مقدمہ بابت بجلی چوری زیرِ دفعہ 462-I الیکٹریسٹی ایکٹ 2016</p>
-            <p>رپورٹ کی جاتی ہے کہ آج مؤرخہ {formatDate(data.dateOfChecking)} کو دورانِ معمول چیکنگ سب ڈویژنل چیکنگ ٹیم ہمراہ {Array.isArray(data.checkedBy) ? data.checkedBy.join(', ') : data.checkedBy} نے کنکشن بجلی بحوالہ نمبر {data.referenceNumber} بنام {data.name} سکنہ {data.address} چیک کیا۔ تو پایا کہ صارف / حال مقیم {data.name} نے واپڈا کی L.T لائن / مین کیبل سے ڈائریکٹ کنڈا لگا کر بجلی چوری کر رہا تھا۔ اس طرح صارف/حال مقیم شخص ہزاروں روپے کی بجلی چوری کا مرتکب پایا گیا اور صارف نے واپڈا کو تقریباً {data.lossAmount || '۔۔۔۔۔'} روپے کا نقصان پہنچایا ہے۔</p>
-            <p>لہٰذا مندرجہ بالا صارف / حال مقیم کے خلاف بجلی چوری کرنے کے جرم میں مقدمہ درج کر کے FIR کی کاپی زیرِ دستخطی کو ارسال کی جائے۔</p>
-        </div>
-        
-        <div className="mt-8">
-            <h3 className="font-bold">گواہان:</h3>
-            <ul className="list-decimal pr-5">
-                {(data.witnesses || []).map((w, i) => <li key={i}>{w}</li>)}
-            </ul>
-        </div>
-        
-        <div className="mt-8 text-left font-bold">
-            <p>اِنجینئر محبوب عالم</p>
-            <p>اِسسٹنٹ مینیجر آپریشن لیسکو کوٹ رادھا کشن سب ڈویژن نمبر۔۱</p>
+  const localTranslateToUrdu = (text: string | undefined): string => {
+    if (!text) return '۔۔۔۔۔۔۔۔۔۔۔۔';
+    
+    // Prioritize persistent Urdu fields from data first
+    if (text === data.name && data.nameUrdu) return data.nameUrdu;
+    if (text === data.address && data.addressUrdu) return data.addressUrdu;
+    if (text === data.employeeName && data.employeeNameUrdu) return data.employeeNameUrdu;
+
+    // Fallback to transient AI translations if persistent ones aren't set
+    if (aiUrduTranslations) {
+      if (text === data.name && aiUrduTranslations['name']) return aiUrduTranslations['name'];
+      if (text === data.address && aiUrduTranslations['address']) return aiUrduTranslations['address'];
+      if (text === data.employeeName && aiUrduTranslations['employeeName']) return aiUrduTranslations['employeeName'];
+    }
+
+    let translated = text;
+    const map: { [key: string]: string } = {
+      'raiwind': 'رائے ونڈ',
+      'changa manga': 'چھانگا مانگا',
+      'kot radha kishan': 'کوٹ رادہاکشن',
+      'manga mandi': 'مانگا منڈی',
+      'raiwind city': 'رائے ونڈ سٹی',
+      'along with': 'ہمراہ',
+      'kasur': 'قصور',
+      'lahore': 'لاہور',
+      'pattoki': 'پتونکی',
+      'chunian': 'چونیاں',
+      'phool nagar': 'پھول نگر',
+      'habibabad': 'حبیب آباد',
+      'mustafabad': 'مصطفی آباد',
+      'ellahabad': 'الہٰ آباد',
+      'kanganpur': 'کنگن پور',
+      'khudian': 'کھڈیاں',
+      'bhai pheru': 'بھائی پھیرو',
+      'lalyani': 'للیانی',
+      'okara': 'اوکاڑہ',
+      'sahiwal': 'ساہیوال',
+      'sheikhupura': 'شیخوپورہ',
+      'gujranwala': 'گوجرانوالہ',
+      's/o': 'ولد',
+      'son of': 'ولد',
+      'd/o': 'بنت',
+      'daughter of': 'بنت',
+      'w/o': 'زوجہ',
+      'wife of': 'زوجہ',
+      'p/o': 'حال قابض',
+      'p.o': 'حال قابض',
+      'r/o': 'سکنہ',
+      'resident of': 'سکنہ',
+      'tehsil': 'تحصیل',
+      'district': 'ضلع',
+      'road': 'روڈ',
+      'mohallah': 'محلہ',
+      'chak': 'چک',
+      'kot': 'کوٹ',
+      'house': 'مکان',
+      'street': 'گلی',
+      'gali': 'گلی',
+      'near': 'نزد',
+      'opposite': 'بالمقابل',
+      'main bazar': 'مین بازار',
+      'bazar': 'بازار',
+      'village': 'گاوں',
+      'dhariwal': 'دھاریوال',
+      'jamber': 'جمبر',
+      'shiekh hussain': 'شیخ حسین',
+      'behlolpur': 'بہلول پور',
+      'assistant manager (operation)': 'اِسسٹنٹ مینیجر (آپریشن)',
+      'm&s team': 'ایم اینڈ ایس ٹیم',
+      'sub divisional checking team': 'سب ڈویژنل چیکنگ ٹیم',
+      'inyat ullah': 'عنایت اللہ',
+      'inayat ullah': 'عنایت اللہ',
+      'nia moh': 'نیاز محمد',
+      'noor muhammad': 'نور محمد',
+      'naseem shah': 'نسیم شاہ',
+      'black': 'سیاہ',
+      'meter': 'میٹر',
+      'ft': 'فٹ',
+      'meters': 'میٹر',
+      'ls': 'ایل ایس',
+      'lm': 'ایل ایم',
+      'alm': 'اے ایل ایم',
+      'bd': 'بل ڈسٹری بیوٹر',
+      'ms': 'ایم ایس',
+      'm/r': 'میٹر ریڈر',
+      'je': 'جے ای',
+      'sdo': 'سب ڈویژنل آفیسر',
+      'acting meter inspector': 'ایکٹنگ میٹر انسپکٹر',
+      'Direct Supply From LESCO main Cable': 'لیسکو مین کیبل سے ڈائریکٹ سپلائی',
+      'Direct Supply From L.T line': 'ایل ٹی لائن سے ڈائریکٹ سپلائی',
+      'Direct Supply From Meter terminal.': 'میٹر ٹرمینل بلاک سے ڈائیریکٹ سپلائی لگارکھی تھی',
+      'Meter Body Tempered.': 'میٹر باڈی ٹیمپرڈ کرکے بجلی چوری کر رہا تھا۔',
+      'Meter Body Tempered': 'میٹر باڈی ٹیمپرڈ کرکے بجلی چوری کر رہا تھا۔',
+      'Hole In Meter Body. Meter Reversed.': 'میٹر باڈی میں سوراخ کر کے میٹر ریورس کیا گیا',
+      'Hole in Meter Terminal Block.': 'میٹر ٹرمینل بلاک میں سوراخ پایا گیا',
+      'Scratches on Figures. Meter Reversed.': 'فگرز پر خراشیں ڈال کر میٹر ریورس کیا گیا',
+      'Shunt In Terminal Block.': 'ٹرمینل بلاک میں شنٹ پایا گیا',
+      'One Phase Dead Stop. Meter 33% Slow.': 'ایک فیز مردہ ہے، میٹر 33 فیصد سلو ہے',
+      'Two Phase Dead Stop. Meter 66% Slow.': 'دو فیز مردہ ہیں، میٹر 66 فیصد سلو ہے',
+      'Meter Dead Stop.': 'میٹر مکمل طور پر بند ہے (ڈیڈ سٹاپ)',
+      'Meter Intensionally Display Wash.': 'میٹر کا ڈسپلے جان بوجھ کر واش کیا گیا',
+      'Meter Intensionally Burnt.': 'میٹر جان بوجھ کر جلایا گیا',
+      'ls-i': 'ایل ایس ون',
+      'ls-ii': 'ایل ایس ٹو',
+      'lm-i': 'ایل ایم ون',
+      'lm-ii': 'ایل ایم ٹو',
+      'ms-i': 'ایم ایس ون',
+      'ms-ii': 'ایم ایس ٹو',
+      'lorry driver': 'لاری ڈرائیور',
+      'laeeque ahmad': 'لئیق احمد',
+      'amjad ali': 'امجد علی',
+      'muhammad afzal.': 'محمد افضل۔',
+      'muhammad amin': 'محمد امین',
+      'pervaiz akhtar': 'پرویز اختر',
+      'mumtaz ali': 'ممتاز علی',
+      'muhammad ashraf': 'محمد اشرف',
+      'muhammad fazal': 'محمد فضل',
+      'javaid iqbal': 'جاوید اقبال',
+      'anjum maqsood': 'انجم مقصود',
+      'ghulam muhammad': 'غلام محمد',
+      'jameel ahmad': 'جمیل احمد',
+      'zulifqar ali bhatti': 'ذوالفقار علی بھٹی',
+      'nazeer ahmad': 'نذیر احمد',
+      'muhammad azam': 'محمد اعظم',
+      'tahir hussain': 'طاہر حسین',
+      'muhammad sarwar': 'محمد سرور',
+      'muhammad imran': 'محمد عمران',
+      'muhammad shafique': 'محمد شفیق',
+      'irfan ali ayoub': 'عرفان علی ایوب',
+      'muhammad yaqoob': 'محمد یعقوب',
+      'muhammad asif': 'محمد آصف',
+      'kashif mehmood': 'کاشف محمود',
+      'ch.bilal ahmad': 'چوہدری بلال احمد',
+      'zia-ul-qamar': 'ضیاء القمر',
+      'muhammad dawood': 'محمد داؤد',
+      'muhammad tariq mahmood': 'محمد طارق محمود',
+      'shehzad anjum': 'شہزاد انجم',
+      'shahbaz ali': 'شہباز علی',
+      'muhammad amir': 'محمد عامر',
+      'muhammad amjad': 'محمد امجد',
+      'muhammad rasheed': 'محمد رشید',
+      'mohammad asghar': 'محمد اصغر',
+      'nadeem sajjad': 'ندیم سجاد',
+      'naeem ahmad': 'نعیم احمد',
+      'muhammad usman': 'محمد عثمان',
+      'muhammad mubeen': 'محمد مبین',
+      'shahbaz ahmad saqi': 'شہباز احمد ساقی',
+      'mohsan bashir': 'محسن بشیر',
+      'ch; muhammad shafqat khan': 'چوہدری; محمد شفقت خان',
+      'muhammad shakeel': 'محمد شکیل',
+      'ali shan': 'علی شان',
+      'shafqat ali babar': 'شفقت علی بابر',
+      'mohammad asif': 'محمد آصف',
+      'waseem akram': 'وسیم اکرم',
+      'muhammad riaz': 'محمد ریاض',
+      'kazim ali': 'کاظم علی',
+      'asjad ali': 'اسجد علی',
+      'attaullah khattak': 'عطا اللہ خٹک',
+      'tahir islam': 'طاہر اسلام',
+      'imran nasir': 'عمران ناصر',
+      'muhammad aslam': 'محمد اسلم',
+      'muhammad farman': 'محمد فرمان',
+      'dildar hussain': 'دلدار حسین',
+      'tallat mehmood': 'طلعت محمود',
+      'allah ditta': 'اللہ دتہ',
+      'saeed ahmed': 'سعید احمد',
+      'shakeel ahmad': 'شکیل احمد',
+      'mohammad amjad': 'محمد امجد',
+      'maqbool ahmed': 'مقبول احمد',
+      'mohammad asif bashir': 'محمد آصف بشیر',
+      'abdul latif': 'عبداللطیف',
+      'shafaqat ali sajid': 'شفقت علی ساجد',
+      'maqgood ahmad': 'مقبول احمد',
+      'muhammad maqbool': 'محمد مقبول',
+      'nasrullah khan': 'نصراللہ خان',
+      'muhammad saleem': 'محمد سلیم',
+      'iftikhar ahmad': 'افتخار احمد',
+      'irfan haider': 'عرفان حیدر',
+      'zulifqar ali': 'ذوالفقار علی',
+      'muhammad abbas': 'محمد عباس',
+      'muhammad nawaz': 'محمد نواز',
+      'mohammad arshad': 'محمد ارشد',
+      'abid hussain': 'عابد حسین',
+      'shahzad nadeem': 'شہزاد ندیم',
+      'muhammad ashfaq': 'محمد اشفاق',
+      'shahbaz ahmed': 'شہباز احمد',
+      'shoaib akhtar': 'شعیب اختر',
+      'mirza muhammad abid baig': 'مرزا محمد عابد بیگ',
+      'muhammad dilshad': 'محمد دلشاد',
+      'naseem akbar': 'نسیم اکبر',
+      'zulfqar ali': 'ذوالفقار علی',
+      'naveed shehzad hussain': 'نوید شہزاد حسین',
+      'muhammad irfan': 'محمد عرفان',
+      'danish masih': 'دانش مسیح',
+      'sajjad masih': 'سجاد مسیح',
+      'junaid jamil': 'جنید جمیل',
+      'abdul rasheed': 'عبدالرشید',
+      'fiaz ullah athar': 'فیاض اللہ اطہر',
+      'muhammad saddique': 'محمد صدیق',
+      'imarat ali': 'امارت علی',
+      'muhammad sharif': 'محمد شریف',
+      'akhtar hussain': 'اختر حسین',
+      'muhammad shahbaz price': 'محمد شہباز قیمت',
+      'shakeel lal': 'شکیل لال',
+      'muhammad latif': 'محمد لطیف',
+      'amir allah wasaya': 'امیر اللہ وسایا',
+      'muhammad farooq': 'محمد فاروق',
+      'faryad ali': 'فریاد علی',
+      'hanan ashraf': 'حنان اشرف',
+      'farman arshad': 'فرمان ارشد',
+      'm.naveed': 'ایم نوید',
+      'faisal masood': 'فیصل مسعود',
+      'maqsood ahmad': 'مقصود احمد',
+      'safdar malik': 'صفدر ملک',
+      'salman m.r': 'سلمان ایم آر',
+      'muhammadmurtaza': 'محمد مرتضیٰ',
+      'muhammad aqeel': 'محمد عقیل',
+      'muhammad asghar': 'محمد اصغر',
+      'muhammad salman': 'محمد سلمان',
+      'awaise munir': 'اویس منیر',
+      'ghulam murtaza': 'غلام مرتضیٰ',
+      'zaeem sabir': 'زعیم صابر',
+      'mudassar yaseen': 'مدثر یاسین',
+      'muhammad khaliq': 'محمد خالق',
+      'muhammad naveed sharif': 'محمد نوید شریف',
+      'qaisar nadeem': 'قیصر ندیم',
+      'rozdar khan': 'روزدار خان',
+      'zahid naseer': 'زاہد نصیر',
+      'khizar hayat': 'خضر حیات',
+      'saeed ahmad': 'سعید احمد',
+      'shehzad qaisar': 'شہزاد قیصر',
+      'ch. muhammad abubakar siddique': 'چوہدری محمد ابوبکر صدیق',
+      'muhammad umar': 'محمد عمر',
+      'muhammad younas': 'محمد یونس',
+      'ahmad naseem': 'احمد نسیم',
+      'tauqeer ali shahzad': 'توقیر علی شہزاد',
+      'muhammad ramzan': 'محمد رمضان',
+      'm. imran rafique': 'ایم عمران رفیق',
+      'imran khan': 'عمران خان',
+      'adil usman': 'عادل عثمان',
+      'adil hussain': 'عادل حسین',
+      'sajid javed': 'ساجد جاوید',
+      'kashif hussain': 'کاشف حسین',
+      'mudassar sehar': 'مدثر سحر',
+      'abdul khaliq': 'عبدالخالق',
+      'sakhawat ali khan': 'سخاوت علی خان',
+      'kalim ullah': 'کلیم اللہ',
+      'atif mahmood': 'عاطف محمود',
+      'muhammad umar subhani': 'محمد عمر سبحانی۔',
+      'shan ali': 'شان علی',
+      'bhola masih': 'بھولا مسیح',
+      'zahid ali ولد nasar ali': 'زاہد علی ولد ناصر علی',
+      'zahid ali son of nasar ali': 'زاہد علی ولد ناصر علی',
+      'zahid ali s/o nasar ali': 'زاہد علی ولد ناصر علی',
+      'chak number 55 kot radhakishan': 'چک نمبر 55 کوٹ رادہا کشن',
+      'chak no 55 kot radhakishan': 'چک نمبر 55 کوٹ رادہا کشن',
+      'chak no 55 kot radhakishan sub div': 'چک نمبر 55 کوٹ رادہا کشن سب ڈویژن',
+      'm&t representative': 'نمائندہ ایم اینڈ ٹی',
+      'assistant manager operation': 'اِسسٹنٹ مینیجر (آپریشن)',
+      'assistant manager': 'اِسسٹنٹ مینیجر',
+      'muhammad': 'محمد',
+      'fiaz': 'فیاض',
+      'ahmed': 'احمد',
+      'ahmad': 'احمد',
+      'ali': 'علی',
+      'hussain': 'حسین',
+      'raza': 'رضا',
+      'hassan': 'حسن',
+      'khalid': 'خالد',
+      'tariq': 'طارق',
+      'naveed': 'نوید',
+      'shahid': 'شاہد',
+      'zafar': 'ظفر',
+      'iqbal': 'اقبال',
+      'anwar': 'انور',
+      'bashir': 'بشیر',
+      'munir': 'منیر',
+      'rashid': 'رشید',
+      'sultan': 'سلطان',
+      'shaukat': 'شوکت',
+      'rafiq': 'رفیق',
+      'farooq': 'فاروق',
+      'siddique': 'صدیق',
+      'tayyab': 'طیب',
+      'zubair': 'زبیر',
+      'bilal': 'بلال',
+      'hamza': 'حمزہ',
+      'usman': 'عثمان',
+      'umar': 'عمر',
+      'abu bakar': 'ابوبکر',
+      'abubakar': 'ابوبکر',
+      'mian': 'میاں',
+      'syed': 'سید',
+      'haji': 'حاجی',
+      'ch.': 'چوہدری',
+      'ch': 'چوہدری',
+      'malik': 'ملک',
+      'sheikh': 'شیخ',
+      'sh.': 'شیخ',
+      'sh': 'شیخ',
+      'bhatti': 'بھٹی',
+      'jatt': 'جٹ',
+      'rajpoot': 'راجپوت',
+      'rana': 'رانا',
+      'dogar': 'ڈوگر',
+      'arain': 'آرائیں',
+      'guijar': 'گجر',
+      'gujjar': 'گجر',
+      'butt': 'بٹ',
+      'mirza': 'مرزا',
+      'beg': 'بیگ',
+      'baig': 'بیگ',
+      'zahid ali': 'زاہد علی',
+      'nasar ali': 'ناصر علی',
+      'kamran': 'کامران',
+      'rizwan': 'رضوان',
+      'adnan': 'عدنان',
+      'faisal': 'فیصل',
+      'irfan': 'عرفان',
+      'sajid': 'ساجد',
+      'majid': 'ماجد',
+      'zahoor': 'ظہور',
+      'akmal': 'اکمل',
+      'aslam': 'اسلم',
+      'akram': 'اکرم',
+      'arshad': 'ارشد',
+      'ashfaq': 'اشفاق',
+      'ashraf': 'اشرف',
+      'asif': 'آصف',
+      'azam': 'اعظم',
+      'babur': 'بابر',
+      'babar': 'بابر',
+      'habib': 'حبیب',
+      'haider': 'حیدر',
+      'hameed': 'حمید',
+      'ibrahim': 'ابراہیم',
+      'idrees': 'ادریس',
+      'ilyas': 'الیاس',
+      'imran': 'عمران',
+      'ishfaq': 'اشفاق',
+      'ishaq': 'اسحاق',
+      'ismail': 'اسماعیل',
+      'imtiaz': 'امتیاز',
+      'javaid': 'جاوید',
+      'javed': 'جاوید',
+      'latif': 'لطیف',
+      'liaquat': 'لیاقت',
+      'maqsood': 'مقصود',
+      'masood': 'مسعود',
+      'mubarak': 'مبارک',
+      'mubashir': 'مبشر',
+      'muddasar': 'مدثر',
+      'mudassar': 'مدثر',
+      'mujtaba': 'مجتبیٰ',
+      'mustafa': 'مصطفی',
+      'nadeem': 'ندیم',
+      'naseer': 'نصیر',
+      'nasir': 'ناصر',
+      'nawaz': 'نواز',
+      'qasim': 'قاسم',
+      'qayyum': 'قیوم',
+      'rafeeq': 'رفیق',
+      'rehan': 'ریحان',
+      'saif': 'سیف',
+      'saleem': 'سلیم',
+      'salman': 'سلمان',
+      'shabbir': 'شبیر',
+      'shahzad': 'شہزاد',
+      'shakeel': 'شکیل',
+      'sharif': 'شریف',
+      'tahir': 'طاہر',
+      'waheed': 'وحید',
+      'waqas': 'وقاص',
+      'yaseen': 'یاسین',
+      'younas': 'یونس',
+      'yousaf': 'یوسف',
+      'zaheer': 'ظہیر',
+      'master': 'ماسٹر',
+      'doctor': 'ڈاکٹر',
+      'dr.': 'ڈاکٹر',
+      'professor': 'پروفیسر',
+      'prof.': 'پروفیسر',
+      'advocate': 'ایڈووکیٹ',
+      'adv.': 'ایڈووکیٹ',
+      'engineer': 'انجینئر',
+      'engr.': 'انجینئر',
+      'engr': 'انجینئر',
+      'major': 'میجر',
+      'captain': 'کیپٹن',
+      'retired': 'ریٹائرڈ',
+      'ret.': 'ریٹائرڈ',
+      'pensioner': 'پینشنر',
+      'floor': 'منزل',
+      'ground': 'گراؤنڈ',
+      'plaza': 'پلازہ',
+      'market': 'مارکیٹ',
+      'block': 'بلاک',
+      'sector': 'سیکٹر',
+      'phase': 'فیز',
+      'garden': 'گارڈن',
+      'colony': 'کالونی',
+      'town': 'ٹاؤن',
+      'city': 'سٹی',
+      'shumal': 'شمال',
+      'janub': 'جنوب',
+      'mashriq': 'مشرق',
+      'maghrib': 'مغرب',
+      'faridi': 'فریدی',
+      'chishti': 'چشتی',
+      'qadri': 'قادری',
+      'naqshbandi': 'نقشبندی',
+      'soharwardi': 'سہروردی',
+      'shoaib': 'شعیب',
+      'tauseef': 'توصیف',
+      'tanveer': 'تنویر',
+      'khurram': 'خرم',
+      'shehzad': 'شہزاد',
+      'aftab': 'آفتاب',
+      'mahtab': 'مہتاب',
+      'khurshid': 'خورشید',
+      'pervaiz': 'پرویز',
+      'akhtar': 'اختر',
+      'asghar': 'اصغر',
+      'akbar': 'اکبر',
+      'mohammad': 'محمد',
+      'muhamad': 'محمد',
+      'muhammd': 'محمد',
+      'm.': 'ایم',
+      'afzal': 'افضل',
+      'inayat': 'عنایت',
+      'ullah': 'اللہ',
+      'inayatullah': 'عنایت اللہ'
+    };
+
+    // Sort keys by length descending to handle longer terms first (e.g. 'raiwind city' before 'raiwind')
+    const sortedKeys = Object.keys(map).sort((a, b) => b.length - a.length);
+
+    sortedKeys.forEach(key => {
+      // Use string replace instead of word boundary regex to handle mixed scripts better
+      translated = translated.split(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')).join(map[key]);
+    });
+
+    return translated;
+  };
+
+  const renderFIRUrdu = () => {
+    const hasSeizureMemo = !!(data.seizureCableSize && data.seizureCableLength && data.seizureCableColor);
+
+    return (
+      <div className="print-container bg-white urdu-font p-0 m-0" ref={ref} dir="rtl">
+        {/* FIR Page */}
+        <div 
+          className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[20mm] text-black bg-white"
+          style={{ pageBreakAfter: hasSeizureMemo ? 'always' : 'auto' }}
+        >
+            <div className="text-center mb-4">
+                <h1 className="text-xl font-bold urdu-font mb-1">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h1>
+                <p className="text-sm">دفتر اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                <p className="text-[10px]">132 کے وی اے گریڈ اسٹیشن کوٹ رادھاکشن | <span dir="ltr">049-2382776</span> ☎</p>
+                <div className="mt-2 border-b-2 border-double border-black w-2/3 mx-auto"></div>
+            </div>
+            
+            <div className="text-right space-y-3 text-sm leading-relaxed">
+                <div className="flex justify-between w-full font-bold">
+                  <p>چھٹی نمبری: <span>{data.firNo || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></p>
+                  <p>بتاریخ: <span dir="ltr">{(() => {
+                    const dateToUse = data.registeredFirDated || data.firDated;
+                    if (dateToUse) return formatDate(dateToUse);
+                    const today = new Date();
+                    return `${today.getDate().toString().padStart(2, "0")}-${(today.getMonth() + 1).toString().padStart(2, "0")}-${today.getFullYear()}`;
+                  })()}</span></p>
+                </div>
+                
+                <div className="space-y-0.5">
+                    <p>از طرف: <span className="font-bold">اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</span></p>
+                    <p>بطرف: <span className="font-bold">جناب ایس۔ایچ۔او صاحب تھانہ {localTranslateToUrdu(data.policeStation)} {data.policeStation?.toLowerCase().includes('raiwind') ? 'ضلع لاہور' : 'ضلع قصور'}</span></p>
+                </div>
+
+                <div className="text-center py-1">
+                    <h2 className="text-base font-bold inline-block pb-0.5 urdu-font border-b border-black">
+                        عنوان: اندراج مقدمہ بابت بجلی چوری زیرِ دفعہ <span dir="ltr" className="inline-block px-1">462-I</span> الیکٹریسٹی ایکٹ 2016
+                    </h2>
+                </div>
+                
+                {(() => {
+                  const getCleanNameForPO = (n: string) => {
+                    const markers = [/p\/o/i, /p\.o/i, /hal qabiz/i, /present occupier/i];
+                    for (const marker of markers) {
+                      const parts = n.split(marker);
+                      if (parts.length > 1) {
+                        return localTranslateToUrdu(parts[parts.length - 1].trim());
+                      }
+                    }
+                    return localTranslateToUrdu(n);
+                  };
+
+                  const checkingTeamUrdu = (() => {
+                    if (!data.checkedBy) return '۔۔۔۔۔';
+                    const items = Array.isArray(data.checkedBy) ? data.checkedBy : [data.checkedBy];
+                    if (items.length === 2 && 
+                        items.some(i => i === 'Sub Divisional Checking Team') && 
+                        items.some(i => i === 'M&T Representative')) {
+                      return 'سب ڈویژنل چیکنگ ٹیم بمعہ نمائندہ ایم اینڈ ٹی';
+                    }
+                    return items.map(item => localTranslateToUrdu(item)).reduce((acc, current, idx) => {
+                      if (idx === 0) return current;
+                      const trimmedCurrent = current.trim();
+                      if (trimmedCurrent.startsWith('ہمراہ') || trimmedCurrent.startsWith('بمعہ')) {
+                        return acc + ' ' + trimmedCurrent;
+                      }
+                      return acc + '، ' + trimmedCurrent;
+                    }, '');
+                  })();
+
+                  const discrepancyUrdu = data.discrepancy.map(d => {
+                    const label = d === 'Meter Slow By' && data.meterSlowBy ? `Meter ${data.meterSlowBy} Slow` : (d === 'Others' && data.remarks ? data.remarks : d);
+                    return localTranslateToUrdu(label);
+                  }).join('، ');
+
+                  const cleanName = getCleanNameForPO(data.name);
+                  const formattedCheckingDate = data.dateOfChecking ? formatDate(data.dateOfChecking) : '۔۔۔۔۔۔۔۔۔۔۔۔';
+
+                  return (
+                    <div className="text-justify leading-[1.7]">
+                      <p>
+                        رپورٹ کی جاتی ہے کہ مؤرخہ <span className="inline-block font-bold" dir="ltr">{formattedCheckingDate}</span> کو دورانِ معمول چیکنگ <span className="font-bold">{checkingTeamUrdu}</span> نے کنکشن بجلی بحوالہ نمبر <span className="font-bold px-1">{data.referenceNumber}</span> بنام <span className="font-bold">{localTranslateToUrdu(data.name)}</span> سکنہ <span className="font-bold">{localTranslateToUrdu(data.address)}</span> چیک کیا۔ تو پایا کہ حال قابض شخص <span className="font-bold">{cleanName}</span> نے <span className="font-bold text-red-700">{discrepancyUrdu}</span> {discrepancyUrdu.endsWith('۔') ? '' : (discrepancyUrdu.includes('تھا') || discrepancyUrdu.includes('تھی') ? '۔' : 'لگا رکھی تھی۔ ')} {discrepancyUrdu.includes('بجلی چوری') ? '' : 'جس کی وجہ سے بجلی چوری ہورہی تھی۔'} اس طرح حال قابض شخص <span className="font-bold">{cleanName}</span> بجلی چوری کا مرتکب پایا گیا۔ اور اس نے محکمہ لیسکو کو تقریباً <span className="font-bold px-1">{data.lossAmount || '۔۔۔۔۔'}</span> روپے کا نقصان پہنچایا ہے۔ لہٰذا حال قابض شخص <span className="font-bold">{cleanName}</span> کے خلاف بجلی چوری کرنے کے جرم میں مقدمہ درج کر کے ایف۔آئی۔آر کی کاپی زیر دستخطی کو ارسال کی جائے۔
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div className="pt-1">
+                    <h3 className="inline-block px-1 mb-0.5 text-base font-bold urdu-font">گواہان:</h3>
+                    <ul className="list-decimal pr-10 space-y-0.5">
+                        {(data.witnesses || []).length > 0 ? (data.witnesses || []).map((w, i) => <li key={i} className="font-medium text-sm">{localTranslateToUrdu(w)}</li>) : (
+                          <>
+                            <li className="text-sm">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                            <li className="text-sm">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                          </>
+                        )}
+                    </ul>
+                </div>
+
+                <div className="pt-2 flex flex-col">
+                    <div className="flex flex-col items-center w-fit mr-auto ml-4 text-sm leading-snug">
+                        <p className="font-bold mb-0.5">خیر اندیش:</p>
+                        <div className="mt-10 flex flex-col items-center space-y-0.5">
+                            <p className="font-bold text-base">{localTranslateToUrdu(data.employeeName) || '۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔'}</p>
+                            <p className="text-sm">{localTranslateToUrdu(data.employeeDesignation) || 'اِسسٹنٹ مینیجر (آپریشن)'} لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                            <p className="text-xs text-gray-700">شناختی کارڈ نمبر: <span dir="ltr">{data.employeeCnic || '35102-0565965-3'}</span></p>
+                            <p className="text-xs text-gray-700">موبائل نمبر: <span dir="ltr">{data.employeeMobile || '0370-4991751'}</span></p>
+                        </div>
+                    </div>
+
+                    <div className="text-right space-y-0.5 mt-2">
+                        <p className="font-bold mb-0.5 text-xs">کاپی برائے اطلاع:</p>
+                        <ul className="list-none pr-2 space-y-0.5 text-[10px]">
+                             <li>1۔ جناب ڈپٹی مینیجر صاحب (آپریشن) لیسکو ڈویژن کوٹ رادہاکشن </li>
+                            <li>2۔ جناب ڈی۔پی۔او صاحب قصور</li>
+                            <li>3۔ جناب ڈی۔ایس۔پی صاحب صدر سرکل قصور</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {/* Seizure Memo */}
-         <div className="mt-12 border-t pt-4">
-            <h2 className="text-center font-bold text-lg">فرد مقبوضگی</h2>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-                <p>کنکشن بجلی بحوالہ نمبر: {data.referenceNumber}</p>
-                <p>بنام: {data.name}</p>
-                <p>سائز تار: {data.seizureCableSize || '۔۔۔۔۔'}</p>
-                <p>رنگ: {data.seizureCableColor || '۔۔۔۔۔'}</p>
-                <p>لمبائی: {data.seizureCableLength || '۔۔۔۔۔'}</p>
+        {/* Seizure Memo Page */}
+        {hasSeizureMemo && (
+          <div className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[20mm] text-black bg-white urdu-font">
+            <div className="text-center mb-4">
+                <h2 className="text-lg font-bold urdu-font mb-1">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h2>
+                <p className="text-sm">دفتر اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                <p className="text-[10px]">132 کے وی اے گریڈ اسٹیشن کوٹ رادھاکشن | <span dir="ltr">049-2382776</span> ☎</p>
+                <div className="mt-2">
+                    <h3 className="text-lg font-bold inline-block px-4 py-0.5 urdu-font border-b border-black">فرد مقبوضگی</h3>
+                </div>
             </div>
-         </div>
-    </div>
-  );
+
+            <div className="mt-4 space-y-3 text-sm leading-normal">
+                <div className="space-y-1">
+                    <p>کنکشن بجلی بحوالہ نمبر: <span className="font-bold px-2">{data.referenceNumber}</span> &nbsp;&nbsp;&nbsp;&nbsp; بنام: <span className="font-bold px-2">{localTranslateToUrdu(data.name)}</span></p>
+                    <p>حال قابض: <span className="font-bold px-2">{localTranslateToUrdu(data.name)}</span> &nbsp;&nbsp;&nbsp;&nbsp; ساکن: <span className="font-bold px-2">{localTranslateToUrdu(data.address)}</span></p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 border-y border-black py-3 bg-gray-50/50">
+                  <div className="text-center">
+                      <p className="text-[10px] text-gray-600 mb-0.5">سائز تار</p>
+                      <p className="font-bold text-base">{localTranslateToUrdu(data.seizureCableSize)}</p>
+                  </div>
+                  <div className="text-center border-x border-gray-300">
+                      <p className="text-[10px] text-gray-600 mb-0.5">رنگ</p>
+                      <p className="font-bold text-base">{localTranslateToUrdu(data.seizureCableColor)}</p>
+                  </div>
+                  <div className="text-center">
+                      <p className="text-[10px] text-gray-600 mb-0.5">لمبائی</p>
+                      <p className="font-bold text-base">{localTranslateToUrdu(data.seizureCableLength)}</p>
+                  </div>
+                </div>
+                
+                <div className="mt-3 text-justify leading-[1.6]">
+                    <p className="indent-8">
+                        مندرجہ بالا کنکشن کی چیکنگ کے دوران جو تار بجلی چوری کے لیے استعمال ہو رہی تھی، اسے قبضہ میں لے کر اس کی فرد مقبوضگی تیار کی گئی ہے۔ یہ تار موقع پر موجود گواہان کی موجودگی میں باقاعدہ طور پر سیل کی گئی ہے اور اب اسے قانونی کارروائی کے لیے محفوظ کر لیا گیا ہے۔اور حوالہ پولیس کیا جاتا ہے۔تاکہ بوقت شہادت عدالت عالیہ میں پیش کی جاسکے
+                    </p>
+                </div>
+
+                <div className="mt-4">
+                    <h3 className="inline-block px-1 mb-1 text-base font-bold urdu-font border-b border-black">گواہان:</h3>
+                    <ul className="list-decimal pr-10 space-y-1">
+                        {(data.witnesses || []).length > 0 ? (data.witnesses || []).map((w, i) => <li key={i} className="font-bold text-sm">{localTranslateToUrdu(w)}</li>) : (
+                          <>
+                            <li className="text-gray-400 text-xs">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                            <li className="text-gray-400 text-xs">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                          </>
+                        )}
+                    </ul>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                    <div className="flex flex-col items-center w-fit text-sm leading-snug p-1">
+                        <p className="font-bold mb-0.5">خیر اندیش:</p>
+                        <div className="mt-10 flex flex-col items-center space-y-0.5">
+                          <p className="font-bold text-base">{localTranslateToUrdu(data.employeeName) || '۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔'}</p>
+                          <p className="text-xs">{localTranslateToUrdu(data.employeeDesignation) || 'اِسسٹنٹ مینیجر (آپریشن)'} لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                          <p className="text-[10px] text-gray-700">شناختی کارڈ نمبر: <span dir="ltr">{data.employeeCnic || '35102-0565965-3'}</span></p>
+                          <p className="text-[10px] text-gray-700">موبائل نمبر: <span dir="ltr">{data.employeeMobile || '0370-4991751'}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderFIRRequest = () => (
-    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] min-h-[297mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[11px] md:text-[12px] leading-relaxed p-6 md:p-[20mm]">
+    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[11px] md:text-[12px] leading-relaxed p-6 md:p-[20mm]">
       <div className="flex items-center justify-between mb-8 border-b-2 border-black pb-4">
         <div className="text-center flex-1">
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">FIR REQUEST</h1>
@@ -961,7 +1559,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <p className="text-[8px] font-bold">OFFICE OF THE ASSISTANT MANAGER (OPERATION)</p>
           <p className="text-[8px] font-bold uppercase">KOT RADHA KISHAN-1 SUB DIVISION LESCO</p>
           <p className="font-bold text-[9px] flex items-center justify-center gap-1">
-            <span className="text-xs">☎</span> 049-2382776
+            <span className="text-xs">☎</span> <span dir="ltr">049-2382776</span>
           </p>
         </div>
         {renderQRCode()}
@@ -973,7 +1571,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <p className="font-bold">The SHO : -</p>
           <p>Police Station : - <span className="border-b border-black whitespace-nowrap text-black font-bold">{(data.firNo && !data.registeredFirNo) ? (
             <>
-              {data.policeStation || '____________________'} <span className="text-red-600">(PENDING FIR)</span>
+              {data.policeStation || '____________________'}
             </>
           ) : (data.policeStation || '____________________')}</span>,</p>
           <p>Lahore : -</p>

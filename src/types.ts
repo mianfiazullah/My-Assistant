@@ -96,6 +96,7 @@ export interface DetectionCase {
   noticeDated?: string;
   firNo?: string;
   firDated?: string;
+  referenceNumber: string;
   registeredFirNo?: string;
   registeredFirDated?: string;
   policeStation?: string;
@@ -103,6 +104,8 @@ export interface DetectionCase {
   splitAcCount?: string;
   windowAcCount?: string;
   acType?: 'Split' | 'Window' | 'Others' | string;
+  othersAcType?: string;
+  othersCheckedBy?: string;
   detectionPeriodFrom?: string;
   detectionPeriodTo?: string;
   detectionPeriodMonths?: string;
@@ -115,9 +118,14 @@ export interface DetectionCase {
   netUnitsToBeCharged?: string;
   feederName?: string;
   meterSlowBy?: string;
+  employeeCnic?: string;
+  employeeMobile?: string;
   loadItems?: LoadItem[];
   lossAmount?: string;
   seizureCableSize?: string;
   seizureCableColor?: string;
   seizureCableLength?: string;
+  nameUrdu?: string;
+  addressUrdu?: string;
+  employeeNameUrdu?: string;
 }

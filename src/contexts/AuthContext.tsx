@@ -57,8 +57,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch (error: any) {
           console.error('AuthContext Error:', error.message);
-          if (error.message.includes('permission')) {
+          if (error.message.includes('offline')) {
+            console.warn('App is offline, profile loading deferred.');
+          } else if (error.message.includes('permission')) {
             console.error('Permission denied. Check firestore.rules.');
+          }
+
+          // Use Spec Error Handler if it's not a standard offline warning
+          try {
+            const { handleFirestoreError, OperationType } = await import('../firebase');
+            handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          } catch (e) {
+            // Ignore failure in the error handler itself
           }
         }
       } else {

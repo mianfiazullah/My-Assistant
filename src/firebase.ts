@@ -24,6 +24,10 @@ console.log(`Initializing Firestore with Database ID: ${databaseId}`);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, databaseId);
+// Ensure we explicitly disable auto detection to avoid collisions in newer versions
+if ((db as any)._delegate && (db as any)._delegate._settings) {
+  (db as any)._delegate._settings.experimentalAutoDetectLongPolling = false;
+}
 
 export const storage = getStorage(app);
 

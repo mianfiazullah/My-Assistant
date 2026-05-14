@@ -22,12 +22,13 @@ export default function QuickEdit() {
   const getInitialState = (key: string, defaultValue: any) => {
     try {
       const saved = localStorage.getItem(key);
-      if (!saved) return defaultValue;
+      if (!saved || saved === 'undefined' || saved === 'null') return defaultValue;
       const trimmed = saved.trim();
       if (trimmed === 'undefined' || trimmed === 'null' || trimmed === '') return defaultValue;
       try {
         return JSON.parse(trimmed);
       } catch (err) {
+        console.warn(`QuickEdit parse error for key "${key}":`, err);
         return defaultValue;
       }
     } catch (e) {
@@ -288,7 +289,7 @@ export default function QuickEdit() {
         fetch("/api/save-to-sheets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          body: safeStringify({
             data: {
               referenceNumber: data.referenceNumber,
               consumerName: data.name,

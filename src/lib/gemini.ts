@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+    const key = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.API_KEY || '';
     if (!key && process.env.NODE_ENV !== 'development' && !(import.meta as any).env?.VITE_IN_AI_STUDIO) {
       console.warn("No Gemini API key found, but relying on browser/AI Studio proxy");
     }
@@ -24,7 +24,7 @@ export async function extractBillData(base64Image: string) {
   try {
     const ai = getAI();
     const result = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview", // Upgraded for better table extraction accuracy
+      model: "gemini-flash-latest", // Using most widely available flash model for better reliability
       contents: [
         {
           role: "user",
@@ -109,13 +109,19 @@ Return ONLY JSON.` }
     });
 
     const text = result.text;
-    if (!text) throw new Error("No response generated from Gemini API");
+    if (!text || text.trim() === 'undefined' || text.trim() === 'null') {
+      throw new Error("The AI model returned an empty or invalid response. Please try a clearer picture.");
+    }
     
     try {
-      return JSON.parse(text);
+      const trimmed = text.trim();
+      return JSON.parse(trimmed);
     } catch (e) {
       console.warn("Failed to parse JSON result directly, attempting cleanup", text);
       const cleaned = text.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
+      if (!cleaned || cleaned === 'undefined' || cleaned === 'null') {
+        throw new Error("The AI model returned an invalid response format.");
+      }
       return JSON.parse(cleaned);
     }
   } catch (error: any) {
@@ -128,7 +134,7 @@ export async function chatWithGemini(input: string) {
   try {
     const ai = getAI();
     const result = await ai.models.generateContent({ 
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
       config: {
         systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
@@ -145,13 +151,42 @@ export async function generateGeminiContent(prompt: string) {
   try {
     const ai = getAI();
     const result = await ai.models.generateContent({ 
-      model: "gemini-3-flash-preview",
+      model: "gemini-flash-latest",
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
     return result.text;
   } catch (error: any) {
     console.error("Generate API Error:", error);
     throw new Error(error.message || "Failed to generate content");
+  }
+}
+
+export async function translateToUrduAI(text: string) {
+  try {
+    const ai = getAI();
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: [{
+        role: "user",
+        parts: [{ text: `Translate or transliterate this English text to Urdu specifically for use in official legal/utility documents (FIR, Notice). 
+        Rules:
+        1. Return ONLY the Urdu text.
+        2. NO English explanation.
+        3. NO punctuation unless it's part of the translation.
+        4. NO markdown bold or code blocks.
+        5. Just the clean Urdu string.
+
+        Text: ${text}` }]
+      }]
+    });
+    let translated = result.text.trim();
+    // Cleanup common AI prefixing/formatting
+    translated = translated.replace(/^(Urdu translation|Translation|Urdu|Urdu:):\s*/i, '');
+    translated = translated.replace(/[`*]+/g, ''); // Remove code blocks and bold markers
+    return translated;
+  } catch (error: any) {
+    console.error("Translation API Error:", error);
+    return null;
   }
 }
 
