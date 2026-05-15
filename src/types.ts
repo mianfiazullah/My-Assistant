@@ -128,4 +128,6 @@ export interface DetectionCase {
   nameUrdu?: string;
   addressUrdu?: string;
   employeeNameUrdu?: string;
+  presentOccupier?: string;
+  presentOccupierUrdu?: string;
 }

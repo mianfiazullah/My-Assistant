@@ -224,7 +224,7 @@ export default function NewCase() {
     email: '',
     mobileNo: '+92',
     meterMake: '',
-    name: '',
+    name: 'Inayat Ullah',
     address: '',
     sanctionLoad: '',
     connectedLoad: '',
@@ -266,6 +266,8 @@ export default function NewCase() {
     nameUrdu: '',
     addressUrdu: '',
     employeeNameUrdu: '',
+    presentOccupier: 'Muhammad Afzal',
+    presentOccupierUrdu: 'محمد افضل',
     loadItems: [
       { name: 'E/Saver', qty: '', watts: 18, total: 0 },
       { name: 'Tube Light', qty: '', watts: 40, total: 0 },
@@ -326,6 +328,12 @@ export default function NewCase() {
   useEffect(() => {
     localStorage.setItem('lesco_new_case_is_saved', safeStringify(isSaved));
   }, [isSaved]);
+
+  useEffect(() => {
+    if (step < 4 && isSaved) {
+      setIsSaved(false);
+    }
+  }, [step, isSaved]);
 
   useEffect(() => {
     localStorage.setItem('lesco_new_case_show_meter_mismatch', safeStringify(showMeterMismatch));
@@ -430,7 +438,7 @@ export default function NewCase() {
     'dateOfChecking', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'registeredFirNo', 'registeredFirDated', 'policeStation',
     'noOfAC', 'feederName', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
     'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
-    'consumerName', 'nameUrdu', 'address', 'addressUrdu', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
+    'consumerName', 'nameUrdu', 'presentOccupier', 'presentOccupierUrdu', 'address', 'addressUrdu', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
     'meterType', 'capacity', 'discrepancy', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod',
     'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks',
     'employeeName', 'employeeNameUrdu', 'employeeDesignation', 'employeeCnic', 'employeeMobile'
@@ -440,7 +448,7 @@ export default function NewCase() {
     dateOfChecking: '1', noticeNo: '2', noticeDated: '3', firNo: '4', firDated: '5', registeredFirNo: '6', registeredFirDated: '7', policeStation: '8',
     noOfAC: '9', detectionPeriodFrom: '10', detectionPeriodTo: '11', detectionPeriodMonths: '12',
     unitsAssessed: '34', unitsAlreadyCharged: '33', netUnitsToBeCharged: '35', checkedBy: '16', referenceNo: '17',
-    consumerName: '18', nameUrdu: '18U', address: '19', addressUrdu: '19U', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
+    consumerName: '18', nameUrdu: '18U', presentOccupier: '18A', presentOccupierUrdu: '18B', address: '19', addressUrdu: '19U', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
     meterType: '25', capacity: '26', discrepancy: '27', acPeriodFrom: '28', acPeriodTo: '29', acPeriodMonths: '30', unitsOfAcPeriod: '31',
     presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36',
     employeeName: '40', employeeNameUrdu: '40U', employeeDesignation: '41', employeeCnic: '42', employeeMobile: '43'
@@ -1358,7 +1366,7 @@ export default function NewCase() {
             key="consumerName" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Consumer Name</label>}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Consumer Name (As per Bill)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-name">
               <div className="relative group/field">
@@ -1406,6 +1414,86 @@ export default function NewCase() {
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+          </SortableItem>
+        );
+      case 'presentOccupier':
+        return (
+          <SortableItem 
+            id="presentOccupier" 
+            key="presentOccupier" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Present Occupier (P/O)</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <div className="relative group/field">
+                <input
+                  type="text"
+                  value={detectionData.presentOccupier || ''}
+                  onChange={(e) => {
+                    setDetectionData({...detectionData, presentOccupier: e.target.value});
+                    if (aiUrduTranslations['presentOccupier']) {
+                      setAiUrduTranslations(prev => {
+                        const next = { ...prev };
+                        delete next['presentOccupier'];
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Enter Present Occupier Name"
+                  disabled={isDisabled}
+                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={() => handleTranslateField('presentOccupier', detectionData.presentOccupier || '')}
+                  disabled={isDisabled || !detectionData.presentOccupier || isTranslating === 'presentOccupier'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  title="Translate to Urdu"
+                >
+                  {isTranslating === 'presentOccupier' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
+                </button>
+              </div>
+              <AnimatePresence mode="wait">
+                {(detectionData.presentOccupier || aiUrduTranslations['presentOccupier'] || isTranslating === 'presentOccupier') && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="mt-1 flex justify-end items-center gap-2 pb-1" 
+                    dir="rtl"
+                  >
+                    <span className={cn(
+                      "text-sm font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 urdu-font transition-colors",
+                      isTranslating === 'presentOccupier' ? "text-neutral-400 animate-pulse" : "text-indigo-600"
+                    )}>
+                      {isTranslating === 'presentOccupier' ? 'ترجمہ ہو رہا ہے...' : (detectionData.presentOccupierUrdu || aiUrduTranslations['presentOccupier'] || translateToUrdu(detectionData.presentOccupier || ''))}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </SortableItem>
+        );
+      case 'presentOccupierUrdu':
+        return (
+          <SortableItem 
+            id="presentOccupierUrdu" 
+            key="presentOccupierUrdu" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">Present Occupier (Urdu)</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input
+                type="text"
+                value={detectionData.presentOccupierUrdu || ''}
+                onChange={(e) => setDetectionData({...detectionData, presentOccupierUrdu: e.target.value})}
+                placeholder="حال قابض کا نام درج کریں"
+                disabled={isDisabled}
+                dir="rtl"
+                className="w-full bg-indigo-50/30 border border-indigo-100 rounded-xl py-2 px-3 text-neutral-900 font-bold urdu-font focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </SortableItem>
         );
@@ -3412,29 +3500,48 @@ export default function NewCase() {
 
       await addDoc(collection(db, 'cases'), newCase);
       
-      // 3. Save to Google Sheets (Parallel/Async)
-      try {
-        fetch("/api/save-to-sheets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: safeStringify({
-            data: {
-              referenceNumber: sanitizedBillData.referenceNumber,
-              consumerName: detectionData.name,
-              address: detectionData.address,
-              billingMonth: sanitizedBillData.billingMonth,
-              consumedUnits: detectionData.netUnitsToBeCharged,
-              currentBill: sanitizedBillData.currentBill,
-              sanctionedLoad: detectionData.sanctionLoad,
-              meterStatus: sanitizedBillData.meterStatus
-            }
-          })
-        }).then(res => res.json()).then(result => {
-          if (result.success) console.log("Saved to Google Sheets");
-          else console.warn("Google Sheets Save Warning:", result.error);
-        }).catch(e => console.error("Sheets Background Error:", e));
-      } catch (sheetsErr) {
-        console.error("Failed to initiate Sheets save:", sheetsErr);
+      // 3. Save to Google Sheets (Client-side Webhook Automation)
+      const webhookUrl = localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzXzjN4H0kVSuOfyNHdDb_rig-UVh7bqdvRnUPl7IGR1NNpljX3CRsm6OAVyU5gfRlZ/exec';
+      if (webhookUrl) {
+        try {
+          const payload = {
+            ref: newCase.referenceNumber,
+            name: newCase.name,
+            address: newCase.address,
+            date: newCase.dateOfChecking,
+            id: newCase.customerId,
+            tariff: newCase.tariff,
+            sLoad: newCase.sanctionLoad,
+            cLoad: newCase.connectedLoad,
+            mNo: newCase.meterNumber,
+            mType: newCase.meterType,
+            mMake: newCase.meterMake,
+            cap: newCase.capacity,
+            mStatus: newCase.meterStatus,
+            pRead: newCase.presentReadingAtSite,
+            prevRead: newCase.previousReading,
+            diff: newCase.difference,
+            uAssessed: newCase.unitsAssessed,
+            uCharged: newCase.netUnitsToBeCharged,
+            month: newCase.billingMonth,
+            fir: newCase.registeredFirNo || newCase.firNo,
+            ps: newCase.policeStation,
+            firDate: newCase.registeredFirDated || newCase.firDated,
+            remarks: newCase.remarks,
+            checked: (newCase.checkedBy || []).join(', '),
+            witness: (newCase.witnesses || []).join(', ')
+          };
+
+          fetch(webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          console.log('Case sent to Google Sheets via Webhook');
+        } catch (sheetsErr) {
+          console.error("Failed to sync to Google Sheets:", sheetsErr);
+        }
       }
 
       // Clear persistence after successful save
@@ -4490,32 +4597,6 @@ export default function NewCase() {
               <div className="flex items-center gap-4">
                 <h2 className="text-2xl font-bold text-neutral-900">Step 4: View & Generate</h2>
               </div>
-              <div className="flex flex-col items-end gap-1">
-                {!isSaved && (
-                  <>
-                    <button
-                      onClick={saveCase}
-                      disabled={isSaving}
-                      className={cn(
-                        "px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center gap-2",
-                        isSaving
-                          ? "bg-neutral-200 text-neutral-400 shadow-none cursor-not-allowed"
-                          : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20"
-                      )}
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" /> Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-5 h-5" /> Save Case to Database
-                        </>
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
             </div>
 
 
@@ -4598,6 +4679,40 @@ export default function NewCase() {
                 </SortableContext>
               </DndContext>
             </div>
+
+            {!isSaved && (
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm text-center space-y-6">
+                <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                  <Save className="text-indigo-600 w-8 h-8" />
+                </div>
+                <div className="max-w-md mx-auto">
+                  <h3 className="text-xl font-bold text-neutral-900">Final Step: Record Case</h3>
+                  <p className="text-neutral-500 mt-2">After reviewing the templates above, save the case to the database and sync with Google Sheets.</p>
+                </div>
+                <button
+                  onClick={saveCase}
+                  disabled={isSaving}
+                  className={cn(
+                    "w-full max-w-md mx-auto py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-3 text-lg",
+                    isSaving
+                      ? "bg-neutral-200 text-neutral-400 shadow-none cursor-not-allowed"
+                      : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 scale-100 hover:scale-[1.02] active:scale-95"
+                  )}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" /> 
+                      <span>Saving Case...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-6 h-6" /> 
+                      <span>Confirm & Save Case to Database</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
 
             {isSaved && (
               <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm text-center">

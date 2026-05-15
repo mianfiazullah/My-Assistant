@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Download, FileText, ChevronRight, Hash, Calendar, User, Loader2, X, MapPin, Zap, Activity, Home, ShieldAlert, ExternalLink, Users, Printer, Eye, Trash2, Edit2 } from 'lucide-react';
+import { Search, Filter, Download, FileText, ChevronRight, Hash, Calendar, User, Loader2, X, MapPin, Zap, Activity, Home, ShieldAlert, ExternalLink, Users, Printer, Eye, Trash2, Edit2, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
@@ -8,6 +8,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { DetectionCase } from '../types';
 import { format } from 'date-fns';
 import { ProformaTemplates } from '../components/ProformaTemplates';
+import { toast } from 'sonner';
 
 export default function Cases() {
   const [cases, setCases] = useState<DetectionCase[]>([]);
@@ -20,7 +21,51 @@ export default function Cases() {
   const printRefDetectionBill = useRef<HTMLDivElement>(null);
   const printRefNotice = useRef<HTMLDivElement>(null);
   const printRefFIR = useRef<HTMLDivElement>(null);
+  const printRefFIRUrdu = useRef<HTMLDivElement>(null);
   const printRefRegister = useRef<HTMLDivElement>(null);
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyCaseExcel = (item: DetectionCase) => {
+    const data = [
+      item.billData.referenceNumber,
+      item.billData.consumerName,
+      item.billData.address,
+      item.dateOfChecking,
+      item.billData.customerId || item.customerId || "",
+      item.tariff || item.billData.tariff || "",
+      item.sanctionLoad || item.billData.sanctionedLoad || "",
+      item.connectedLoad || "",
+      item.meterNumber || item.billData.meterNoOnBill || "",
+      item.meterType || "",
+      item.meterMake || "",
+      item.capacity || "",
+      item.meterStatus || item.billData.meterStatus || "",
+      item.presentReading || "",
+      item.billData.previousReading || item.previousReading || "",
+      item.billData.difference || item.difference || "",
+      item.unitsAssessed || "",
+      item.netUnitsToBeCharged || "",
+      item.billData.billingMonth || item.billingMonth || "",
+      item.firNumber || item.registeredFirNo || "",
+      item.policeStation || "",
+      item.registeredFirDated || item.firDated || "",
+      item.remarks || "",
+      (item.checkedBy || []).join(', '),
+      (item.witnesses || []).join(', ')
+    ];
+
+    const textToCopy = data.join('\t');
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopiedId(item.id);
+      toast.success('Case data copied for Excel/Sheets!');
+      setTimeout(() => setCopiedId(null), 2000);
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      toast.error('Failed to copy case data');
+    });
+  };
 
   const printTemplate = (ref: RefObject<HTMLDivElement | null>) => {
     const content = ref.current;
@@ -43,6 +88,7 @@ export default function Cases() {
     if (type === 'DETECTION BILL PROFORMA') ref = printRefDetectionBill;
     else if (type === 'NOTICE') ref = printRefNotice;
     else if (type === 'FIR Request') ref = printRefFIR;
+    else if (type === 'FIR Urdu') ref = printRefFIRUrdu;
     else if (type === 'Detection Register') ref = printRefRegister;
     
     if (ref) {
@@ -192,6 +238,21 @@ export default function Cases() {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
+                      handleCopyCaseExcel(item);
+                    }}
+                    className={cn(
+                      "p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all",
+                      copiedId === item.id 
+                        ? "bg-emerald-100 text-emerald-600" 
+                        : "bg-neutral-50 hover:bg-emerald-50 text-neutral-400 hover:text-emerald-600"
+                    )}
+                    title="Copy Data for Excel/Sheets"
+                  >
+                    {copiedId === item.id ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : <Copy className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
                       navigate('/quick-edit', { state: { case: item } });
                     }}
                     className="p-2 sm:p-3 bg-neutral-50 hover:bg-indigo-50 text-neutral-400 hover:text-indigo-600 rounded-xl sm:rounded-2xl transition-all"
@@ -272,15 +333,29 @@ export default function Cases() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
           >
-            <div className="p-6 border-b border-neutral-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <div className="flex items-center gap-4">
+              <div className="p-6 border-b border-neutral-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-xl font-bold text-neutral-900">Case Details</h2>
-                <button 
-                  onClick={() => navigate('/quick-edit', { state: { case: selectedCase } })}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition-all"
-                >
-                  <Edit2 className="w-3.5 h-3.5" /> Edit Everything
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleCopyCaseExcel(selectedCase)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
+                      copiedId === selectedCase.id
+                        ? "bg-emerald-100 text-emerald-600"
+                        : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+                    )}
+                  >
+                    {copiedId === selectedCase.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedId === selectedCase.id ? 'Copied!' : 'Copy for Excel'}
+                  </button>
+                  <button 
+                    onClick={() => navigate('/quick-edit', { state: { case: selectedCase } })}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition-all"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" /> Edit Template
+                  </button>
+                </div>
               </div>
               <button 
                 onClick={() => setSelectedCase(null)}
@@ -427,6 +502,7 @@ export default function Cases() {
                   { name: 'DETECTION BILL PROFORMA', icon: FileText },
                   { name: 'NOTICE', icon: Activity },
                   { name: 'FIR Request', icon: ShieldAlert },
+                  { name: 'FIR Urdu', icon: ShieldAlert },
                   { name: 'Detection Register', icon: FileText },
                 ].map((doc) => (
                   <div 
@@ -454,6 +530,8 @@ export default function Cases() {
                             deferredAmount: selectedCase.billData.deferredAmount,
                             meterNoOnBill: selectedCase.billData.meterNoOnBill,
                             photoUrl: selectedCase.photoUrl,
+                            presentOccupier: selectedCase.presentOccupier,
+                            presentOccupierUrdu: selectedCase.presentOccupierUrdu,
                           }
                         })}
                         className="p-2 hover:bg-indigo-100 text-neutral-400 hover:text-indigo-600 rounded-xl transition-all"
@@ -535,6 +613,7 @@ export default function Cases() {
               { type: 'DETECTION BILL PROFORMA', ref: printRefDetectionBill },
               { type: 'NOTICE', ref: printRefNotice },
               { type: 'FIR Request', ref: printRefFIR },
+              { type: 'FIR Urdu', ref: printRefFIRUrdu },
               { type: 'Detection Register', ref: printRefRegister },
             ].map(({ type, ref }) => (
               <ProformaTemplates 
@@ -554,6 +633,8 @@ export default function Cases() {
                   deferredAmount: selectedCase.billData.deferredAmount,
                   meterNoOnBill: selectedCase.billData.meterNoOnBill,
                   photoUrl: selectedCase.photoUrl,
+                  presentOccupier: selectedCase.presentOccupier,
+                  presentOccupierUrdu: selectedCase.presentOccupierUrdu,
                 }}
               />
             ))}

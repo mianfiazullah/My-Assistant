@@ -57,6 +57,8 @@ interface ProformaProps {
     seizureCableLength?: string;
     nameUrdu?: string;
     addressUrdu?: string;
+    presentOccupier?: string;
+    presentOccupierUrdu?: string;
     employeeNameUrdu?: string;
     meterSlowBy?: string;
     acPeriodFrom?: string;
@@ -336,33 +338,44 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
         </div>
         <div className="flex justify-between gap-4">
           <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Date of checking : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.dateOfChecking)}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Present Reading : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatBillLabel(data.presentReadingAtSite)}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter No : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterNumber}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Make : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterMake}</span></div>
-        </div>
-        <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Type : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterType}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Capacity : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.capacity}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Meter Status : -</span><span className={cn("border-b border-black whitespace-nowrap", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase() === 'DF') ? "text-red-600" : "text-black")}>{formatBillLabel(data.meterStatus)}</span></div>
-        </div>
-        <div className="flex justify-between gap-4">
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Notice No : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.noticeNo}</span></div>
-          <div className="flex gap-3 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.noticeDated)}</span></div>
-          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">FIR Request Vide T/O No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.firNo}</span></div>
-          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">FIR Request T/O Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.firDated)}</span></div>
-        </div>
-        <div className="flex justify-start gap-4">
-          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Registered FIR No. : -</span><span className="border-b border-black whitespace-nowrap text-black">{data.registeredFirNo}</span></div>
-          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Dated : -</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.registeredFirDated)}</span></div>
-          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap">Name Of Police Station : -</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden">{(data.firNo && !data.registeredFirNo) ? (
-            <>
-              {data.policeStation || '____________________'}
-            </>
-          ) : (data.policeStation || '____________________')}</span></div>
+          <div className="flex gap-3 items-end font-bold min-w-0">
+            <span className="whitespace-nowrap">Checked by : -</span>
+            <span className="border-b border-black text-black whitespace-nowrap">
+              {Array.isArray(data.checkedBy) && data.checkedBy.length > 0 ? data.checkedBy.join(', ') : (typeof data.checkedBy === 'string' && data.checkedBy ? data.checkedBy : '____________________')}
+            </span>
+          </div>
         </div>
         <div className="flex gap-3 items-start">
           <span className="whitespace-nowrap font-bold">Discrepancy : -</span>
           <span className={cn("border-b border-black font-bold inline", formatDiscrepancies(data.discrepancy).toUpperCase().includes('REPLACED') ? "text-red-600" : "text-black")}>{formatDiscrepancies(data.discrepancy)}</span>
+        </div>
+        <div className="flex justify-between gap-1 text-[8pt]">
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase">Present Reading:</span><span className="border-b border-black whitespace-nowrap text-black">{formatBillLabel(data.presentReadingAtSite)}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase">Meter No:</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterNumber}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase">Make:</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterMake}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase">Type:</span><span className="border-b border-black whitespace-nowrap text-black">{data.meterType}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase">Capacity:</span><span className="border-b border-black whitespace-nowrap text-black">{data.capacity}</span></div>
+        </div>
+        <div className="flex justify-between gap-1 text-[7pt]">
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase text-[7.5pt]">Meter Status:</span><span className={cn("border-b border-black whitespace-nowrap text-black", (data.meterStatus?.toUpperCase()?.includes('REPLACED') || data.meterStatus?.toUpperCase() === 'DF') ? "text-red-600" : "text-black")}>{formatBillLabel(data.meterStatus)}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase text-[7.5pt]">Notice No:</span><span className="border-b border-black whitespace-nowrap text-black">{data.noticeNo || '۔۔۔۔۔۔۔۔'}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase text-[7.5pt]">Dated:</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.noticeDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">FIR T/O No:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{data.firNo || '۔۔۔۔۔۔۔۔'}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">FIR T/O Dated:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{formatDate(data.firDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
+        </div>
+        <div className="flex justify-between gap-1 text-[7pt]">
+          <div className={cn("flex gap-1 items-end min-w-0 font-bold", !data.registeredFirNo ? "text-red-600 font-bold" : "text-black")}>
+            <span className="whitespace-nowrap uppercase text-[7.5pt]">Registered FIR No:</span>
+            <span className="border-b border-black whitespace-nowrap">{data.registeredFirNo || "(FIR PENDING)"}</span>
+          </div>
+          <div className={cn("flex gap-1 items-end min-w-0 font-bold", !data.registeredFirNo ? "text-red-600 font-bold" : "text-black")}>
+            <span className="whitespace-nowrap uppercase text-[7.5pt]">Dated:</span>
+            <span className="border-b border-black whitespace-nowrap">{data.registeredFirNo ? (formatDate(data.registeredFirDated) || '۔۔۔۔۔۔۔۔۔۔۔۔') : "(FIR PENDING)"}</span>
+          </div>
+          <div className={cn("flex gap-1 items-end min-w-0 font-bold overflow-hidden", !data.registeredFirNo ? "text-red-600 font-bold" : "text-black")}>
+            <span className="whitespace-nowrap uppercase text-[7.5pt]">Name Of Police Station:</span>
+            <span className="border-b border-black overflow-hidden text-ellipsis whitespace-nowrap">{(data.firNo && !data.registeredFirNo) ? (data.policeStation || '____________________') : (data.policeStation || '۔۔۔۔۔۔۔۔۔۔۔۔')}</span>
+          </div>
         </div>
         <div className="flex justify-between gap-4">
           {data.noOfAC && parseInt(data.noOfAC) > 0 ? (
@@ -848,7 +861,9 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           </div>
 
           <div className="flex flex-col items-start gap-1.5">
-            <span className="border-b border-black text-black font-bold uppercase">{data.name}</span>
+            <span className="border-b border-black text-black font-bold uppercase">
+              {data.presentOccupier ? `${data.name} P/O ${data.presentOccupier}` : data.name}
+            </span>
             <span className="border-b border-black text-black font-bold uppercase">{data.address}</span>
           </div>
 
@@ -962,6 +977,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       'wife of': 'زوجہ',
       'p/o': 'حال قابض',
       'p.o': 'حال قابض',
+      'present occupier': 'حال قابض',
       'r/o': 'سکنہ',
       'resident of': 'سکنہ',
       'tehsil': 'تحصیل',
@@ -992,6 +1008,8 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       'naseem shah': 'نسیم شاہ',
       'black': 'سیاہ',
       'meter': 'میٹر',
+      'foot': 'فٹ',
+      'feet': 'فٹ',
       'ft': 'فٹ',
       'meters': 'میٹر',
       'ls': 'ایل ایس',
@@ -1003,20 +1021,20 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       'je': 'جے ای',
       'sdo': 'سب ڈویژنل آفیسر',
       'acting meter inspector': 'ایکٹنگ میٹر انسپکٹر',
-      'Direct Supply From LESCO main Cable': 'لیسکو مین کیبل سے ڈائریکٹ سپلائی',
-      'Direct Supply From L.T line': 'ایل ٹی لائن سے ڈائریکٹ سپلائی',
-      'Direct Supply From Meter terminal.': 'میٹر ٹرمینل بلاک سے ڈائیریکٹ سپلائی لگارکھی تھی',
-      'Meter Body Tempered.': 'میٹر باڈی ٹیمپرڈ کرکے بجلی چوری کر رہا تھا۔',
-      'Meter Body Tempered': 'میٹر باڈی ٹیمپرڈ کرکے بجلی چوری کر رہا تھا۔',
-      'Hole In Meter Body. Meter Reversed.': 'میٹر باڈی میں سوراخ کر کے میٹر ریورس کیا گیا',
-      'Hole in Meter Terminal Block.': 'میٹر ٹرمینل بلاک میں سوراخ پایا گیا',
-      'Scratches on Figures. Meter Reversed.': 'فگرز پر خراشیں ڈال کر میٹر ریورس کیا گیا',
-      'Shunt In Terminal Block.': 'ٹرمینل بلاک میں شنٹ پایا گیا',
+      'Direct Supply From LESCO main Cable': 'لیسکو کی مین کیبل سے ڈائریکٹ سپلائی لگا رکھی تھی، جس کے ذریعے غیر قانونی طور پر بجلی استعمال/چوری کی جا رہی تھی',
+      'Direct Supply From L.T line': 'ایل ٹی لائن سے ڈائریکٹ سپلائی لگا رکھی تھی، جس کے ذریعے غیر قانونی طور پر بجلی استعمال/چوری کی جا رہی تھی',
+      'Direct Supply From Meter terminal.': 'میٹر ٹرمینل بلاک سے ڈائریکٹ سپلائی لگا رکھی تھی، جس کے ذریعے غیر قانونی طور پر بجلی استعمال/چوری کی جا رہی تھی',
+      'Meter Body Tempered.': 'میٹرباڈی ٹیمپرڈ کرکے بجلی چوری کر رہا تھا۔',
+      'Meter Body Tempered': 'میٹرباڈی ٹیمپرڈ کرکے بجلی چوری کر رہا تھا۔',
+      'Hole In Meter Body. Meter Reversed.': 'میٹرباڈی میں سوراخ کرکے میٹر ریورس کر رکھا تھا',
+      'Hole in Meter Terminal Block.': 'میٹر ٹرمینل بلاک میں سوراخ کرکے بجلی چوری کر رہا تھا',
+      'Scratches on Figures. Meter Reversed.': 'میٹر ریورس کر رکھا تھا۔ موقع پر چیک کرنے سے میٹر کے فگرز پر واضح نشانات پائے گئے، جس کی وجہ سے بجلی چوری کی جا رہی تھی',
+      'Shunt In Terminal Block.': 'میٹر ٹرمینل بلاک میں شنٹ لگا کر میٹر سلو کر رکھا تھا',
       'One Phase Dead Stop. Meter 33% Slow.': 'ایک فیز مردہ ہے، میٹر 33 فیصد سلو ہے',
       'Two Phase Dead Stop. Meter 66% Slow.': 'دو فیز مردہ ہیں، میٹر 66 فیصد سلو ہے',
       'Meter Dead Stop.': 'میٹر مکمل طور پر بند ہے (ڈیڈ سٹاپ)',
-      'Meter Intensionally Display Wash.': 'میٹر کا ڈسپلے جان بوجھ کر واش کیا گیا',
-      'Meter Intensionally Burnt.': 'میٹر جان بوجھ کر جلایا گیا',
+      'Meter Intensionally Display Wash.': 'میٹر کا ڈسپلے جان بوجھ کر واش/خراب کر رکھا تھا، جس کے باعث بجلی کی غیر قانونی ترسیل و استعمال جاری تھا',
+      'Meter Intensionally Burnt.': 'میٹر کو جان بوجھ کر جلا دیا تھا، جس کے باعث بجلی کی غیر قانونی ترسیل و استعمال جاری تھا',
       'ls-i': 'ایل ایس ون',
       'ls-ii': 'ایل ایس ٹو',
       'lm-i': 'ایل ایم ون',
@@ -1364,20 +1382,20 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
     const hasSeizureMemo = !!(data.seizureCableSize && data.seizureCableLength && data.seizureCableColor);
 
     return (
-      <div className="print-container bg-white urdu-font p-0 m-0" ref={ref} dir="rtl">
+      <div className="print-container bg-white urdu-font p-0 m-0" ref={ref} dir="rtl" style={{ fontSize: '14pt', lineHeight: '1.5' }}>
         {/* FIR Page */}
         <div 
-          className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[20mm] text-black bg-white"
-          style={{ pageBreakAfter: hasSeizureMemo ? 'always' : 'auto' }}
+          className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[25.4mm] text-black bg-white"
+          style={{ pageBreakAfter: hasSeizureMemo ? 'always' : 'auto', breakAfter: hasSeizureMemo ? 'page' : 'auto' }}
         >
-            <div className="text-center mb-4">
-                <h1 className="text-xl font-bold urdu-font mb-1">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h1>
-                <p className="text-sm">دفتر اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
-                <p className="text-[10px]">132 کے وی اے گریڈ اسٹیشن کوٹ رادھاکشن | <span dir="ltr">049-2382776</span> ☎</p>
+            <div className="text-center mb-6 space-y-1">
+                <h1 className="text-[18pt] font-bold urdu-font">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h1>
+                <p className="text-[16pt] font-bold">دفتر اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                <p className="text-[11pt]">132 کے وی گریڈ اسٹیشن کوٹ رادھاکشن   <span dir="ltr">049-2382776</span> ☎</p>
                 <div className="mt-2 border-b-2 border-double border-black w-2/3 mx-auto"></div>
             </div>
             
-            <div className="text-right space-y-3 text-sm leading-relaxed">
+            <div className="text-right space-y-4">
                 <div className="flex justify-between w-full font-bold">
                   <p>چھٹی نمبری: <span>{data.firNo || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></p>
                   <p>بتاریخ: <span dir="ltr">{(() => {
@@ -1388,28 +1406,30 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   })()}</span></p>
                 </div>
                 
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                     <p>از طرف: <span className="font-bold">اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</span></p>
                     <p>بطرف: <span className="font-bold">جناب ایس۔ایچ۔او صاحب تھانہ {localTranslateToUrdu(data.policeStation)} {data.policeStation?.toLowerCase().includes('raiwind') ? 'ضلع لاہور' : 'ضلع قصور'}</span></p>
                 </div>
 
-                <div className="text-center py-1">
-                    <h2 className="text-base font-bold inline-block pb-0.5 urdu-font border-b border-black">
+                <div className="text-center py-2">
+                    <h2 className="text-[16pt] font-bold inline-block pb-1 urdu-font border-b-2 border-black">
                         عنوان: اندراج مقدمہ بابت بجلی چوری زیرِ دفعہ <span dir="ltr" className="inline-block px-1">462-I</span> الیکٹریسٹی ایکٹ 2016
                     </h2>
                 </div>
                 
                 {(() => {
-                  const getCleanNameForPO = (n: string) => {
+                  const presentOccupierUrdu = data.presentOccupierUrdu || (data.presentOccupier ? localTranslateToUrdu(data.presentOccupier) : null);
+                  
+                  const cleanName = presentOccupierUrdu || (() => {
                     const markers = [/p\/o/i, /p\.o/i, /hal qabiz/i, /present occupier/i];
                     for (const marker of markers) {
-                      const parts = n.split(marker);
+                      const parts = data.name.split(marker);
                       if (parts.length > 1) {
                         return localTranslateToUrdu(parts[parts.length - 1].trim());
                       }
                     }
-                    return localTranslateToUrdu(n);
-                  };
+                    return localTranslateToUrdu(data.name);
+                  })();
 
                   const checkingTeamUrdu = (() => {
                     if (!data.checkedBy) return '۔۔۔۔۔';
@@ -1434,44 +1454,52 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                     return localTranslateToUrdu(label);
                   }).join('، ');
 
-                  const cleanName = getCleanNameForPO(data.name);
                   const formattedCheckingDate = data.dateOfChecking ? formatDate(data.dateOfChecking) : '۔۔۔۔۔۔۔۔۔۔۔۔';
 
                   return (
-                    <div className="text-justify leading-[1.7]">
+                    <div className="text-justify leading-[1.6]">
                       <p>
-                        رپورٹ کی جاتی ہے کہ مؤرخہ <span className="inline-block font-bold" dir="ltr">{formattedCheckingDate}</span> کو دورانِ معمول چیکنگ <span className="font-bold">{checkingTeamUrdu}</span> نے کنکشن بجلی بحوالہ نمبر <span className="font-bold px-1">{data.referenceNumber}</span> بنام <span className="font-bold">{localTranslateToUrdu(data.name)}</span> سکنہ <span className="font-bold">{localTranslateToUrdu(data.address)}</span> چیک کیا۔ تو پایا کہ حال قابض شخص <span className="font-bold">{cleanName}</span> نے <span className="font-bold text-red-700">{discrepancyUrdu}</span> {discrepancyUrdu.endsWith('۔') ? '' : (discrepancyUrdu.includes('تھا') || discrepancyUrdu.includes('تھی') ? '۔' : 'لگا رکھی تھی۔ ')} {discrepancyUrdu.includes('بجلی چوری') ? '' : 'جس کی وجہ سے بجلی چوری ہورہی تھی۔'} اس طرح حال قابض شخص <span className="font-bold">{cleanName}</span> بجلی چوری کا مرتکب پایا گیا۔ اور اس نے محکمہ لیسکو کو تقریباً <span className="font-bold px-1">{data.lossAmount || '۔۔۔۔۔'}</span> روپے کا نقصان پہنچایا ہے۔ لہٰذا حال قابض شخص <span className="font-bold">{cleanName}</span> کے خلاف بجلی چوری کرنے کے جرم میں مقدمہ درج کر کے ایف۔آئی۔آر کی کاپی زیر دستخطی کو ارسال کی جائے۔
+                        رپورٹ کی جاتی ہے کہ مورخہ <span className="inline-block font-bold" dir="ltr">{formattedCheckingDate}</span> کو دورانِ معمول چیکنگ، <span className="font-bold">{checkingTeamUrdu}</span> نے کنکشن بنام <span className="font-bold">{data.nameUrdu || localTranslateToUrdu(data.name)}</span>، حوالہ نمبر <span className="font-bold px-1">{data.referenceNumber}</span>، واقعہ <span className="font-bold">{data.addressUrdu || localTranslateToUrdu(data.address)}</span> کو چیک کیا۔
+                      </p>
+                      <p className="mt-2">
+                        چیکنگ کے دوران یہ مشاہدہ کیا گیا کہ مذکورہ کنکشن پر حال قابض <span className="font-bold">{cleanName}</span> {(!discrepancyUrdu.includes('رہا تھا') && !discrepancyUrdu.includes('کر لیا ہے') && !discrepancyUrdu.includes('کرلیا ہے')) || discrepancyUrdu.includes('میٹرباڈی') || discrepancyUrdu.includes('میٹر ریورس') || discrepancyUrdu.includes('سپلائی') || discrepancyUrdu.includes('ڈسپلے') || discrepancyUrdu.includes('جلا دیا') ? 'نے ' : ''}<span className="font-bold text-red-700">{discrepancyUrdu}</span> {discrepancyUrdu.endsWith('۔') || discrepancyUrdu.includes('پائے گئے') || discrepancyUrdu.includes('جا رہی تھی') || discrepancyUrdu.includes('جاری تھا') ? '' : (discrepancyUrdu.includes('تھا') || discrepancyUrdu.includes('تھی') || discrepancyUrdu.includes('گیا') || discrepancyUrdu.includes('ہے') ? '۔' : 'لگا رکھی تھی۔ ')} {discrepancyUrdu.includes('بجلی استعمال') || discrepancyUrdu.includes('بجلی چوری') || discrepancyUrdu.includes('پائے گئے') || discrepancyUrdu.includes('جا رہی تھی') || discrepancyUrdu.includes('جاری تھا') || discrepancyUrdu.includes('واش') || discrepancyUrdu.includes('جلا دیا') ? '' : 'جس کی وجہ سے بجلی چوری کی جا رہی تھی۔'}
+                      </p>
+                      <p className="mt-3">
+                        مذکورہ بالا عمل کے نتیجے میں حال قابض <span className="font-bold">{cleanName}</span> بجلی چوری کا مرتکب پایا گیا، جس سے محکمہ لیسکو کو تقریباً <span className="font-bold px-1">{data.lossAmount ? Number(data.lossAmount).toLocaleString() : '۔۔۔۔۔'}</span> روپے کا مالی نقصان پہنچا۔
+                      </p>
+                      <p className="mt-3">
+                        لہٰذا استدعا کی جاتی ہے کہ حال قابض <span className="font-bold">{cleanName}</span> کے خلاف بجلی چوری کے جرم کے تحت قانونی کارروائی عمل میں لاتے ہوئے مقدمہ درج کیا جائے اور ایف آئی آر کی نقل برائے ریکارڈ و مزید کارروائی زیرِ دستخطی کو ارسال کی جائے۔
                       </p>
                     </div>
                   );
                 })()}
 
-                <div className="pt-1">
-                    <h3 className="inline-block px-1 mb-0.5 text-base font-bold urdu-font">گواہان:</h3>
-                    <ul className="list-decimal pr-10 space-y-0.5">
-                        {(data.witnesses || []).length > 0 ? (data.witnesses || []).map((w, i) => <li key={i} className="font-medium text-sm">{localTranslateToUrdu(w)}</li>) : (
+                <div className="pt-1 break-inside-avoid">
+                    <h3 className="inline-block px-1 mb-1 text-[15pt] font-bold urdu-font border-b border-black">گواہان:</h3>
+                    <ul className="list-decimal pr-12 space-y-1">
+                        {(data.witnesses || []).length > 0 ? (data.witnesses || []).map((w, i) => <li key={i} className="font-medium text-[13pt]">{localTranslateToUrdu(w)}</li>) : (
                           <>
-                            <li className="text-sm">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
-                            <li className="text-sm">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                            <li className="text-[13pt]">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                            <li className="text-[13pt]">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
                           </>
                         )}
                     </ul>
                 </div>
 
-                <div className="pt-2 flex flex-col">
-                    <div className="flex flex-col items-center w-fit mr-auto ml-4 text-sm leading-snug">
-                        <p className="font-bold mb-0.5">خیر اندیش:</p>
-                        <div className="mt-10 flex flex-col items-center space-y-0.5">
-                            <p className="font-bold text-base">{localTranslateToUrdu(data.employeeName) || '۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔'}</p>
-                            <p className="text-sm">{localTranslateToUrdu(data.employeeDesignation) || 'اِسسٹنٹ مینیجر (آپریشن)'} لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
-                            <p className="text-xs text-gray-700">شناختی کارڈ نمبر: <span dir="ltr">{data.employeeCnic || '35102-0565965-3'}</span></p>
-                            <p className="text-xs text-gray-700">موبائل نمبر: <span dir="ltr">{data.employeeMobile || '0370-4991751'}</span></p>
+                <div className="pt-2 flex flex-col break-inside-avoid">
+                    <div className="flex flex-col items-center w-fit mr-auto ml-10 leading-snug">
+                        <p className="font-bold mb-1 text-[15pt]">خیر اندیش:</p>
+                        <div className="mt-14 flex flex-col items-center space-y-1">
+                            <p className="font-bold text-[16pt]">{localTranslateToUrdu(data.employeeName) || '۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔'}</p>
+                            <p className="text-[14pt]">{localTranslateToUrdu(data.employeeDesignation) || 'اِسسٹنٹ مینیجر (آپریشن)'} لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                            <p className="text-[11pt] text-gray-700">شناختی کارڈ نمبر: <span dir="ltr">{data.employeeCnic || '35102-0565965-3'}</span></p>
+                            <p className="text-[11pt] text-gray-700">موبائل نمبر: <span dir="ltr">{data.employeeMobile || '0370-4991751'}</span></p>
                         </div>
                     </div>
 
-                    <div className="text-right space-y-0.5 mt-2">
-                        <p className="font-bold mb-0.5 text-xs">کاپی برائے اطلاع:</p>
-                        <ul className="list-none pr-2 space-y-0.5 text-[10px]">
+                    <div className="text-right space-y-1 mt-4">
+                        <p className="font-bold mb-1 text-[11pt]">کاپی برائے اطلاع:</p>
+                        <ul className="list-none pr-4 space-y-1 text-[10pt]">
                              <li>1۔ جناب ڈپٹی مینیجر صاحب (آپریشن) لیسکو ڈویژن کوٹ رادہاکشن </li>
                             <li>2۔ جناب ڈی۔پی۔او صاحب قصور</li>
                             <li>3۔ جناب ڈی۔ایس۔پی صاحب صدر سرکل قصور</li>
@@ -1483,63 +1511,63 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
         {/* Seizure Memo Page */}
         {hasSeizureMemo && (
-          <div className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[20mm] text-black bg-white urdu-font">
-            <div className="text-center mb-4">
-                <h2 className="text-lg font-bold urdu-font mb-1">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h2>
-                <p className="text-sm">دفتر اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
-                <p className="text-[10px]">132 کے وی اے گریڈ اسٹیشن کوٹ رادھاکشن | <span dir="ltr">049-2382776</span> ☎</p>
-                <div className="mt-2">
-                    <h3 className="text-lg font-bold inline-block px-4 py-0.5 urdu-font border-b border-black">فرد مقبوضگی</h3>
+          <div className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[25.4mm] text-black bg-white urdu-font" style={{ pageBreakBefore: 'always', breakBefore: 'page' }}>
+            <div className="text-center mb-6 space-y-1">
+                <h2 className="text-[18pt] font-bold urdu-font">لاہور الیکٹرک سپلائی کمپنی لمیٹڈ (لیسکو)</h2>
+                <p className="text-[15pt] font-bold">دفتر اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                <p className="text-[11pt]">132 کے وی گریڈ اسٹیشن کوٹ رادھاکشن   <span dir="ltr">049-2382776</span> ☎</p>
+                <div className="mt-4">
+                    <h3 className="text-[16pt] font-bold inline-block px-6 py-1 urdu-font border-b-2 border-black">فرد مقبوضگی</h3>
                 </div>
             </div>
 
-            <div className="mt-4 space-y-3 text-sm leading-normal">
-                <div className="space-y-1">
-                    <p>کنکشن بجلی بحوالہ نمبر: <span className="font-bold px-2">{data.referenceNumber}</span> &nbsp;&nbsp;&nbsp;&nbsp; بنام: <span className="font-bold px-2">{localTranslateToUrdu(data.name)}</span></p>
-                    <p>حال قابض: <span className="font-bold px-2">{localTranslateToUrdu(data.name)}</span> &nbsp;&nbsp;&nbsp;&nbsp; ساکن: <span className="font-bold px-2">{localTranslateToUrdu(data.address)}</span></p>
+            <div className="mt-6 space-y-4">
+                <div className="space-y-2">
+                    <p>کنکشن بنام: <span className="font-bold px-2">{data.nameUrdu || localTranslateToUrdu(data.name)}</span> &nbsp;&nbsp;&nbsp;&nbsp; بحوالہ نمبر: <span className="font-bold px-2">{data.referenceNumber}</span></p>
+                    <p>حال قابض: <span className="font-bold px-2">{data.presentOccupierUrdu || localTranslateToUrdu(data.presentOccupier || data.name)}</span> &nbsp;&nbsp;&nbsp;&nbsp; ساکن: <span className="font-bold px-2">{data.addressUrdu || localTranslateToUrdu(data.address)}</span></p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 border-y border-black py-3 bg-gray-50/50">
+                <div className="grid grid-cols-3 gap-4 border-y-2 border-black py-4 bg-gray-50/50">
                   <div className="text-center">
-                      <p className="text-[10px] text-gray-600 mb-0.5">سائز تار</p>
-                      <p className="font-bold text-base">{localTranslateToUrdu(data.seizureCableSize)}</p>
-                  </div>
-                  <div className="text-center border-x border-gray-300">
-                      <p className="text-[10px] text-gray-600 mb-0.5">رنگ</p>
-                      <p className="font-bold text-base">{localTranslateToUrdu(data.seizureCableColor)}</p>
+                      <p className="text-[11pt] text-gray-600 mb-1 font-bold">سائز تار</p>
+                      <p className="font-bold text-[15pt]">{localTranslateToUrdu(data.seizureCableSize)}</p>
+                   </div>
+                  <div className="text-center border-x-2 border-black">
+                      <p className="text-[11pt] text-gray-600 mb-1 font-bold">رنگ</p>
+                      <p className="font-bold text-[15pt]">{localTranslateToUrdu(data.seizureCableColor)}</p>
                   </div>
                   <div className="text-center">
-                      <p className="text-[10px] text-gray-600 mb-0.5">لمبائی</p>
-                      <p className="font-bold text-base">{localTranslateToUrdu(data.seizureCableLength)}</p>
+                      <p className="text-[11pt] text-gray-600 mb-1 font-bold">لمبائی</p>
+                      <p className="font-bold text-[15pt]">{localTranslateToUrdu(data.seizureCableLength)}</p>
                   </div>
                 </div>
                 
-                <div className="mt-3 text-justify leading-[1.6]">
-                    <p className="indent-8">
-                        مندرجہ بالا کنکشن کی چیکنگ کے دوران جو تار بجلی چوری کے لیے استعمال ہو رہی تھی، اسے قبضہ میں لے کر اس کی فرد مقبوضگی تیار کی گئی ہے۔ یہ تار موقع پر موجود گواہان کی موجودگی میں باقاعدہ طور پر سیل کی گئی ہے اور اب اسے قانونی کارروائی کے لیے محفوظ کر لیا گیا ہے۔اور حوالہ پولیس کیا جاتا ہے۔تاکہ بوقت شہادت عدالت عالیہ میں پیش کی جاسکے
+                <div className="mt-4 text-justify leading-[1.6]">
+                    <p className="indent-10">
+                        مندرجہ بالا کنکشن کی چیکنگ کے دوران جو تار بجلی چوری کے لیے استعمال ہو رہی تھی، اسے قبضہ میں لے کر اس کی فردِ مقبوضگی تیار کی گئی۔ مذکورہ تار کو موقع پر موجود گواہان کی موجودگی میں باقاعدہ طور پر سیل کر دیا گیا ہے اور قانونی کارروائی کے لیے محفوظ تحویل میں رکھا گیا ہے۔ مزید قانونی کارروائی کے لیے اسے پولیس کے حوالے کیا جاتا ہے تاکہ بوقتِ شہادت عدالتِ عالیہ میں پیش کیا جا سکے۔
                     </p>
                 </div>
 
-                <div className="mt-4">
-                    <h3 className="inline-block px-1 mb-1 text-base font-bold urdu-font border-b border-black">گواہان:</h3>
-                    <ul className="list-decimal pr-10 space-y-1">
-                        {(data.witnesses || []).length > 0 ? (data.witnesses || []).map((w, i) => <li key={i} className="font-bold text-sm">{localTranslateToUrdu(w)}</li>) : (
+                <div className="mt-2 break-inside-avoid">
+                    <h3 className="inline-block px-1 mb-2 text-[15pt] font-bold urdu-font border-b-2 border-black">گواہان:</h3>
+                    <ul className="list-decimal pr-12 space-y-2 font-bold">
+                        {(data.witnesses || []).length > 0 ? (data.witnesses || []).map((w, i) => <li key={i} className="text-[14pt]">{localTranslateToUrdu(w)}</li>) : (
                           <>
-                            <li className="text-gray-400 text-xs">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
-                            <li className="text-gray-400 text-xs">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                            <li className="text-gray-400">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
+                            <li className="text-gray-400">۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔</li>
                           </>
                         )}
                     </ul>
                 </div>
 
-                <div className="flex justify-end pt-4">
-                    <div className="flex flex-col items-center w-fit text-sm leading-snug p-1">
-                        <p className="font-bold mb-0.5">خیر اندیش:</p>
-                        <div className="mt-10 flex flex-col items-center space-y-0.5">
-                          <p className="font-bold text-base">{localTranslateToUrdu(data.employeeName) || '۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔'}</p>
-                          <p className="text-xs">{localTranslateToUrdu(data.employeeDesignation) || 'اِسسٹنٹ مینیجر (آپریشن)'} لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
-                          <p className="text-[10px] text-gray-700">شناختی کارڈ نمبر: <span dir="ltr">{data.employeeCnic || '35102-0565965-3'}</span></p>
-                          <p className="text-[10px] text-gray-700">موبائل نمبر: <span dir="ltr">{data.employeeMobile || '0370-4991751'}</span></p>
+                <div className="flex justify-end pt-4 break-inside-avoid">
+                    <div className="flex flex-col items-center w-fit leading-snug p-2">
+                        <p className="font-bold mb-1 text-[15pt]">خیر اندیش:</p>
+                        <div className="mt-14 flex flex-col items-center space-y-1">
+                          <p className="font-bold text-[16pt]">{localTranslateToUrdu(data.employeeName) || '۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔۔'}</p>
+                          <p className="text-[13pt] font-bold">{localTranslateToUrdu(data.employeeDesignation) || 'اِسسٹنٹ مینیجر (آپریشن)'} لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</p>
+                          <p className="text-[11pt] text-gray-700">شناختی کارڈ نمبر: <span dir="ltr">{data.employeeCnic || '35102-0565965-3'}</span></p>
+                          <p className="text-[11pt] text-gray-700">موبائل نمبر: <span dir="ltr">{data.employeeMobile || '0370-4991751'}</span></p>
                         </div>
                     </div>
                 </div>

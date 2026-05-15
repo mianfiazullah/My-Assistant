@@ -49,7 +49,7 @@ export default function QuickEdit() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState('');
-  const [activeTemplate, setActiveTemplate] = useState<'DETECTION BILL PROFORMA' | 'NOTICE' | 'FIR Request'>(() => 
+  const [activeTemplate, setActiveTemplate] = useState<'DETECTION BILL PROFORMA' | 'NOTICE' | 'FIR Request' | 'FIR Urdu'>(() => 
     getInitialState('lesco_quick_edit_template', 'DETECTION BILL PROFORMA')
   );
   const [zoom, setZoom] = useState(0.8);
@@ -109,6 +109,8 @@ export default function QuickEdit() {
       employeeDesignation: baseCase?.employeeDesignation || 'Line Superintendent',
       witnesses: baseCase?.witnesses || ['', ''],
       photoUrl: baseCase?.photoUrl || '',
+      presentOccupier: baseCase?.presentOccupier || '',
+      presentOccupierUrdu: baseCase?.presentOccupierUrdu || '',
       billData: baseCase?.billData,
     };
   });
@@ -451,7 +453,7 @@ export default function QuickEdit() {
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex bg-neutral-100 p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
-            {(['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Request'] as const).map((t) => (
+            {(['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Request', 'FIR Urdu'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setActiveTemplate(t)}
@@ -511,6 +513,10 @@ export default function QuickEdit() {
             <h3 className="text-xs font-bold text-black uppercase tracking-widest border-b border-neutral-100 pb-2">Consumer Info</h3>
             <div className="grid gap-4">
               <InputField label="Consumer Name : -" value={data.name} onChange={(v) => handleInputChange('name', v)} />
+              <div className="grid grid-cols-2 gap-4">
+                <InputField label="Present Occupier : -" value={data.presentOccupier} onChange={(v) => handleInputChange('presentOccupier', v)} />
+                <InputField label="P/O Urdu : -" value={data.presentOccupierUrdu} onChange={(v) => handleInputChange('presentOccupierUrdu', v)} />
+              </div>
               <InputField label="Address : -" value={data.address} onChange={(v) => handleInputChange('address', v)} />
               <div className="grid grid-cols-2 gap-4">
                 <InputField label="Reference No : -" value={data.referenceNumber} onChange={(v) => handleInputChange('referenceNumber', v)} />
