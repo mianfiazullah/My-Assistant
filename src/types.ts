@@ -130,4 +130,6 @@ export interface DetectionCase {
   employeeNameUrdu?: string;
   presentOccupier?: string;
   presentOccupierUrdu?: string;
+  dBillingMemoNo?: string;
+  dBillingMemoDated?: string;
 }

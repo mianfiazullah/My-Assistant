@@ -40,6 +40,8 @@ interface ProformaProps {
     firDated?: string;
     registeredFirNo?: string;
     registeredFirDated?: string;
+    dBillingMemoNo?: string;
+    dBillingMemoDated?: string;
     policeStation?: string;
     noOfAC?: string;
     splitAcCount?: string;
@@ -362,6 +364,10 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <div className="flex gap-1 items-end min-w-0 font-bold"><span className="whitespace-nowrap uppercase text-[7.5pt]">Dated:</span><span className="border-b border-black whitespace-nowrap text-black">{formatDate(data.noticeDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
           <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">FIR T/O No:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{data.firNo || '۔۔۔۔۔۔۔۔'}</span></div>
           <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">FIR T/O Dated:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{formatDate(data.firDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
+        </div>
+        <div className="flex justify-between gap-1 text-[7pt]">
+          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">D.BILL MEMO NO:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{data.dBillingMemoNo || '۔۔۔۔۔۔۔۔'}</span></div>
+          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">D.BILL MEMO DATED:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{formatDate(data.dBillingMemoDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
         </div>
         <div className="flex justify-between gap-1 text-[7pt]">
           <div className={cn("flex gap-1 items-end min-w-0 font-bold", !data.registeredFirNo ? "text-red-600 font-bold" : "text-black")}>

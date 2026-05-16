@@ -153,20 +153,20 @@ export default function Cases() {
     <div className="space-y-6 md:space-y-8 px-2 sm:px-4">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900">Past Detection Cases</h1>
-          <p className="text-sm text-neutral-500">View and manage all recorded theft detections</p>
+          <h1 className="text-2xl sm:text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 dark:text-slate-100">Past Detection Cases</h1>
+          <p className="text-sm text-neutral-500 dark:text-slate-400">View and manage all recorded theft detections</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button 
             onClick={() => navigate('/quick-edit')}
-            className="flex-1 sm:flex-none bg-white border border-neutral-200 text-neutral-700 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-bold shadow-sm hover:bg-neutral-50 transition-all flex items-center justify-center gap-2 text-sm"
+            className="flex-1 sm:flex-none bg-white dark:bg-slate-900 border border-neutral-200 dark:border-slate-800 text-neutral-700 dark:text-slate-300 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-bold shadow-sm hover:bg-neutral-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-center gap-2 text-sm"
           >
             <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" /> Quick Editor
           </button>
-          <button className="flex-1 sm:flex-none bg-white border border-neutral-200 text-neutral-700 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-bold shadow-sm hover:bg-neutral-50 transition-all flex items-center justify-center gap-2 text-sm">
+          <button className="flex-1 sm:flex-none bg-white dark:bg-slate-900 border border-neutral-200 dark:border-slate-800 text-neutral-700 dark:text-slate-300 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-bold shadow-sm hover:bg-neutral-50 dark:hover:bg-slate-800/50 transition-all flex items-center justify-center gap-2 text-sm">
             <Filter className="w-4 h-4 sm:w-5 sm:h-5" /> Filter
           </button>
-          <button className="w-full sm:w-auto bg-neutral-900 text-white px-4 py-2 sm:py-3 rounded-xl font-bold shadow-sm hover:bg-neutral-800 transition-all flex items-center justify-center gap-2 text-sm">
+          <button className="w-full sm:w-auto bg-neutral-900 dark:bg-indigo-600 text-white px-4 py-2 sm:py-3 rounded-xl font-bold shadow-sm hover:bg-neutral-800 dark:hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 text-sm shadow-indigo-600/10">
             <Download className="w-4 h-4 sm:w-5 sm:h-5" /> Export All
           </button>
         </div>
@@ -174,13 +174,13 @@ export default function Cases() {
 
       {/* Search Bar */}
       <div className="relative group">
-        <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-neutral-400 group-focus-within:text-indigo-500 transition-colors" />
+        <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-neutral-400 dark:text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search by Reference Number, Consumer Name, or Date..."
-          className="w-full bg-white border border-neutral-100 rounded-2xl sm:rounded-3xl py-3 sm:py-5 pl-12 sm:pl-16 pr-4 sm:pr-6 text-sm sm:text-base text-neutral-900 shadow-sm focus:outline-none focus:border-indigo-500 transition-all"
+          className="w-full bg-white dark:bg-slate-900 border border-neutral-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl py-3 sm:py-5 pl-12 sm:pl-16 pr-4 sm:pr-6 text-sm sm:text-base text-neutral-900 dark:text-slate-100 shadow-sm focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-500 transition-all placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
         />
       </div>
 
@@ -192,9 +192,9 @@ export default function Cases() {
             <p className="text-neutral-500">Loading cases from database...</p>
           </div>
         ) : filteredCases.length === 0 ? (
-          <div className="py-20 text-center bg-white rounded-3xl border border-neutral-100">
-            <FileText className="w-12 h-12 text-neutral-200 mx-auto mb-4" />
-            <p className="text-neutral-500">No matching cases found.</p>
+          <div className="py-20 text-center bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800">
+            <FileText className="w-12 h-12 text-neutral-200 dark:text-slate-800 mx-auto mb-4" />
+            <p className="text-neutral-500 dark:text-slate-500">No matching cases found.</p>
           </div>
         ) : (
           filteredCases.map((item, i) => (
@@ -204,24 +204,24 @@ export default function Cases() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               onClick={() => setSelectedCase(item)}
-              className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-neutral-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group cursor-pointer"
+              className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500 hover:shadow-md transition-all group cursor-pointer"
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                 <div className="flex items-start gap-3 sm:gap-4">
-                  <div className="bg-indigo-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 sm:p-4 rounded-xl sm:rounded-2xl text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
                     <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base sm:text-base sm:text-lg font-bold text-neutral-900 truncate">{item.billData.consumerName}</h3>
+                      <h3 className="text-base sm:text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100 truncate">{item.billData.consumerName}</h3>
                       <span className={cn(
                         "px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
-                        item.firNumber ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                        item.firNumber ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
                       )}>
                         {item.firNumber ? 'Completed' : 'Pending FIR'}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-sm text-neutral-500">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-sm text-neutral-500 dark:text-slate-400">
                       <span className="flex items-center gap-1.5 font-mono">
                         <Hash className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {item.billData.referenceNumber}
                       </span>
@@ -243,8 +243,8 @@ export default function Cases() {
                     className={cn(
                       "p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all",
                       copiedId === item.id 
-                        ? "bg-emerald-100 text-emerald-600" 
-                        : "bg-neutral-50 hover:bg-emerald-50 text-neutral-400 hover:text-emerald-600"
+                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" 
+                        : "bg-neutral-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-neutral-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400"
                     )}
                     title="Copy Data for Excel/Sheets"
                   >
@@ -255,12 +255,12 @@ export default function Cases() {
                       e.stopPropagation();
                       navigate('/quick-edit', { state: { case: item } });
                     }}
-                    className="p-2 sm:p-3 bg-neutral-50 hover:bg-indigo-50 text-neutral-400 hover:text-indigo-600 rounded-xl sm:rounded-2xl transition-all"
+                    className="p-2 sm:p-3 bg-neutral-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-neutral-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl sm:rounded-2xl transition-all"
                     title="Edit Case"
                   >
                     <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
-                  <button className="p-2 sm:p-3 bg-neutral-50 hover:bg-indigo-50 text-neutral-400 hover:text-indigo-600 rounded-xl sm:rounded-2xl transition-all">
+                  <button className="p-2 sm:p-3 bg-neutral-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-neutral-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl sm:rounded-2xl transition-all">
                     <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button 
@@ -268,12 +268,12 @@ export default function Cases() {
                       e.stopPropagation();
                       setCaseToDelete(item.id);
                     }}
-                    className="p-2 sm:p-3 bg-neutral-50 hover:bg-indigo-600 text-neutral-400 hover:text-white rounded-xl sm:rounded-2xl transition-all"
+                    className="p-2 sm:p-3 bg-neutral-50 dark:bg-slate-800 hover:bg-indigo-600 dark:hover:bg-indigo-600 text-neutral-400 dark:text-slate-500 hover:text-white rounded-xl sm:rounded-2xl transition-all"
                     title="Delete Case"
                   >
                     <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
-                  <button className="p-2 sm:p-3 bg-neutral-50 hover:bg-neutral-100 text-neutral-400 hover:text-neutral-900 rounded-xl sm:rounded-2xl transition-all">
+                  <button className="p-2 sm:p-3 bg-neutral-50 dark:bg-slate-800 hover:bg-neutral-100 dark:hover:bg-slate-700 text-neutral-400 dark:text-slate-500 hover:text-neutral-900 dark:hover:text-slate-100 rounded-xl sm:rounded-2xl transition-all">
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
@@ -290,19 +290,19 @@ export default function Cases() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center space-y-6"
+              className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center space-y-6"
             >
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto">
-                <Trash2 className="w-8 h-8 text-indigo-600" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto">
+                <Trash2 className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-neutral-900">Delete Case?</h3>
-                <p className="text-neutral-500 mt-2">Are you sure you want to delete this case? This action cannot be undone.</p>
+                <h3 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Delete Case?</h3>
+                <p className="text-neutral-500 dark:text-slate-400 mt-2">Are you sure you want to delete this case? This action cannot be undone.</p>
               </div>
               <div className="flex gap-3">
                 <button 
                   onClick={() => setCaseToDelete(null)}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-neutral-700 dark:text-slate-300 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -331,19 +331,19 @@ export default function Cases() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
           >
-              <div className="p-6 border-b border-neutral-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div className="p-6 border-b border-neutral-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-10">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-xl font-bold text-neutral-900">Case Details</h2>
+                <h2 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Case Details</h2>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => handleCopyCaseExcel(selectedCase)}
                     className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
                       copiedId === selectedCase.id
-                        ? "bg-emerald-100 text-emerald-600"
-                        : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                        : "bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                     )}
                   >
                     {copiedId === selectedCase.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -351,7 +351,7 @@ export default function Cases() {
                   </button>
                   <button 
                     onClick={() => navigate('/quick-edit', { state: { case: selectedCase } })}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition-all"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all"
                   >
                     <Edit2 className="w-3.5 h-3.5" /> Edit Template
                   </button>
@@ -359,9 +359,9 @@ export default function Cases() {
               </div>
               <button 
                 onClick={() => setSelectedCase(null)}
-                className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                className="p-2 hover:bg-neutral-100 dark:hover:bg-slate-800 rounded-full transition-colors"
               >
-                <X className="w-6 h-6 text-neutral-400" />
+                <X className="w-6 h-6 text-neutral-400 dark:text-slate-500" />
               </button>
             </div>
 
@@ -372,7 +372,7 @@ export default function Cases() {
                   <img 
                     src={selectedCase.photoUrl} 
                     alt="Detection" 
-                    className="w-32 h-32 rounded-2xl object-cover border-4 border-neutral-50 shadow-sm"
+                    className="w-32 h-32 rounded-2xl object-cover border-4 border-neutral-50 dark:border-slate-800 shadow-sm"
                   />
                   <button 
                     onClick={(e) => {
@@ -384,19 +384,19 @@ export default function Cases() {
                       link.click();
                       document.body.removeChild(link);
                     }}
-                    className="absolute top-2 right-2 bg-white/90 hover:bg-white text-neutral-900 p-1.5 rounded-lg shadow-lg opacity-0 group-hover/case-photo:opacity-100 transition-all"
+                    className="absolute top-2 right-2 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-neutral-900 dark:text-slate-100 p-1.5 rounded-lg shadow-lg opacity-0 group-hover/case-photo:opacity-100 transition-all"
                     title="Download Photo"
                   >
                     <Download className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-neutral-900">{selectedCase.name || selectedCase.billData.consumerName}</h3>
-                  <p className="text-neutral-500 font-mono">{selectedCase.billData.referenceNumber}</p>
+                  <h3 className="text-2xl font-bold text-neutral-900 dark:text-slate-100">{selectedCase.name || selectedCase.billData.consumerName}</h3>
+                  <p className="text-neutral-500 dark:text-slate-400 font-mono">{selectedCase.billData.referenceNumber}</p>
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      selectedCase.firNumber ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                      selectedCase.firNumber ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
                     )}>
                       {selectedCase.firNumber ? `FIR: ${selectedCase.firNumber}` : 'Pending FIR'}
                     </span>
@@ -572,10 +572,10 @@ export default function Cases() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col"
+              className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col border border-transparent dark:border-slate-800"
             >
-              <div className="p-6 border-b border-neutral-100 flex items-center justify-between bg-white z-10">
-                <h2 className="text-xl font-bold text-neutral-900">Document Preview: {previewDoc.type}</h2>
+              <div className="p-6 border-b border-neutral-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 z-10">
+                <h2 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Document Preview: {previewDoc.type}</h2>
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => triggerPrint(previewDoc.type)}
@@ -585,15 +585,15 @@ export default function Cases() {
                   </button>
                   <button 
                     onClick={() => setPreviewDoc(null)}
-                    className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-neutral-100 dark:hover:bg-slate-800 rounded-full transition-colors"
                   >
-                    <X className="w-6 h-6 text-neutral-400" />
+                    <X className="w-6 h-6 text-neutral-400 dark:text-slate-500" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-8 bg-neutral-100">
-                <div className="bg-white shadow-xl mx-auto transform origin-top scale-[0.85] md:scale-100">
+              <div className="flex-1 overflow-y-auto p-8 bg-neutral-100 dark:bg-slate-950">
+                <div className="bg-white dark:bg-white shadow-xl mx-auto transform origin-top scale-[0.85] md:scale-100">
                   <ProformaTemplates 
                     type={previewDoc.type as any}
                     data={previewDoc.data}
@@ -648,12 +648,12 @@ export default function Cases() {
 function DetailItem({ icon: Icon, label, value, className }: { icon: any, label: string, value: React.ReactNode, className?: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="bg-neutral-50 p-2 rounded-lg text-black">
+      <div className="bg-neutral-50 dark:bg-slate-800 p-2 rounded-lg text-black dark:text-slate-100">
         <Icon className="w-4 h-4" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] text-black font-bold uppercase tracking-wider">{label}</p>
-        <p className={cn("text-sm font-bold text-black border-b border-neutral-200 inline-block whitespace-nowrap", className)}>{value}</p>
+        <p className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-wider">{label}</p>
+        <p className={cn("text-sm font-bold text-black dark:text-slate-100 border-b border-neutral-200 dark:border-slate-800 inline-block whitespace-nowrap", className)}>{value}</p>
       </div>
     </div>
   );

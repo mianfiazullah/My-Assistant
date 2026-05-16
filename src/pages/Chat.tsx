@@ -75,30 +75,30 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-120px)] bg-white dark:bg-slate-900 rounded-3xl border border-neutral-200 dark:border-slate-800 overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="p-6 border-b border-neutral-200 flex items-center justify-between bg-neutral-50/50">
+      <div className="p-6 border-b border-neutral-200 dark:border-slate-800 flex items-center justify-between bg-neutral-50/50 dark:bg-slate-800/30">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-neutral-200 rounded-full transition-colors lg:hidden"
+            className="p-2 hover:bg-neutral-200 dark:hover:bg-slate-700 rounded-full transition-colors lg:hidden"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-600" />
+            <ArrowLeft className="w-5 h-5 text-neutral-600 dark:text-slate-400" />
           </button>
           <div className="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/20">
             <Bot className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">AI Assistant</h1>
+            <h1 className="text-xl font-bold text-neutral-900 dark:text-slate-100">AI Assistant</h1>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <p className="text-xs text-neutral-500 font-medium">Online & Ready to Help</p>
+              <p className="text-xs text-neutral-500 dark:text-slate-400 font-medium">Online & Ready to Help</p>
             </div>
           </div>
         </div>
         <button 
           onClick={clearChat}
-          className="p-2.5 text-neutral-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all"
+          className="p-2.5 text-neutral-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-all"
           title="Clear Chat"
         >
           <Trash2 className="w-5 h-5" />
@@ -112,12 +112,12 @@ export default function Chat() {
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
-            <div className="bg-neutral-100 p-6 rounded-full">
-              <MessageSquare className="w-12 h-12 text-neutral-400" />
+            <div className="bg-neutral-100 dark:bg-slate-800 p-6 rounded-full">
+              <MessageSquare className="w-12 h-12 text-neutral-400 dark:text-slate-500" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-neutral-900">Welcome to AI Support</h3>
-              <p className="text-sm text-neutral-500 max-w-xs mx-auto">
+              <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100">Welcome to AI Support</h3>
+              <p className="text-sm text-neutral-500 dark:text-slate-400 max-w-xs mx-auto">
                 Ask me anything about billing, detection cases, or how to use this system.
               </p>
             </div>
@@ -147,8 +147,8 @@ export default function Chat() {
                 <div className={cn(
                   "p-4 rounded-2xl shadow-sm",
                   msg.role === 'user' 
-                    ? "bg-neutral-900 text-white rounded-tr-none" 
-                    : "bg-neutral-50 border border-neutral-200 text-neutral-900 rounded-tl-none"
+                    ? "bg-neutral-900 dark:bg-indigo-600 text-white rounded-tr-none" 
+                    : "bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 text-neutral-900 dark:text-slate-100 rounded-tl-none"
                 )}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   <p className={cn(
@@ -171,16 +171,16 @@ export default function Chat() {
             <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
               <Bot className="w-5 h-5 text-white" />
             </div>
-            <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-2xl rounded-tl-none flex items-center gap-2">
-              <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
-              <span className="text-sm text-neutral-500 font-medium italic">AI is thinking...</span>
+            <div className="bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 p-4 rounded-2xl rounded-tl-none flex items-center gap-2">
+              <Loader2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 animate-spin" />
+              <span className="text-sm text-neutral-500 dark:text-slate-400 font-medium italic">AI is thinking...</span>
             </div>
           </motion.div>
         )}
       </div>
 
       {/* Input */}
-      <div className="p-6 border-t border-neutral-200 bg-neutral-50/50">
+      <div className="p-6 border-t border-neutral-200 dark:border-slate-800 bg-neutral-50/50 dark:bg-slate-800/30">
         <div className="relative group">
           <input
             type="text"
@@ -188,7 +188,7 @@ export default function Chat() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your message here..."
-            className="w-full bg-white border border-neutral-200 rounded-2xl py-4 pl-6 pr-16 text-neutral-900 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all shadow-sm"
+            className="w-full bg-white dark:bg-slate-900 border border-neutral-200 dark:border-slate-700 rounded-2xl py-4 pl-6 pr-16 text-neutral-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all shadow-sm"
           />
           <button
             onClick={handleSend}

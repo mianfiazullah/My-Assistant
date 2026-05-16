@@ -100,28 +100,28 @@ function SortableItem(props: {
       ref={setNodeRef} 
       style={style} 
       className={cn(
-        "group flex flex-col bg-white border border-neutral-200 rounded-2xl overflow-hidden transition-all hover:border-indigo-200 hover:shadow-md", 
+        "group flex flex-col bg-white dark:bg-slate-900 border border-neutral-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-all hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md", 
         isDragging && "shadow-2xl border-indigo-500",
         props.className
       )}
     >
-      <div className="flex items-center bg-neutral-50 border-b border-neutral-100 px-3 py-2 gap-3">
+      <div className="flex items-center bg-neutral-50 dark:bg-slate-800 border-b border-neutral-100 dark:border-slate-700 px-3 py-2 gap-3">
         <div 
           className="cursor-grab active:cursor-grabbing hover:text-indigo-500 transition-colors shrink-0" 
           style={{ touchAction: 'none' }}
           {...attributes} 
           {...listeners}
         >
-          <GripVertical className="w-4 h-4 text-neutral-400" />
+          <GripVertical className="w-4 h-4 text-neutral-400 dark:text-slate-500" />
         </div>
         
         {props.serialNo !== undefined && (
-          <div className="flex items-center gap-1.5 bg-white border border-neutral-200 rounded-lg px-2 py-1 shadow-sm shrink-0">
-            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">No.</span>
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-neutral-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm shrink-0">
+            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">No.</span>
             <input 
               value={props.serialNo}
               onChange={(e) => props.onSerialNoChange?.(e.target.value)}
-              className="w-6 text-center bg-transparent font-bold text-neutral-800 focus:outline-none text-xs"
+              className="w-6 text-center bg-transparent font-bold text-neutral-800 dark:text-slate-100 focus:outline-none text-xs"
               placeholder="#"
               onClick={(e) => e.stopPropagation()}
             />
@@ -291,6 +291,8 @@ export default function NewCase() {
     billData: {} as BillData,
     referenceNumber: '',
     meterStatus: '',
+    dBillingMemoNo: '',
+    dBillingMemoDated: '',
   };
 
   const [detectionData, setDetectionData] = useState<DetectionCase>(() => {
@@ -437,7 +439,7 @@ export default function NewCase() {
   const defaultFieldOrder = [
     'dateOfChecking', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'registeredFirNo', 'registeredFirDated', 'policeStation',
     'noOfAC', 'feederName', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
-    'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
+    'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'dBillingMemoNo', 'dBillingMemoDated', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
     'consumerName', 'nameUrdu', 'presentOccupier', 'presentOccupierUrdu', 'address', 'addressUrdu', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
     'meterType', 'capacity', 'discrepancy', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod',
     'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks',
@@ -447,6 +449,7 @@ export default function NewCase() {
   const defaultFieldSerials = {
     dateOfChecking: '1', noticeNo: '2', noticeDated: '3', firNo: '4', firDated: '5', registeredFirNo: '6', registeredFirDated: '7', policeStation: '8',
     noOfAC: '9', detectionPeriodFrom: '10', detectionPeriodTo: '11', detectionPeriodMonths: '12',
+    dBillingMemoNo: '34a', dBillingMemoDated: '34b',
     unitsAssessed: '34', unitsAlreadyCharged: '33', netUnitsToBeCharged: '35', checkedBy: '16', referenceNo: '17',
     consumerName: '18', nameUrdu: '18U', presentOccupier: '18A', presentOccupierUrdu: '18B', address: '19', addressUrdu: '19U', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
     meterType: '25', capacity: '26', discrepancy: '27', acPeriodFrom: '28', acPeriodTo: '29', acPeriodMonths: '30', unitsOfAcPeriod: '31',
@@ -654,17 +657,17 @@ export default function NewCase() {
             key="dateOfChecking" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<p className="text-xs text-black uppercase font-bold tracking-widest">Date Of Checking</p>}
+            label={<p className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Date Of Checking</p>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")} id="field-dateOfChecking">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-900 dark:text-slate-100 pointer-events-none" />
               <input 
                 type="date"
                 value={detectionData.dateOfChecking || ''}
                 onChange={(e) => setDetectionData({...detectionData, dateOfChecking: e.target.value})}
                 max={today}
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 dark:text-slate-100"
               />
             </div>
           </SortableItem>
@@ -676,10 +679,10 @@ export default function NewCase() {
             key="noticeNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Notice No.</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Notice No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.noticeNo || ''} onChange={(e) => setDetectionData({...detectionData, noticeNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.noticeNo || ''} onChange={(e) => setDetectionData({...detectionData, noticeNo: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -690,16 +693,16 @@ export default function NewCase() {
             key="noticeDated" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Notice Dated</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Notice Dated</label>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-900 dark:text-slate-100 pointer-events-none" />
               <input 
                 type="date" 
                 value={detectionData.noticeDated || ''} 
                 onChange={(e) => setDetectionData({...detectionData, noticeDated: e.target.value})} 
                 max={today} 
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-black" 
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
             </div>
@@ -712,10 +715,10 @@ export default function NewCase() {
             key="firNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">FIR Request Vide T/O No.</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">FIR Request Vide T/O No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.firNo || ''} onChange={(e) => setDetectionData({...detectionData, firNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.firNo || ''} onChange={(e) => setDetectionData({...detectionData, firNo: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -726,16 +729,16 @@ export default function NewCase() {
             key="firDated" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">FIR Request T/O Dated</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">FIR Request T/O Dated</label>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-900 dark:text-slate-100 pointer-events-none" />
               <input 
                 type="date" 
                 value={detectionData.firDated || ''} 
                 onChange={(e) => setDetectionData({...detectionData, firDated: e.target.value})} 
                 max={today} 
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-black" 
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
             </div>
@@ -748,10 +751,10 @@ export default function NewCase() {
             key="registeredFirNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Registered FIR No.</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Registered FIR No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.registeredFirNo || ''} onChange={(e) => setDetectionData({...detectionData, registeredFirNo: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.registeredFirNo || ''} onChange={(e) => setDetectionData({...detectionData, registeredFirNo: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -762,10 +765,10 @@ export default function NewCase() {
             key="lossAmount" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Loss Amount</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Loss Amount</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.lossAmount || ''} onChange={(e) => setDetectionData({...detectionData, lossAmount: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.lossAmount || ''} onChange={(e) => setDetectionData({...detectionData, lossAmount: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -776,10 +779,10 @@ export default function NewCase() {
             key="seizureCableSize" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Size</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Seizure Cable Size</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.seizureCableSize || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableSize: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.seizureCableSize || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableSize: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -790,10 +793,10 @@ export default function NewCase() {
             key="seizureCableColor" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Color</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Seizure Cable Color</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.seizureCableColor || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableColor: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.seizureCableColor || ''} onChange={(e) => setDetectionData({...detectionData, seizureCableColor: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -804,7 +807,7 @@ export default function NewCase() {
             key="seizureCableLength" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Seizure Cable Length</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Seizure Cable Length</label>}
           >
             <div className={cn("flex gap-2", isDisabled && "opacity-50 pointer-events-none")}>
               <div className="relative flex-1">
@@ -816,7 +819,7 @@ export default function NewCase() {
                     setDetectionData({...detectionData, seizureCableLength: `${e.target.value} ${unit}`.trim()});
                   }} 
                   placeholder="Enter length"
-                  className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black focus:outline-none focus:border-indigo-500" 
+                  className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500" 
                   disabled={isDisabled} 
                 />
               </div>
@@ -845,16 +848,16 @@ export default function NewCase() {
             key="registeredFirDated" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Registered FIR Dated</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Registered FIR Dated</label>}
           >
             <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-900 dark:text-slate-100 pointer-events-none" />
               <input 
                 type="date" 
                 value={detectionData.registeredFirDated || ''} 
                 onChange={(e) => setDetectionData({...detectionData, registeredFirDated: e.target.value})} 
                 max={today} 
-                className="w-full bg-white border border-neutral-200 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-black" 
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
             </div>
@@ -867,14 +870,14 @@ export default function NewCase() {
             key="policeStation" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Name Of Police Station</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Name Of Police Station</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <select 
                 value={detectionData.policeStation || ''} 
                 onChange={(e) => setDetectionData({...detectionData, policeStation: e.target.value})} 
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-black"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100"
               >
                 <option value="">Select Police Station...</option>
                 <option value="Kot Radha Kishan">Kot Radha Kishan</option>
@@ -895,7 +898,7 @@ export default function NewCase() {
             onSerialNoChange={onSerialNoChange}
             label={
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-black uppercase tracking-widest">No. of AC</label>
+                <label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">No. of AC</label>
                 {acCount > 0 && (
                   <button
                     type="button"
@@ -941,7 +944,7 @@ export default function NewCase() {
                   }
                 }}
                 disabled={isDisabled}
-                className={cn("w-full border border-neutral-200 rounded-xl p-3", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")} 
+                className={cn("w-full border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100", isDisabled ? "bg-neutral-100 dark:bg-slate-800 cursor-not-allowed" : "bg-white dark:bg-slate-800")} 
               />
 
               {acCount > 0 && (
@@ -954,7 +957,7 @@ export default function NewCase() {
                   )}
                 >
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-black uppercase tracking-wider">Split ACs</label>
+                    <label className="text-[10px] font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-wider">Split ACs</label>
                     <input 
                       type="number"
                       min="0"
@@ -972,11 +975,11 @@ export default function NewCase() {
                       }}
                       placeholder="Qty"
                       disabled={isDisabled}
-                      className={cn("w-full border border-neutral-200 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")}
+                      className={cn("w-full border border-neutral-200 dark:border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100", isDisabled ? "bg-neutral-100 dark:bg-slate-800 cursor-not-allowed" : "bg-white dark:bg-slate-800")}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-black uppercase tracking-wider">Window ACs</label>
+                    <label className="text-[10px] font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-wider">Window ACs</label>
                     <input 
                       type="number"
                       min="0"
@@ -994,7 +997,7 @@ export default function NewCase() {
                       }}
                       placeholder="Qty"
                       disabled={isDisabled}
-                      className={cn("w-full border border-neutral-200 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black", isDisabled ? "bg-neutral-100 cursor-not-allowed" : "bg-white")}
+                      className={cn("w-full border border-neutral-200 dark:border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100", isDisabled ? "bg-neutral-100 dark:bg-slate-800 cursor-not-allowed" : "bg-white dark:bg-slate-800")}
                     />
                   </div>
                   {showAcMismatch && (
@@ -1015,7 +1018,7 @@ export default function NewCase() {
             key="feederName" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs uppercase tracking-widest text-black">G. Total Units TO BE CHARGED</label>}
+            label={<label className="text-xs uppercase tracking-widest text-neutral-900 dark:text-slate-100 font-bold">G. Total Units TO BE CHARGED</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -1023,8 +1026,8 @@ export default function NewCase() {
                 value={detectionData.feederName || ''} 
                 readOnly
                 className={cn(
-                  "w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 font-bold",
-                  detectionData.feederName?.includes('D.BILL IS NOT JUSTIFIED') ? "text-indigo-600 animate-blink" : "text-black"
+                  "w-full bg-neutral-50 dark:bg-slate-800/50 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold",
+                  detectionData.feederName?.includes('D.BILL IS NOT JUSTIFIED') ? "text-indigo-600 animate-blink" : "text-neutral-900 dark:text-slate-100"
                 )} 
                 disabled={isDisabled} 
               />
@@ -1040,10 +1043,10 @@ export default function NewCase() {
             key="detectionPeriodFrom" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period From</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Detection Period From</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="month" value={detectionData.detectionPeriodFrom || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodFrom: e.target.value})} max={thisMonth} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="month" value={detectionData.detectionPeriodFrom || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodFrom: e.target.value})} max={thisMonth} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -1057,7 +1060,7 @@ export default function NewCase() {
             onSerialNoChange={onSerialNoChange}
             label={
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period To</label>
+                <label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Detection Period To</label>
                 {isToMonthMissing && (
                   <p className="text-[10px] text-red-600 font-medium ml-1 flex items-center gap-1 animate-blink">
                     <AlertCircle className="w-3 h-3" /> Data for this month not found in scanned bill
@@ -1073,8 +1076,8 @@ export default function NewCase() {
                 onChange={(e) => setDetectionData({...detectionData, detectionPeriodTo: e.target.value})} 
                 max={thisMonth} 
                 className={cn(
-                  "w-full bg-white border border-neutral-200 rounded-xl p-3 transition-colors",
-                  isToMonthMissing ? "text-red-600 border-red-300 bg-red-50 font-bold" : "text-black font-bold"
+                  "w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 transition-colors",
+                  isToMonthMissing ? "text-red-600 border-red-300 bg-red-50 font-bold" : "text-neutral-900 dark:text-slate-100 font-bold"
                 )} 
                 disabled={isDisabled} 
               />
@@ -1088,10 +1091,10 @@ export default function NewCase() {
             key="detectionPeriodMonths" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Detection Period Months</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Detection Period Months</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.detectionPeriodMonths || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodMonths: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.detectionPeriodMonths || ''} onChange={(e) => setDetectionData({...detectionData, detectionPeriodMonths: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -1103,7 +1106,7 @@ export default function NewCase() {
             key="acPeriodFrom" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period From</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">AC Period From</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -1133,7 +1136,7 @@ export default function NewCase() {
                 min={acMin}
                 max={acMax} 
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" 
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" 
               />
             </div>
           </SortableItem>
@@ -1146,7 +1149,7 @@ export default function NewCase() {
             key="acPeriodTo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period To</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">AC Period To</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -1180,7 +1183,7 @@ export default function NewCase() {
                 min={acMin}
                 max={acMaxEffective} 
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" 
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" 
               />
             </div>
           </SortableItem>
@@ -1193,7 +1196,7 @@ export default function NewCase() {
             key="acPeriodMonths" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">AC Period Months</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">AC Period Months</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -1201,7 +1204,7 @@ export default function NewCase() {
                 value={detectionData.acPeriodMonths || ''} 
                 readOnly
                 disabled={isDisabled}
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 cursor-not-allowed font-bold text-black" 
+                className="w-full bg-neutral-50 dark:bg-slate-800/50 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 cursor-not-allowed font-bold text-neutral-900 dark:text-slate-100" 
               />
             </div>
           </SortableItem>
@@ -1214,10 +1217,10 @@ export default function NewCase() {
             key="unitsOfAcPeriod" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units of AC Period</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Units of AC Period</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.unitsOfAcPeriod || ''} onChange={(e) => setDetectionData({...detectionData, unitsOfAcPeriod: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.unitsOfAcPeriod || ''} onChange={(e) => setDetectionData({...detectionData, unitsOfAcPeriod: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -1235,14 +1238,14 @@ export default function NewCase() {
             key="unitsAssessed" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units Assessed</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Units Assessed</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
                 type="text" 
                 value={displayAssessed} 
                 onChange={(e) => setDetectionData({...detectionData, unitsAssessed: e.target.value})} 
-                className={cn("w-full border border-neutral-200 rounded-xl p-3 font-bold text-black", isDisabled ? "bg-neutral-100" : "bg-white")} 
+                className={cn("w-full border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100", isDisabled ? "bg-neutral-100 dark:bg-slate-800" : "bg-white dark:bg-slate-800")} 
                 disabled={isDisabled} 
                 readOnly={isSlowness}
               />
@@ -1256,10 +1259,10 @@ export default function NewCase() {
             key="unitsAlreadyCharged" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-black uppercase tracking-widest">Units Already Charged</label>}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Units Already Charged</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
-              <input type="text" value={detectionData.unitsAlreadyCharged || ''} onChange={(e) => setDetectionData({...detectionData, unitsAlreadyCharged: e.target.value})} className="w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold text-black" disabled={isDisabled} />
+              <input type="text" value={detectionData.unitsAlreadyCharged || ''} onChange={(e) => setDetectionData({...detectionData, unitsAlreadyCharged: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
             </div>
           </SortableItem>
         );
@@ -1271,7 +1274,7 @@ export default function NewCase() {
             key="netUnitsToBeCharged" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs uppercase tracking-widest text-black font-bold">{isSlownessActiveForLabel ? `UNITS TO BE CHARGED AS PER SLOWNESS ${detectionData.meterSlowBy || ''}` : 'UNITS TO BE CHARGED AS PER CONNECTED LOAD'}</label>}
+            label={<label className="text-xs uppercase tracking-widest text-neutral-900 dark:text-slate-100 font-bold">{isSlownessActiveForLabel ? `UNITS TO BE CHARGED AS PER SLOWNESS ${detectionData.meterSlowBy || ''}` : 'UNITS TO BE CHARGED AS PER CONNECTED LOAD'}</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
@@ -1279,9 +1282,45 @@ export default function NewCase() {
                 value={detectionData.netUnitsToBeCharged || ''} 
                 onChange={(e) => setDetectionData({...detectionData, netUnitsToBeCharged: e.target.value})} 
                 className={cn(
-                  "w-full bg-white border border-neutral-200 rounded-xl p-3 font-bold",
-                  detectionData.netUnitsToBeCharged?.includes('D.BILL IS NOT JUSTIFIED') ? "text-red-600 animate-blink" : "text-black"
+                  "w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold",
+                  detectionData.netUnitsToBeCharged?.includes('D.BILL IS NOT JUSTIFIED') ? "text-red-600 animate-blink" : "text-neutral-900 dark:text-slate-100"
                 )} 
+                disabled={isDisabled} 
+              />
+            </div>
+          </SortableItem>
+        );
+      case 'dBillingMemoNo':
+        return (
+          <SortableItem 
+            id="dBillingMemoNo" 
+            key="dBillingMemoNo" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">D.BILL MEMO NO.</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input type="text" value={detectionData.dBillingMemoNo || ''} onChange={(e) => setDetectionData({...detectionData, dBillingMemoNo: e.target.value})} className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100" disabled={isDisabled} />
+            </div>
+          </SortableItem>
+        );
+      case 'dBillingMemoDated':
+        return (
+          <SortableItem 
+            id="dBillingMemoDated" 
+            key="dBillingMemoDated" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">D.BILL MEMO DATED</label>}
+          >
+            <div className={cn("relative", isDisabled && "opacity-50 pointer-events-none")}>
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-900 dark:text-slate-100 pointer-events-none" />
+              <input 
+                type="date" 
+                value={detectionData.dBillingMemoDated || ''} 
+                onChange={(e) => setDetectionData({...detectionData, dBillingMemoDated: e.target.value})} 
+                max={today} 
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
             </div>
@@ -1294,7 +1333,7 @@ export default function NewCase() {
             key="checkedBy" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-black uppercase font-bold tracking-widest">Checked By (Multiple)</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Checked By (Multiple)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-checkedBy">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1305,7 +1344,7 @@ export default function NewCase() {
                   "Along With"
                 ].map((option) => (
                   <div key={option} className="space-y-2">
-                    <label className="flex items-center gap-2 p-2 border border-neutral-200 rounded-xl hover:bg-neutral-50 cursor-pointer transition-colors">
+                    <label className="flex items-center gap-2 p-2 border border-neutral-200 dark:border-slate-700 rounded-xl hover:bg-neutral-50 dark:hover:bg-slate-800 transition-colors">
                       <input
                         type="checkbox"
                         checked={detectionData.checkedBy.includes(option)}
@@ -1319,9 +1358,9 @@ export default function NewCase() {
                               : prev.checkedBy.filter(item => item !== option)
                           }));
                         }}
-                        className="w-4 h-4 text-black rounded focus:ring-black"
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                       />
-                      <span className="text-sm font-bold text-black">{option}</span>
+                      <span className="text-sm font-bold text-neutral-900 dark:text-slate-100">{option}</span>
                     </label>
                     {option === "Along With" && detectionData.checkedBy.includes("Along With") && (
                       <input
@@ -1330,7 +1369,7 @@ export default function NewCase() {
                         onChange={(e) => setDetectionData({...detectionData, othersCheckedBy: e.target.value})}
                         placeholder="Enter manual checking team..."
                         disabled={isDisabled}
-                        className="w-full bg-white border border-neutral-200 rounded-xl p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-black"
+                        className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-2 text-sm focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100"
                       />
                     )}
                   </div>
@@ -1346,7 +1385,7 @@ export default function NewCase() {
             key="referenceNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Reference Number</label>}
+            label={<label className="text-xs text-neutral-500 dark:text-slate-400 uppercase font-bold tracking-widest">Reference Number</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -1354,7 +1393,7 @@ export default function NewCase() {
                 value={billData?.referenceNumber || ''}
                 readOnly
                 disabled={isDisabled}
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-2 px-3 text-base sm:text-lg font-bold text-neutral-900 font-mono focus:outline-none"
+                className="w-full bg-neutral-100 dark:bg-slate-800/50 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100 font-mono focus:outline-none"
               />
             </div>
           </SortableItem>
@@ -1366,7 +1405,7 @@ export default function NewCase() {
             key="consumerName" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Consumer Name (As per Bill)</label>}
+            label={<label className="text-xs text-neutral-500 dark:text-slate-400 uppercase font-bold tracking-widest">Consumer Name (As per Bill)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-name">
               <div className="relative group/field">
@@ -1385,12 +1424,12 @@ export default function NewCase() {
                   }}
                   placeholder="Enter Consumer Name"
                   disabled={isDisabled}
-                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-10 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
                 />
                 <button
                   onClick={() => handleTranslateField('name', detectionData.name)}
                   disabled={isDisabled || !detectionData.name || isTranslating === 'name'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all disabled:opacity-30"
                   title="Translate to Urdu"
                 >
                   {isTranslating === 'name' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
@@ -1424,7 +1463,7 @@ export default function NewCase() {
             key="presentOccupier" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Present Occupier (P/O)</label>}
+            label={<label className="text-xs text-neutral-500 dark:text-slate-400 uppercase font-bold tracking-widest">Present Occupier (P/O)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <div className="relative group/field">
@@ -1443,12 +1482,12 @@ export default function NewCase() {
                   }}
                   placeholder="Enter Present Occupier Name"
                   disabled={isDisabled}
-                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-10 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
                 />
                 <button
                   onClick={() => handleTranslateField('presentOccupier', detectionData.presentOccupier || '')}
                   disabled={isDisabled || !detectionData.presentOccupier || isTranslating === 'presentOccupier'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all disabled:opacity-30"
                   title="Translate to Urdu"
                 >
                   {isTranslating === 'presentOccupier' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
@@ -1527,7 +1566,7 @@ export default function NewCase() {
             className="md:col-span-2" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Address</label>}
+            label={<label className="text-xs text-neutral-500 dark:text-slate-400 uppercase font-bold tracking-widest">Address</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-address">
               <div className="relative group/field">
@@ -1546,12 +1585,12 @@ export default function NewCase() {
                   }}
                   placeholder="Enter Address"
                   disabled={isDisabled}
-                  className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-700 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 pl-3 pr-10 text-neutral-700 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
                 />
                 <button
                   onClick={() => handleTranslateField('address', detectionData.address)}
                   disabled={isDisabled || !detectionData.address || isTranslating === 'address'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all disabled:opacity-30"
                   title="Translate to Urdu"
                 >
                   {isTranslating === 'address' ? <Loader2 className="w-4 h-4 animate-spin text-indigo-600" /> : <Languages className="w-4 h-4" />}
@@ -1608,7 +1647,7 @@ export default function NewCase() {
             key="customerId" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">CUSTOMER ID</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">CUSTOMER ID</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-customerId">
               <input
@@ -1617,7 +1656,7 @@ export default function NewCase() {
                 onChange={(e) => setDetectionData({...detectionData, customerId: e.target.value})}
                 placeholder="Enter Customer ID"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1629,7 +1668,7 @@ export default function NewCase() {
             key="tariff" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Tariff</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Tariff</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-tariff">
               <input
@@ -1644,7 +1683,7 @@ export default function NewCase() {
                 }}
                 placeholder="Enter Tariff"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1656,7 +1695,7 @@ export default function NewCase() {
             key="sanctionLoad" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Sanction Load</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Sanction Load</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -1665,7 +1704,7 @@ export default function NewCase() {
                 onChange={(e) => setDetectionData({...detectionData, sanctionLoad: e.target.value})}
                 placeholder="Enter Sanction Load"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1677,7 +1716,7 @@ export default function NewCase() {
             key="meterNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Meter No.</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Meter No.</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-meterNumber">
               <input
@@ -1703,7 +1742,7 @@ export default function NewCase() {
                 }}
                 placeholder="Enter Meter Number"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1715,14 +1754,14 @@ export default function NewCase() {
             key="meterMake" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Make</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Make</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-meterMake">
               <select 
                 value={detectionData.meterMake || ''}
                 onChange={(e) => setDetectionData({...detectionData, meterMake: e.target.value})}
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 font-bold text-neutral-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               >
                 <option value="">Select...</option>
                 <option>Creative</option>
@@ -1747,7 +1786,7 @@ export default function NewCase() {
             key="meterType" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Type</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Type</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-meterType">
               <select 
@@ -1760,7 +1799,7 @@ export default function NewCase() {
                   setDetectionData({...detectionData, meterType: newType, capacity: newCapacity});
                 }}
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 font-bold text-neutral-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               >
                 <option value="">Select...</option>
                 <option>S-Phase Static</option>
@@ -1780,14 +1819,14 @@ export default function NewCase() {
             key="capacity" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Capacity</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Capacity</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-capacity">
               <select 
                 value={detectionData.capacity || ''}
                 onChange={(e) => setDetectionData({...detectionData, capacity: e.target.value})}
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 font-bold text-neutral-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
               >
                 <option value="">Select...</option>
                 <option>10-40 Amp</option>
@@ -1804,10 +1843,10 @@ export default function NewCase() {
             className="md:col-span-2" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Discrepancy (Multiple)</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Discrepancy (Multiple)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-discrepancy">
-              <div className="bg-white border border-neutral-200 rounded-xl p-4 max-h-60 overflow-y-auto space-y-2">
+              <div className="bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-4 max-h-60 overflow-y-auto space-y-2">
                 {[
                   'Direct Supply From LESCO main Cable',
                   'Direct Supply From L.T line',
@@ -1842,7 +1881,7 @@ export default function NewCase() {
                         />
                         <Check className="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100" />
                       </div>
-                      <span className="text-sm text-neutral-700 group-hover:text-neutral-900 transition-colors">{option}</span>
+                      <span className="text-sm text-neutral-700 dark:text-slate-300 group-hover:text-neutral-900 dark:group-hover:text-slate-100 transition-colors">{option}</span>
                     </label>
                     {option === 'Meter Slow By' && detectionData.discrepancy.includes('Meter Slow By') && (
                       <motion.div
@@ -1888,7 +1927,7 @@ export default function NewCase() {
             key="presentReadingAtSite" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Present Reading at Site</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Present Reading at Site</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -1944,7 +1983,7 @@ export default function NewCase() {
                 }}
                 placeholder="Enter Present Reading at Site"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1956,7 +1995,7 @@ export default function NewCase() {
             key="email" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">E Mail Address</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">E Mail Address</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-email">
               <input
@@ -1965,7 +2004,7 @@ export default function NewCase() {
                 onChange={(e) => setDetectionData({...detectionData, email: e.target.value})}
                 placeholder="Enter E Mail"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -1977,7 +2016,7 @@ export default function NewCase() {
             key="mobileNo" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Mobile Number</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Mobile Number</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-mobileNo">
               <input
@@ -1996,7 +2035,7 @@ export default function NewCase() {
                 }}
                 placeholder="Enter Mobile No."
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -2011,12 +2050,12 @@ export default function NewCase() {
             onSerialNoChange={onSerialNoChange}
             label={
               <div className="flex items-center justify-between">
-                <label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Witnesses</label>
+                <label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Witnesses</label>
                 <button 
                   type="button"
                   onClick={() => setDetectionData({...detectionData, witnesses: [...detectionData.witnesses, '']})}
                   disabled={isDisabled}
-                  className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
                 >
                   <PlusCircle className="w-3 h-3" /> Add Witness
                 </button>
@@ -2026,7 +2065,7 @@ export default function NewCase() {
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")} id="field-witnesses">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-transparent">
                 {detectionData.witnesses.map((witness, index) => (
-                  <div key={index} className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                  <div key={index} className="flex flex-col gap-2 p-3 bg-neutral-50 dark:bg-slate-800/50 rounded-xl border border-neutral-100 dark:border-slate-700">
                     <div className="relative group">
                       <input
                         type="text"
@@ -2038,7 +2077,7 @@ export default function NewCase() {
                         }}
                         placeholder={`Witness ${index + 1} Name & Designation`}
                         disabled={isDisabled}
-                        className="w-full bg-white border border-neutral-200 rounded-lg py-2 px-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500 shadow-sm"
+                        className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 pr-10 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500 shadow-sm"
                       />
                       {detectionData.witnesses.length > 1 && (
                         <button
@@ -2067,7 +2106,7 @@ export default function NewCase() {
                               setDetectionData({...detectionData, witnesses: newWitnesses});
                             }
                           }}
-                          className="text-[10px] px-2 py-1 bg-white border border-neutral-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 rounded-md text-neutral-500 transition-all font-bold shadow-sm"
+                          className="text-[10px] px-2 py-1 bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md text-neutral-500 dark:text-slate-400 transition-all font-bold shadow-sm"
                         >
                           + {desig}
                         </button>
@@ -2086,7 +2125,7 @@ export default function NewCase() {
             key="loadFactor" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Load Factor</label>}
+            label={<label className="text-xs text-neutral-900 dark:text-slate-100 uppercase font-bold tracking-widest">Load Factor</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -2095,7 +2134,7 @@ export default function NewCase() {
                 onChange={(e) => setDetectionData({...detectionData, loadFactor: e.target.value})}
                 placeholder="Enter Load Factor"
                 disabled={isDisabled}
-                className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 px-3 text-neutral-900 dark:text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
               />
             </div>
           </SortableItem>
@@ -3646,9 +3685,9 @@ export default function NewCase() {
   return (
     <div className="max-w-4xl mx-auto space-y-4 md:space-y-8 pb-32 px-2 sm:px-4">
       {/* Top Progress Bar (Sticky) */}
-      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-neutral-100/50 backdrop-blur-sm">
+      <div className="fixed top-0 left-0 right-0 h-1 z-50 bg-neutral-100/50 dark:bg-slate-800/50 backdrop-blur-sm">
         <motion.div 
-          className="h-full bg-indigo-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+          className="h-full bg-indigo-600 dark:bg-indigo-500 shadow-[0_0_10px_rgba(220,38,38,0.5)]"
           initial={{ width: 0 }}
           animate={{ width: `${(step / steps.length) * 100}%` }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -3656,11 +3695,11 @@ export default function NewCase() {
       </div>
 
       {/* Stepper */}
-      <div className="bg-white p-4 sm:p-6 pb-10 sm:pb-12 rounded-3xl border border-neutral-100 shadow-sm relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 pb-10 sm:pb-12 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
         {/* Progress Bar inside card */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-50">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-50 dark:bg-slate-800">
           <motion.div 
-            className="h-full bg-indigo-600"
+            className="h-full bg-indigo-600 dark:bg-indigo-500"
             initial={{ width: 0 }}
             animate={{ width: `${(step / steps.length) * 100}%` }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -3670,14 +3709,14 @@ export default function NewCase() {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => navigate('/')} 
-              className="p-2 hover:bg-neutral-100 rounded-full transition-colors shrink-0" 
+              className="p-2 hover:bg-neutral-100 dark:hover:bg-slate-800 rounded-full transition-colors shrink-0" 
               title="Go Home"
             >
-              <Home className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-500" />
+              <Home className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-500 dark:text-slate-400" />
             </button>
             <div className="hidden sm:block">
-              <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Step</p>
-              <p className="text-sm font-bold text-neutral-900">{step} of {steps.length}</p>
+              <p className="text-[10px] font-black text-neutral-400 dark:text-slate-500 uppercase tracking-widest">Step</p>
+              <p className="text-sm font-bold text-neutral-900 dark:text-slate-100">{step} of {steps.length}</p>
             </div>
           </div>
           
@@ -3694,23 +3733,23 @@ export default function NewCase() {
                     disabled={s.id > step && !(s.id === 3 && step === 2 && billData)}
                     className={cn(
                       "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base font-bold transition-all duration-500 relative z-10",
-                      step === s.id ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/30 scale-110" : 
-                      step > s.id ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : 
-                      "bg-neutral-100 text-neutral-400"
+                      step === s.id ? "bg-indigo-600 dark:bg-indigo-500 text-white shadow-xl shadow-indigo-600/30 scale-110" : 
+                      step > s.id ? "bg-green-500 dark:bg-green-600 text-white shadow-lg shadow-green-500/20" : 
+                      "bg-neutral-100 dark:bg-slate-800 text-neutral-400 dark:text-slate-500"
                     )}
                   >
                     {step > s.id ? <Check className="w-6 h-6" /> : <s.icon className="w-5 h-5 sm:w-6 sm:h-6" />}
                     
                     {/* Active Ring */}
                     {step === s.id && (
-                      <span className="absolute inset-0 rounded-full border-4 border-indigo-600/20 animate-ping" />
+                      <span className="absolute inset-0 rounded-full border-4 border-indigo-600/20 dark:border-indigo-400/20 animate-ping" />
                     )}
                   </button>
                   
                   <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
                     <p className={cn(
                       "text-[10px] sm:text-xs font-black uppercase tracking-tighter transition-colors duration-500",
-                      step >= s.id ? "text-neutral-900" : "text-neutral-400"
+                      step >= s.id ? "text-neutral-900 dark:text-slate-100" : "text-neutral-400 dark:text-slate-500"
                     )}>
                       {s.name}
                     </p>
@@ -3749,15 +3788,15 @@ export default function NewCase() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm text-center space-y-6"
+            className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm text-center space-y-6"
           >
-            <div className="bg-indigo-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Camera className="text-indigo-600 w-10 h-10" />
+            <div className="bg-indigo-50 dark:bg-indigo-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Camera className="text-indigo-600 dark:text-indigo-400 w-10 h-10" />
             </div>
             <div className="flex items-center justify-between">
               <div className="text-left">
-                <h2 className="text-2xl font-bold text-neutral-900">Step 1: Photo Evidence</h2>
-                <p className="text-neutral-500 mt-2 text-sm sm:text-base">Upload a photo of the accused person or the scene of theft.</p>
+                <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Step 1: Photo Evidence</h2>
+                <p className="text-neutral-500 dark:text-slate-400 mt-2 text-sm sm:text-base">Upload a photo of the accused person or the scene of theft.</p>
               </div>
             </div>
 
@@ -3888,16 +3927,16 @@ export default function NewCase() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm space-y-8"
+            className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm space-y-8"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <h2 className="text-2xl font-bold text-neutral-900">Step 2: Bill Information</h2>
+                <h2 className="text-2xl font-bold text-neutral-900 dark:text-slate-100">Step 2: Bill Information</h2>
               </div>
             </div>
 
             <div className="space-y-4">
-              <label className="text-sm font-bold text-neutral-700 uppercase tracking-wider">
+              <label className="text-sm font-bold text-neutral-700 dark:text-slate-300 uppercase tracking-wider">
                 LESCO Reference Number
               </label>
               
@@ -4212,10 +4251,10 @@ export default function NewCase() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm space-y-8">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm space-y-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-2xl font-bold text-neutral-900">Step 3: Verify & Details</h2>
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-slate-100">Step 3: Verify & Details</h2>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="bg-green-50 text-green-700 px-4 py-2 rounded-xl text-sm font-bold hidden sm:flex items-center gap-2">
@@ -4226,57 +4265,57 @@ export default function NewCase() {
 
               {/* Consumer Bill Details */}
               <div className="space-y-4">
-                <h3 className="text-base sm:text-lg font-bold text-neutral-900 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-600" /> Consumer Bill Details
+                <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Consumer Bill Details
                 </h3>
                 
                 {/* Consumer Bill Details Grid Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Reference Number</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Reference Number</label>
                     <input
                       type="text"
                       value={billData.referenceNumber || ''}
                       onChange={(e) => setBillData({...billData, referenceNumber: e.target.value.replace(/[^0-9]/g, '')})}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
+                      className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Reference No."
                       readOnly
                     />
                   </div>
                   
                   <div className="flex flex-col gap-1 md:col-span-4">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Consumer Name</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Consumer Name</label>
                     <input
                       type="text"
                       value={billData.consumerName || ''}
                       onChange={(e) => setBillData({...billData, consumerName: e.target.value})}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
+                      className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Consumer Name"
                       readOnly
                     />
                   </div>
                   
                   <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Bill Month</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Bill Month</label>
                     <input
                       type="text"
                       value={billData.billingMonth || ''}
                       onChange={(e) => setBillData({...billData, billingMonth: e.target.value})}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
+                      className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Bill Month"
                       readOnly
                     />
                   </div>
                   
                   <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Payable Within Due Date</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Payable Within Due Date</label>
                     <div className="flex flex-row items-center gap-2">
-                       <span className="text-neutral-500 font-medium">Rs.</span>
+                       <span className="text-neutral-500 dark:text-slate-400 font-medium">Rs.</span>
                        <input
                         type="number"
                         value={billData.currentBill === 0 ? '' : billData.currentBill || ''}
                         onChange={(e) => setBillData({...billData, currentBill: parseFloat(e.target.value) || 0})}
-                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
+                        className="flex-1 bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                         placeholder="0"
                         readOnly
                       />
@@ -4284,14 +4323,14 @@ export default function NewCase() {
                   </div>
                   
                   <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Deferred Amount</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Deferred Amount</label>
                     <div className="flex flex-row items-center gap-2">
-                       <span className="text-neutral-500 font-medium">Rs.</span>
+                       <span className="text-neutral-500 dark:text-slate-400 font-medium">Rs.</span>
                        <input
                         type="number"
                         value={billData.deferredAmount === 0 ? '' : billData.deferredAmount || ''}
                         onChange={(e) => setBillData({...billData, deferredAmount: parseFloat(e.target.value) || 0})}
-                        className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-black font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
+                        className="flex-1 bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                         placeholder="0"
                         readOnly
                       />
@@ -4299,12 +4338,12 @@ export default function NewCase() {
                   </div>
  
                    <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Meter No. On Bill</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Meter No. On Bill</label>
                     <input 
                       type="text" 
                       value={billData.meterNoOnBill || ''} 
                       onChange={(e) => setBillData({...billData, meterNoOnBill: e.target.value})}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 text-neutral-900 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
+                      className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-neutral-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed"
                       placeholder="Enter Meter No."
                       readOnly
                     />
@@ -4335,14 +4374,14 @@ export default function NewCase() {
                   </div>
  
                    <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-bold text-neutral-500 uppercase">Meter Status</label>
+                    <label className="text-xs font-bold text-neutral-500 dark:text-slate-400 uppercase">Meter Status</label>
                     <input 
                       type="text" 
                       value={billData.meterStatus || ''} 
                       onChange={(e) => setBillData({...billData, meterStatus: e.target.value})}
                       className={cn(
-                        "w-full bg-neutral-50 border border-neutral-200 rounded-lg py-1.5 px-3 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed",
-                        billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600 font-bold" : "text-neutral-900"
+                        "w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-1.5 px-3 font-bold focus:outline-none focus:border-indigo-500 cursor-not-allowed",
+                        billData.meterStatus?.toUpperCase()?.includes('REPLACED') ? "text-red-600 font-bold" : "text-neutral-900 dark:text-slate-100"
                       )}
                       placeholder="Status"
                       readOnly
@@ -4395,7 +4434,7 @@ export default function NewCase() {
 
 
                 {/* Month Wise Detail */}
-                <div className="bg-white p-4 rounded-2xl border border-neutral-200 space-y-3">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-neutral-200 dark:border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-neutral-400 uppercase">Month Wise Detail</span>
                       <button
@@ -4411,7 +4450,7 @@ export default function NewCase() {
                           });
                           setBillData({...billData, monthWiseUnits: newUnits});
                         }}
-                        className="text-[10px] bg-neutral-100 hover:bg-neutral-200 text-neutral-600 px-2 py-1 rounded font-bold transition-colors flex items-center gap-1"
+                        className="text-[10px] bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 text-neutral-600 dark:text-slate-300 px-2 py-1 rounded font-bold transition-colors flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> Add Month
                       </button>
@@ -4512,8 +4551,8 @@ export default function NewCase() {
               {/* Detection Details Section */}
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base sm:text-lg font-bold text-neutral-900 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-indigo-600" /> Detection Details
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Detection Details
                   </h3>
                   <a 
                     href="https://docs.google.com/forms/d/e/1FAIpQLSfRahSaD9D-DeGCldxwYg_f2IPIheuxXpheTDXx5iBtPkTFGg/viewform?usp=header" 
@@ -4525,7 +4564,7 @@ export default function NewCase() {
                   </a>
                 </div>
                 
-                <div className="bg-neutral-50 p-6 rounded-3xl border border-neutral-100">
+                <div className="bg-neutral-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-neutral-100 dark:border-slate-800">
                   <DndContext 
                     sensors={sensors}
                     collisionDetection={closestCorners}
@@ -4595,7 +4634,7 @@ export default function NewCase() {
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <h2 className="text-2xl font-bold text-neutral-900">Step 4: View & Generate</h2>
+                <h2 className="text-2xl font-bold text-neutral-900 dark:text-slate-100">Step 4: View & Generate</h2>
               </div>
             </div>
 
@@ -4627,15 +4666,15 @@ export default function NewCase() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.1 }}
-                            className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-indigo-200 transition-all h-full"
+                            className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm flex flex-col justify-between group hover:border-indigo-200 dark:hover:border-indigo-800 transition-all h-full"
                           >
                             <div className="flex items-start gap-4 mb-6">
-                              <div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                              <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-2xl text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                 <template.icon className="w-6 h-6" />
                               </div>
                               <div>
-                                <h3 className="font-bold text-neutral-900">{template.name}</h3>
-                                <p className="text-sm text-neutral-500">{template.desc}</p>
+                                <h3 className="font-bold text-neutral-900 dark:text-slate-100">{template.name}</h3>
+                                <p className="text-sm text-neutral-500 dark:text-slate-400">{template.desc}</p>
                               </div>
                             </div>
                             <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full">
@@ -4644,10 +4683,10 @@ export default function NewCase() {
                                   triggerPrint(template.name, false);
                                   setHasGenerated(true);
                                 }}
-                                className="flex-1 sm:flex-none justify-center bg-white border-2 border-neutral-200 hover:border-indigo-200 text-neutral-700 p-2 sm:p-3 rounded-xl transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
+                                className="flex-1 sm:flex-none justify-center bg-white dark:bg-slate-800 border-2 border-neutral-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 text-neutral-700 dark:text-slate-200 p-2 sm:p-3 rounded-xl transition-all flex items-center gap-1 sm:gap-2 shadow-sm whitespace-nowrap"
                                 title="Preview Template"
                               >
-                                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
                                 <span className="text-[10px] sm:text-xs font-bold">Preview</span>
                               </button>
                               <button 
@@ -4655,10 +4694,10 @@ export default function NewCase() {
                                   downloadAsJpeg(template.name);
                                   setHasGenerated(true);
                                 }}
-                                className="flex-1 sm:flex-none justify-center bg-white border-2 border-neutral-200 hover:border-indigo-200 text-neutral-700 p-2 sm:p-3 rounded-xl transition-all flex items-center gap-1 sm:gap-2 shadow-sm"
+                                className="flex-1 sm:flex-none justify-center bg-white dark:bg-slate-800 border-2 border-neutral-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 text-neutral-700 dark:text-slate-200 p-2 sm:p-3 rounded-xl transition-all flex items-center gap-1 sm:gap-2 shadow-sm whitespace-nowrap"
                                 title="Download as JPG"
                               >
-                                <Download className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                                <Download className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
                                 <span className="text-[10px] sm:text-xs font-bold sm:hidden">JPG</span>
                               </button>
                               <button 
@@ -4666,7 +4705,7 @@ export default function NewCase() {
                                   triggerPrint(template.name, true);
                                   setHasGenerated(true);
                                 }}
-                                className="flex-[2] sm:flex-1 w-full sm:w-auto min-w-[120px] bg-neutral-900 hover:bg-neutral-800 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all shadow-lg"
+                                className="flex-[2] sm:flex-1 w-full sm:w-auto min-w-[120px] bg-neutral-900 dark:bg-indigo-600 hover:bg-neutral-800 dark:hover:bg-indigo-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all shadow-lg"
                               >
                                 <Printer className="w-4 h-4" /> Print PDF
                               </button>
@@ -4681,13 +4720,13 @@ export default function NewCase() {
             </div>
 
             {!isSaved && (
-              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm text-center space-y-6">
-                <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                  <Save className="text-indigo-600 w-8 h-8" />
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm text-center space-y-6">
+                <div className="bg-indigo-50 dark:bg-indigo-900/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                  <Save className="text-indigo-600 dark:text-indigo-400 w-8 h-8" />
                 </div>
                 <div className="max-w-md mx-auto">
-                  <h3 className="text-xl font-bold text-neutral-900">Final Step: Record Case</h3>
-                  <p className="text-neutral-500 mt-2">After reviewing the templates above, save the case to the database and sync with Google Sheets.</p>
+                  <h3 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Final Step: Record Case</h3>
+                  <p className="text-neutral-500 dark:text-slate-400 mt-2">After reviewing the templates above, save the case to the database and sync with Google Sheets.</p>
                 </div>
                 <button
                   onClick={saveCase}
@@ -4695,7 +4734,7 @@ export default function NewCase() {
                   className={cn(
                     "w-full max-w-md mx-auto py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-3 text-lg",
                     isSaving
-                      ? "bg-neutral-200 text-neutral-400 shadow-none cursor-not-allowed"
+                      ? "bg-neutral-200 dark:bg-slate-800 text-neutral-400 dark:text-slate-500 shadow-none cursor-not-allowed"
                       : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 scale-100 hover:scale-[1.02] active:scale-95"
                   )}
                 >
@@ -4715,15 +4754,15 @@ export default function NewCase() {
             )}
 
             {isSaved && (
-              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm text-center">
-                <div className="bg-green-50 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="text-green-600 w-8 h-8" />
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm text-center">
+                <div className="bg-green-50 dark:bg-green-900/30 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="text-green-600 dark:text-green-400 w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">Case Successfully Recorded</h3>
-                <p className="text-neutral-500 mt-2 mb-6">All documents have been auto-filled and are ready for download.</p>
+                <h3 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Case Successfully Recorded</h3>
+                <p className="text-neutral-500 dark:text-slate-400 mt-2 mb-6">All documents have been auto-filled and are ready for download.</p>
                 <button
                   onClick={() => navigate('/')}
-                  className="text-indigo-600 font-bold hover:underline"
+                  className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
                 >
                   Return to Dashboard
                 </button>
@@ -4734,14 +4773,14 @@ export default function NewCase() {
       </AnimatePresence>
 
       {/* Wizard Navigation Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-neutral-200 p-4 sm:p-6 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-neutral-200 dark:border-slate-800 p-4 sm:p-6 z-50">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <button
             onClick={() => {
               if (step > 1) setStep(step - 1);
               else navigate('/');
             }}
-            className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base rounded-2xl font-bold text-neutral-600 hover:bg-neutral-100 transition-all"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base rounded-2xl font-bold text-neutral-600 dark:text-slate-200 hover:bg-neutral-100 dark:hover:bg-slate-800 transition-all"
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="inline">{step === 1 ? 'Cancel' : 'Back'}</span>
@@ -4753,7 +4792,7 @@ export default function NewCase() {
                 key={s.id} 
                 className={cn(
                   "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                  step === s.id ? "w-6 bg-indigo-600" : "bg-neutral-300"
+                  step === s.id ? "w-6 bg-indigo-600 dark:bg-indigo-500" : "bg-neutral-300 dark:bg-slate-700"
                 )} 
               />
             ))}
@@ -4777,8 +4816,8 @@ export default function NewCase() {
             className={cn(
               "flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base rounded-2xl font-bold text-white shadow-lg transition-all",
               step === 4 || (step === 2 && !billData)
-                ? "bg-neutral-200 text-neutral-400 shadow-none cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20"
+                ? "bg-neutral-200 dark:bg-slate-800 text-neutral-400 dark:text-slate-500 shadow-none cursor-not-allowed"
+                : "bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-500 dark:hover:bg-indigo-600 shadow-indigo-600/20"
             )}
           >
             <span className="inline">

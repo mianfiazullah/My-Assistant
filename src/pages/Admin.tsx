@@ -44,14 +44,14 @@ export default function Admin() {
 
       <div className="grid gap-6">
         {/* Automatic Google Sheets Setup */}
-        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-6 sm:p-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm p-6 sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
+            <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
               <Zap className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-neutral-900 mb-2">Automatic Google Sheets Connection</h2>
-              <p className="text-neutral-500 mb-4 text-sm">
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-slate-100 mb-2">Automatic Google Sheets Connection</h2>
+              <p className="text-neutral-500 dark:text-slate-400 mb-4 text-sm">
                 Paste your Google Apps Script "Web App URL" here to automatically save cases to your sheet.
               </p>
               
@@ -61,11 +61,11 @@ export default function Admin() {
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
                   placeholder="https://script.google.com/macros/s/.../exec"
-                  className="flex-1 px-4 py-3 rounded-xl border border-neutral-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                  className="flex-1 px-4 py-3 rounded-xl border border-neutral-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-neutral-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                 />
                 <button
                   onClick={saveWebhook}
-                  className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all active:scale-95"
+                  className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
                 >
                   Save Link
                 </button>
@@ -86,34 +86,34 @@ export default function Admin() {
                     toast.error('Failed to send test data.');
                   }
                 }}
-                className="mt-4 flex items-center gap-2 text-indigo-600 font-bold text-sm hover:underline"
+                className="mt-4 flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline"
               >
                 <Zap className="w-4 h-4" />
                 Test Connection (Send Sample Data)
               </button>
               
-              <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100 italic text-amber-800 text-xs">
+              <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30 italic text-amber-800 dark:text-amber-400 text-xs">
                 <strong>Student Tip:</strong> Remember to set "Who has access" to "Anyone" when deploying your script in Google Sheets!
               </div>
             </div>
           </div>
         </div>
         {/* Google Sheets Helper Card */}
-        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-6 sm:p-8">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm p-6 sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600">
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
               <Copy className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-neutral-900 mb-2">Google Sheets Helper</h2>
-              <p className="text-neutral-500 mb-6 text-sm">
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-slate-100 mb-2">Google Sheets Helper</h2>
+              <p className="text-neutral-500 dark:text-slate-400 mb-6 text-sm">
                 Need to set up your Google Sheet? Tap the button below to copy the header row. 
                 When you paste it into Google Sheets (Cell A1), it will automatically create separate columns for all fields.
               </p>
               
               <button
                 onClick={handleCopyHeaders}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-neutral-900 text-white font-medium hover:bg-neutral-800 transition-colors active:scale-[0.98]"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-neutral-900 dark:bg-indigo-600 text-white font-medium hover:bg-neutral-800 dark:hover:bg-indigo-700 transition-colors active:scale-[0.98] shadow-xl dark:shadow-indigo-900/20"
               >
                 {copied ? (
                   <>
@@ -131,10 +131,10 @@ export default function Admin() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-12 text-center">
-          <Shield className="w-12 h-12 sm:w-16 sm:h-16 text-neutral-200 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-neutral-900 mb-2">System Administration</h2>
-          <p className="text-neutral-500 max-w-md mx-auto">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm p-12 text-center">
+          <Shield className="w-12 h-12 sm:w-16 sm:h-16 text-neutral-200 dark:text-slate-700 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-slate-100 mb-2">System Administration</h2>
+          <p className="text-neutral-500 dark:text-slate-400 max-w-md mx-auto">
             Welcome to the administration panel. Use this section to manage system-wide settings and user permissions.
           </p>
         </div>

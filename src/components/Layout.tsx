@@ -28,8 +28,8 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const SidebarContent = () => (
     <>
-      <div className="p-6 border-b border-slate-100">
-        <h1 className="font-display font-bold text-lg leading-tight text-slate-900">
+      <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+        <h1 className="font-display font-bold text-lg leading-tight text-slate-900 dark:text-slate-50">
           My Assistant
         </h1>
       </div>
@@ -44,39 +44,39 @@ export default function Layout({ children }: { children: ReactNode }) {
               "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
               location.pathname === item.path
                 ? "bg-brand-primary text-white shadow-lg shadow-indigo-600/20 font-medium"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             )}
           >
             <item.icon className={cn(
               "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
-              location.pathname === item.path ? "text-white" : "text-slate-400 group-hover:text-brand-primary"
+              location.pathname === item.path ? "text-white" : "text-slate-400 group-hover:text-brand-primary dark:text-slate-500 dark:group-hover:text-indigo-400"
             )} />
             {item.label}
           </Link>
         ))}
       </nav>
 
-      <div className="px-4 py-2 border-t border-slate-50">
+      <div className="px-4 py-2 border-t border-slate-50 dark:border-slate-800/50">
         <a 
           href="https://www.lesco.gov.pk:36269/Modules/CustomerBillN/CheckBill.asp" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-brand-primary transition-colors uppercase tracking-[0.2em]"
+          className="flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-brand-primary transition-colors uppercase tracking-[0.2em] dark:text-slate-500 dark:hover:text-indigo-400"
         >
           <ExternalLink className="w-3 h-3" />
           Official Portal
         </a>
       </div>
 
-      <div className="p-4 border-t border-slate-100">
-        <div className="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-100">
-          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Employee</p>
-          <p className="text-sm font-bold text-slate-900 truncate">{user?.name || 'Loading...'}</p>
-          <p className="text-xs text-slate-500 truncate font-medium">Sub-Division: {user?.subDivision || 'N/A'}</p>
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl mb-4 border border-slate-100 dark:border-slate-800">
+          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1 dark:text-slate-500">Employee</p>
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{user?.name || 'Loading...'}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-medium">Sub-Division: {user?.subDivision || 'N/A'}</p>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-brand-primary hover:bg-indigo-50 rounded-xl transition-all duration-300 group"
+          className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-brand-primary hover:bg-indigo-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-indigo-400 rounded-xl transition-all duration-300 group"
         >
           <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
           <span className="font-medium">Logout</span>
@@ -86,20 +86,20 @@ export default function Layout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <header className="md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="bg-brand-primary p-1.5 rounded-lg shadow-lg shadow-indigo-600/20">
             <ShieldAlert className="text-white w-5 h-5" />
           </div>
-          <span className="font-display font-bold text-slate-900">My Assistant</span>
+          <span className="font-display font-bold text-slate-900 dark:text-slate-100">My Assistant</span>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 hover:bg-slate-50 rounded-xl transition-colors"
+          className="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
         >
-          {isMobileMenuOpen ? <X className="w-6 h-6 text-slate-600" /> : <Menu className="w-6 h-6 text-slate-600" />}
+          {isMobileMenuOpen ? <X className="w-6 h-6 text-slate-600 dark:text-slate-400" /> : <Menu className="w-6 h-6 text-slate-600 dark:text-slate-400" />}
         </button>
       </header>
 
@@ -119,7 +119,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white z-[70] md:hidden flex flex-col shadow-2xl"
+              className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 z-[70] md:hidden flex flex-col shadow-2xl"
             >
               <SidebarContent />
             </motion.aside>
@@ -128,7 +128,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       </AnimatePresence>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-100 flex-col sticky top-0 h-screen">
+      <aside className="hidden md:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col sticky top-0 h-screen">
         <SidebarContent />
       </aside>
 

@@ -188,10 +188,10 @@ export default function Dashboard() {
     <div className="space-y-10">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl sm:text-2xl sm:text-xl sm:text-2xl md:text-3xl md:text-4xl font-display font-bold text-slate-900 mb-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">
             Welcome back, <span className="text-brand-primary">{user?.name?.split(' ')[0]}</span>
           </h1>
-          <p className="text-slate-500 font-medium"></p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium"></p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Link
@@ -234,8 +234,8 @@ export default function Dashboard() {
               </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Live</span>
             </div>
-            <p className="text-sm font-bold text-black mb-1">{stat.label}</p>
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-black">{stat.value}</h3>
+            <p className="text-sm font-bold text-neutral-900 dark:text-slate-200 mb-1">{stat.label}</p>
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-neutral-900 dark:text-white">{stat.value}</h3>
           </motion.div>
         ))}
       </div>
@@ -244,7 +244,7 @@ export default function Dashboard() {
         {/* Recent Cases */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-display font-bold text-slate-900">Recent Cases</h2>
+            <h2 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100">Recent Cases</h2>
             <Link to="/cases" className="text-sm font-bold text-brand-primary hover:underline flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
@@ -255,7 +255,7 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left whitespace-nowrap">
                 <thead>
-                  <tr className="bg-slate-50/50 text-black text-[10px] uppercase tracking-[0.2em] font-bold">
+                  <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-neutral-900 dark:text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold">
                     <th className="px-8 py-5">Ref Number</th>
                     <th className="px-8 py-5">Consumer</th>
                     <th className="px-8 py-5">Date</th>
@@ -279,13 +279,13 @@ export default function Dashboard() {
                     </tr>
                   ) : (
                     recentCases.map((item, i) => (
-                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-8 py-5 font-mono text-xs font-bold text-black">{item.billData.referenceNumber}</td>
+                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                        <td className="px-8 py-5 font-mono text-xs font-bold text-neutral-900 dark:text-slate-300">{item.billData.referenceNumber}</td>
                         <td className="px-8 py-5">
-                          <p className="text-sm font-bold text-black">{item.billData.consumerName}</p>
-                          <p className="text-[10px] text-black font-medium truncate max-w-[200px]">{item.billData.address}</p>
+                          <p className="text-sm font-bold text-neutral-900 dark:text-slate-100">{item.billData.consumerName}</p>
+                          <p className="text-[10px] text-neutral-500 dark:text-slate-400 font-medium truncate max-w-[200px]">{item.billData.address}</p>
                         </td>
-                        <td className="px-8 py-5 text-sm font-bold text-black">{format(new Date(item.createdAt), 'MMM d, yyyy')}</td>
+                        <td className="px-8 py-5 text-sm font-bold text-neutral-900 dark:text-slate-300">{format(new Date(item.createdAt), 'MMM d, yyyy')}</td>
                         <td className="px-8 py-5">
                           <span className={cn(
                             "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
@@ -314,17 +314,17 @@ export default function Dashboard() {
                                   }
                                 });
                               }}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-brand-primary hover:text-white transition-all duration-300"
+                               className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-all duration-300"
                               title="View Templates"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-brand-primary hover:text-white transition-all duration-300">
+                            <button className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-200 hover:bg-brand-primary hover:text-white transition-all duration-300">
                               <Download className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => setCaseToDelete(item.id)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white transition-all duration-300"
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-200 hover:bg-indigo-600 hover:text-white transition-all duration-300"
                               title="Delete Case"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -339,7 +339,7 @@ export default function Dashboard() {
             </div>
 
           {/* Mobile Card List (Optional, but kept for better mobile experience if they prefer it) */}
-          <div className="md:hidden divide-y divide-slate-50">
+          <div className="md:hidden divide-y divide-slate-50 dark:divide-slate-800">
             {loading ? (
               <div className="p-12 text-center">
                 <Loader2 className="w-10 h-10 animate-spin text-brand-primary mx-auto mb-4" />
@@ -351,11 +351,11 @@ export default function Dashboard() {
               </div>
             ) : (
               recentCases.map((item) => (
-                <div key={item.id} className="p-6 space-y-4 hover:bg-slate-50/50 transition-colors">
+                <div key={item.id} className="p-6 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-base font-bold text-slate-900">{item.billData.consumerName}</p>
-                      <p className="text-xs font-mono font-bold text-slate-400 mt-0.5">{item.billData.referenceNumber}</p>
+                      <p className="text-base font-bold text-slate-900 dark:text-slate-100">{item.billData.consumerName}</p>
+                      <p className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 mt-0.5">{item.billData.referenceNumber}</p>
                     </div>
                     <span className={cn(
                       "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
@@ -365,7 +365,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{format(new Date(item.createdAt), 'MMM d, yyyy')}</p>
+                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{format(new Date(item.createdAt), 'MMM d, yyyy')}</p>
                     <div className="flex items-center gap-3">
                       <button 
                         onClick={() => {
@@ -385,16 +385,16 @@ export default function Dashboard() {
                             }
                           });
                         }}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-brand-primary hover:text-white transition-all duration-300"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-300 hover:bg-brand-primary hover:text-white transition-all duration-300"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
-                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-brand-primary hover:text-white transition-all duration-300">
+                      <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-300 hover:bg-brand-primary hover:text-white transition-all duration-300">
                         <Download className="w-5 h-5" />
                       </button>
                       <button 
                         onClick={() => setCaseToDelete(item.id)}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white transition-all duration-300"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-300 hover:bg-indigo-600 hover:text-white transition-all duration-300"
                         title="Delete Case"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -411,33 +411,33 @@ export default function Dashboard() {
         <div className="space-y-6">
           <div className="glass-card p-8 rounded-[2rem]">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-display font-bold text-slate-900">Notice Template</h2>
-              <span className="px-3 py-1 bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-full uppercase tracking-wider">Official</span>
+              <h2 className="text-xl font-display font-bold text-slate-900 dark:text-slate-100">Notice Template</h2>
+              <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-full uppercase tracking-wider">Official</span>
             </div>
             
             <div className="relative group mb-8">
               <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative bg-white p-6 rounded-2xl border border-slate-100 leading-none flex flex-col">
+              <div className="relative bg-white dark:bg-slate-900 dark:border-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 leading-none flex flex-col">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <Bell className="w-6 h-6" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-bold text-slate-900">LESCO Official Notice</h3>
-                    <p className="text-xs text-slate-500 mt-1">Section 39-A Electricity Act</p>
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100">LESCO Official Notice</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Section 39-A Electricity Act</p>
                   </div>
                 </div>
                 
                 <div className="space-y-3 mb-6 text-left">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                     <span>Direct Hooking Detection</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                     <span>Meter Tampering Notice</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                     <span>Illegal Abstraction Warning</span>
                   </div>
@@ -472,7 +472,7 @@ export default function Dashboard() {
                         witnesses: ["Witness 1", "Witness 2"]
                       }
                     })}
-                    className="flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
+                    className="flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-black dark:hover:bg-slate-700 transition-all"
                   >
                     <Edit2 className="w-4 h-4" /> Edit & Fill
                   </button>
@@ -518,7 +518,7 @@ export default function Dashboard() {
                 { name: 'FIR Template', type: 'FIR Request', icon: ShieldAlert },
                 { name: 'Detection Bill Register', type: 'Detection Register', icon: ClipboardList },
               ].map((template) => (
-                <button
+                  <button
                   key={template.name}
                   onClick={() => setPreviewDoc({ 
                     type: template.type, 
@@ -546,13 +546,13 @@ export default function Dashboard() {
                       witnesses: ["Witness 1", "Witness 2"]
                     }
                   })}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-transparent dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <template.icon className="w-4 h-4 text-slate-400 group-hover:text-slate-600" />
-                    <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900">{template.name}</span>
+                    <template.icon className="w-4 h-4 text-slate-400 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200" />
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">{template.name}</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500" />
+                  <ArrowRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400" />
                 </button>
               ))}
             </div>
@@ -590,19 +590,19 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center space-y-6"
+              className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center space-y-6 border border-transparent dark:border-slate-800"
             >
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto">
-                <Trash2 className="w-8 h-8 text-indigo-600" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto">
+                <Trash2 className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-neutral-900">Delete Case?</h3>
-                <p className="text-neutral-500 mt-2">Are you sure you want to delete this case? This action cannot be undone.</p>
+                <h3 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Delete Case?</h3>
+                <p className="text-neutral-500 dark:text-slate-400 mt-2">Are you sure you want to delete this case? This action cannot be undone.</p>
               </div>
               <div className="flex gap-3">
                 <button 
                   onClick={() => setCaseToDelete(null)}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-neutral-700 dark:text-slate-300 bg-neutral-100 dark:bg-slate-800 hover:bg-neutral-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -624,20 +624,20 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               className={cn(
-                "bg-white w-full rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col transition-all duration-500",
+                "bg-white dark:bg-slate-900 w-full rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col transition-all duration-500",
                 previewDoc.isEditing ? "max-w-6xl" : "max-w-4xl"
               )}
             >
-            <div className="p-4 md:p-6 border-b border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between bg-white z-10 gap-4">
+            <div className="p-4 md:p-6 border-b border-neutral-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 z-10 gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <h2 className="text-lg md:text-xl font-bold text-neutral-900 truncate max-w-[250px] sm:max-w-none">
+                <h2 className="text-lg md:text-xl font-bold text-neutral-900 dark:text-slate-100 truncate max-w-[250px] sm:max-w-none">
                   {previewDoc.isEditing ? 'Edit' : 'Preview'}: {previewDoc.type}
                 </h2>
                 <button 
                   onClick={() => setPreviewDoc({ ...previewDoc, isEditing: !previewDoc.isEditing })}
                   className={cn(
                     "px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 w-fit",
-                    previewDoc.isEditing ? "bg-indigo-600 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    previewDoc.isEditing ? "bg-indigo-600 text-white" : "bg-neutral-100 dark:bg-slate-800 text-neutral-600 dark:text-slate-400 hover:bg-neutral-200 dark:hover:bg-slate-700"
                   )}
                 >
                   {previewDoc.isEditing ? <Save className="w-3 h-3" /> : <Edit2 className="w-3 h-3" />}
@@ -670,9 +670,9 @@ export default function Dashboard() {
               <div className="flex-1 overflow-y-auto flex flex-col md:flex-row bg-neutral-100">
                 {/* Editor Sidebar */}
                 {previewDoc.isEditing && (
-                  <div className="w-full md:w-80 lg:w-96 bg-white border-b md:border-b-0 md:border-r border-neutral-200 p-4 md:p-6 space-y-8 shrink-0">
+                  <div className="w-full md:w-80 lg:w-96 bg-white dark:bg-slate-900 border-b md:border-b-0 md:border-r border-neutral-200 dark:border-slate-800 p-4 md:p-6 space-y-8 shrink-0">
                     {/* Bill Fetcher Section */}
-                    <div className="space-y-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                    <div className="space-y-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
                       <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-2">
                         <Zap className="w-3 h-3" /> Fetch Consumer Bill
                       </h3>
@@ -708,11 +708,11 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-6">
-                      <h3 className="text-xs font-bold text-black uppercase tracking-widest">Consumer & Detection Details</h3>
+                      <h3 className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Consumer & Detection Details</h3>
                       <div className="grid grid-cols-1 gap-4">
                         {/* Consumer Info */}
                         <div className="space-y-3">
-                          <p className="text-[10px] font-bold text-black uppercase">Consumer Info</p>
+                          <p className="text-[10px] font-bold text-neutral-900 dark:text-slate-100 uppercase border-b border-neutral-100 dark:border-slate-800 pb-1">Consumer Info</p>
                           {[
                             { key: 'name', label: 'Consumer Name' },
                             { key: 'address', label: 'Address' },
@@ -723,7 +723,7 @@ export default function Dashboard() {
                             { key: 'sanctionLoad', label: 'Sanction Load' },
                           ].map((field) => (
                             <div key={field.key}>
-                              <label className="block text-[10px] font-bold text-black uppercase mb-1">{field.label}</label>
+                              <label className="block text-[10px] font-bold text-neutral-600 dark:text-slate-400 uppercase mb-1">{field.label}</label>
                               <input
                                 type="text"
                                 value={previewDoc.data[field.key] || ''}
@@ -731,21 +731,21 @@ export default function Dashboard() {
                                   ...previewDoc,
                                   data: { ...previewDoc.data, [field.key]: e.target.value }
                                 })}
-                                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
+                                className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all font-bold text-neutral-900 dark:text-slate-100"
                               />
                             </div>
                           ))}
                         </div>
 
                         {/* Employee Info */}
-                        <div className="space-y-3 pt-4 border-t border-neutral-100">
-                          <p className="text-[10px] font-bold text-neutral-400 uppercase">Employee Info</p>
+                        <div className="space-y-3 pt-4 border-t border-neutral-100 dark:border-slate-800">
+                          <p className="text-[10px] font-bold text-neutral-500 dark:text-slate-400 uppercase border-b border-neutral-50 dark:border-slate-800/50 pb-1">Employee Info</p>
                           {[
                             { key: 'employeeName', label: 'Employee Name' },
                             { key: 'employeeDesignation', label: 'Designation' },
                           ].map((field) => (
                             <div key={field.key}>
-                              <label className="block text-[10px] font-bold text-black uppercase mb-1">{field.label}</label>
+                              <label className="block text-[10px] font-bold text-neutral-600 dark:text-slate-400 uppercase mb-1">{field.label}</label>
                               <input
                                 type="text"
                                 value={previewDoc.data[field.key] || ''}
@@ -753,15 +753,15 @@ export default function Dashboard() {
                                   ...previewDoc,
                                   data: { ...previewDoc.data, [field.key]: e.target.value }
                                 })}
-                                className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
+                                className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all font-bold text-neutral-900 dark:text-slate-100"
                               />
                             </div>
                           ))}
                         </div>
 
                         {/* Detection Info */}
-                        <div className="space-y-3 pt-4 border-t border-neutral-100">
-                          <p className="text-[10px] font-bold text-black uppercase">Detection Info</p>
+                        <div className="space-y-3 pt-4 border-t border-neutral-100 dark:border-slate-800">
+                          <p className="text-[10px] font-bold text-neutral-900 dark:text-slate-100 uppercase border-b border-neutral-50 dark:border-slate-800/50 pb-1">Detection Info</p>
                           {[
                             { key: 'dateOfChecking', label: 'Date of Checking', type: 'date' },
                             { key: 'meterStatus', label: 'Meter Status' },
@@ -793,6 +793,8 @@ export default function Dashboard() {
                             { key: 'acPeriodTo', label: 'AC Period To', type: 'month' },
                             { key: 'acPeriodMonths', label: 'AC Period Months', readOnly: true },
                             { key: 'unitsOfAcPeriod', label: 'Units of AC Period' },
+                            { key: 'dBillingMemoNo', label: 'D.BILL MEMO NO.' },
+                            { key: 'dBillingMemoDated', label: 'D.BILL MEMO DATED', type: 'date' },
                             { key: 'registeredFirNo', label: 'Registered FIR No.' },
                             { 
                               key: 'policeStation', 
@@ -802,7 +804,7 @@ export default function Dashboard() {
                             },
                           ].map((field) => (
                             <div key={field.key}>
-                              <label className="block text-[10px] font-bold text-black uppercase mb-1">{field.label}</label>
+                              <label className="block text-[10px] font-bold text-neutral-600 dark:text-slate-400 uppercase mb-1">{field.label}</label>
                               {field.type === 'select' ? (
                                 <select
                                   value={previewDoc.data[field.key] || ''}
@@ -810,11 +812,11 @@ export default function Dashboard() {
                                     ...previewDoc,
                                     data: { ...previewDoc.data, [field.key]: e.target.value }
                                   })}
-                                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
+                                  className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all font-bold text-neutral-900 dark:text-slate-100"
                                 >
                                   <option value="">Select...</option>
                                   {field.options?.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
+                                    <option key={opt} value={opt} className="dark:bg-slate-900">{opt}</option>
                                   ))}
                                 </select>
                               ) : (
@@ -872,9 +874,9 @@ export default function Dashboard() {
                                     });
                                   }}
                                   className={cn(
-                                    "w-full border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black",
-                                    field.readOnly ? "bg-neutral-100 cursor-not-allowed" : "bg-neutral-50",
-                                    field.key === 'meterStatus' && previewDoc.data.meterStatus?.toUpperCase()?.includes('REPLACED') && "text-red-600"
+                                    "w-full border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all font-bold text-neutral-900 dark:text-slate-100",
+                                    field.readOnly ? "bg-neutral-100 dark:bg-slate-900/50 cursor-not-allowed opacity-70" : "bg-neutral-50 dark:bg-slate-800",
+                                    field.key === 'meterStatus' && previewDoc.data.meterStatus?.toUpperCase()?.includes('REPLACED') && "text-red-600 dark:text-red-400"
                                   )}
                                 />
                               )}
@@ -883,21 +885,21 @@ export default function Dashboard() {
                         </div>
 
                         {/* Discrepancy */}
-                        <div className="pt-4 border-t border-neutral-100">
-                          <label className="block text-[10px] font-bold text-black uppercase mb-1">Discrepancy (Comma Separated)</label>
+                        <div className="pt-4 border-t border-neutral-100 dark:border-slate-800">
+                          <label className="block text-[10px] font-bold text-neutral-900 dark:text-slate-100 uppercase mb-1">Discrepancy (Comma Separated)</label>
                           <textarea
                             value={(Array.isArray(previewDoc.data.discrepancy) ? previewDoc.data.discrepancy : []).join(', ')}
                             onChange={(e) => setPreviewDoc({
                               ...previewDoc,
                               data: { ...previewDoc.data, discrepancy: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
                             })}
-                            className="w-full bg-white border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all h-20 font-bold text-black"
+                            className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all h-20 font-bold text-neutral-900 dark:text-slate-100"
                           />
                         </div>
 
                         {/* Witnesses */}
-                        <div className="pt-4 border-t border-neutral-100">
-                          <label className="block text-[10px] font-bold text-black uppercase mb-1">Witnesses (Comma Separated)</label>
+                        <div className="pt-4 border-t border-neutral-100 dark:border-slate-800">
+                          <label className="block text-[10px] font-bold text-neutral-900 dark:text-slate-100 uppercase mb-1">Witnesses (Comma Separated)</label>
                           <input
                             type="text"
                             value={(Array.isArray(previewDoc.data.witnesses) ? previewDoc.data.witnesses : []).join(', ')}
@@ -905,7 +907,7 @@ export default function Dashboard() {
                               ...previewDoc,
                               data: { ...previewDoc.data, witnesses: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
                             })}
-                            className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-black transition-all font-bold text-black"
+                            className="w-full bg-neutral-50 dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-indigo-500 transition-all font-bold text-neutral-900 dark:text-slate-100"
                           />
                         </div>
                       </div>
