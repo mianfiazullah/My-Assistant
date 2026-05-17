@@ -20,6 +20,21 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState<{ type: string; data: any; isEditing?: boolean } | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState<number | null>(null);
+
+  useEffect(() => {
+    const savedStep = localStorage.getItem('lesco_new_case_step');
+    if (savedStep) {
+      try {
+        const step = JSON.parse(savedStep);
+        if (step > 1) {
+          setActiveStep(step);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved step');
+      }
+    }
+  }, []);
   const [refNumber, setRefNumber] = useState(() => {
     const saved = localStorage.getItem('lesco_dashboard_ref');
     return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
@@ -194,6 +209,15 @@ export default function Dashboard() {
           <p className="text-slate-500 dark:text-slate-400 font-medium"></p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {activeStep && (
+            <button
+              onClick={() => navigate('/new-case')}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 animate-pulse flex-1 sm:flex-none justify-center"
+            >
+              <ArrowRight className="w-5 h-5 rotate-180" />
+              Resume Case (Step {activeStep})
+            </button>
+          )}
           <Link
             to="/quick-edit"
             className="btn-secondary group flex-1 sm:flex-none justify-center"

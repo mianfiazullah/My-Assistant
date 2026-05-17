@@ -194,10 +194,16 @@ export default function NewCase() {
   };
 
   const [step, setStep] = useState(() => getInitialState('lesco_new_case_step', 1));
+
+  useEffect(() => {
+    localStorage.setItem('lesco_new_case_step', safeStringify(step));
+  }, [step]);
+
   const [photo, setPhoto] = useState<string | null>(() => {
     const saved = localStorage.getItem('lesco_new_case_photo');
     return (saved && saved !== 'undefined' && saved !== 'null') ? saved : null;
   });
+
   const [referenceNumber, setReferenceNumber] = useState(() => {
     const saved = localStorage.getItem('lesco_new_case_ref');
     return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
@@ -230,6 +236,7 @@ export default function NewCase() {
     connectedLoad: '',
     loadFactor: '',
     feederName: '',
+    grandTotalUnits: '',
     customerId: '',
     tariff: '',
     meterNumber: '',
@@ -312,11 +319,6 @@ export default function NewCase() {
   const [isReadingVerified, setIsReadingVerified] = useState(() => getInitialState('lesco_new_case_is_reading_verified', false));
   const [showAcMismatch, setShowAcMismatch] = useState(() => getInitialState('lesco_new_case_show_ac_mismatch', false));
   const [isAcVerified, setIsAcVerified] = useState(() => getInitialState('lesco_new_case_is_ac_verified', true));
-
-  // Persistence Effects
-  useEffect(() => {
-    localStorage.setItem('lesco_new_case_step', safeStringify(step));
-  }, [step]);
 
   useEffect(() => {
     if (photo) localStorage.setItem('lesco_new_case_photo', photo);
@@ -438,7 +440,7 @@ export default function NewCase() {
 
   const defaultFieldOrder = [
     'dateOfChecking', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'registeredFirNo', 'registeredFirDated', 'policeStation',
-    'noOfAC', 'feederName', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
+    'noOfAC', 'feederName', 'grandTotalUnits', 'meterStatus', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
     'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'dBillingMemoNo', 'dBillingMemoDated', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
     'consumerName', 'nameUrdu', 'presentOccupier', 'presentOccupierUrdu', 'address', 'addressUrdu', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
     'meterType', 'capacity', 'discrepancy', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod',
@@ -453,7 +455,7 @@ export default function NewCase() {
     unitsAssessed: '34', unitsAlreadyCharged: '33', netUnitsToBeCharged: '35', checkedBy: '16', referenceNo: '17',
     consumerName: '18', nameUrdu: '18U', presentOccupier: '18A', presentOccupierUrdu: '18B', address: '19', addressUrdu: '19U', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
     meterType: '25', capacity: '26', discrepancy: '27', acPeriodFrom: '28', acPeriodTo: '29', acPeriodMonths: '30', unitsOfAcPeriod: '31',
-    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36',
+    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36', grandTotalUnits: '36a', meterStatus: '26a',
     employeeName: '40', employeeNameUrdu: '40U', employeeDesignation: '41', employeeCnic: '42', employeeMobile: '43'
   };
 
@@ -664,7 +666,22 @@ export default function NewCase() {
               <input 
                 type="date"
                 value={detectionData.dateOfChecking || ''}
-                onChange={(e) => setDetectionData({...detectionData, dateOfChecking: e.target.value})}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const datesToCheck = [
+                    { key: 'noticeDated', label: 'Notice Dated' },
+                    { key: 'firDated', label: 'FIR Request Dated' },
+                    { key: 'registeredFirDated', label: 'Registered FIR Dated' },
+                    { key: 'dBillingMemoDated', label: 'D.BILL MEMO DATED' }
+                  ];
+                  
+                  const invalidSet = datesToCheck.filter(d => (detectionData as any)[d.key] && val && (detectionData as any)[d.key] < val);
+                  
+                  if (invalidSet.length > 0) {
+                    toast.warning(`Note: Date of Checking is now later than existing ${invalidSet.map(d => d.label).join(', ')}`);
+                  }
+                  setDetectionData({...detectionData, dateOfChecking: val});
+                }}
                 max={today}
                 disabled={isDisabled}
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-2 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 dark:text-slate-100"
@@ -700,8 +717,15 @@ export default function NewCase() {
               <input 
                 type="date" 
                 value={detectionData.noticeDated || ''} 
-                onChange={(e) => setDetectionData({...detectionData, noticeDated: e.target.value})} 
-                max={today} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && detectionData.dateOfChecking && val < detectionData.dateOfChecking) {
+                    toast.error("Notice Dated cannot be earlier than Date of Checking");
+                    return;
+                  }
+                  setDetectionData({...detectionData, noticeDated: val});
+                }} 
+                min={detectionData.dateOfChecking}                max={today} 
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
@@ -736,8 +760,15 @@ export default function NewCase() {
               <input 
                 type="date" 
                 value={detectionData.firDated || ''} 
-                onChange={(e) => setDetectionData({...detectionData, firDated: e.target.value})} 
-                max={today} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && detectionData.dateOfChecking && val < detectionData.dateOfChecking) {
+                    toast.error("FIR Request Dated cannot be earlier than Date of Checking");
+                    return;
+                  }
+                  setDetectionData({...detectionData, firDated: val});
+                }} 
+                min={detectionData.dateOfChecking}                max={today} 
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
@@ -855,8 +886,15 @@ export default function NewCase() {
               <input 
                 type="date" 
                 value={detectionData.registeredFirDated || ''} 
-                onChange={(e) => setDetectionData({...detectionData, registeredFirDated: e.target.value})} 
-                max={today} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && detectionData.dateOfChecking && val < detectionData.dateOfChecking) {
+                    toast.error("Registered FIR Dated cannot be earlier than Date of Checking");
+                    return;
+                  }
+                  setDetectionData({...detectionData, registeredFirDated: val});
+                }} 
+                min={detectionData.dateOfChecking}                max={today} 
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
@@ -885,6 +923,26 @@ export default function NewCase() {
                 <option value="Changa Manga">Changa Manga</option>
                 <option value="Manga Mandi">Manga Mandi</option>
               </select>
+            </div>
+          </SortableItem>
+        );
+      case 'meterStatus':
+        return (
+          <SortableItem 
+            id="meterStatus" 
+            key="meterStatus" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs uppercase tracking-widest text-neutral-900 dark:text-slate-100 font-bold">Meter Status</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input 
+                type="text" 
+                value={detectionData.meterStatus || ''} 
+                onChange={(e) => setDetectionData({...detectionData, meterStatus: e.target.value})}
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100"
+                disabled={isDisabled} 
+              />
             </div>
           </SortableItem>
         );
@@ -1011,11 +1069,11 @@ export default function NewCase() {
             </div>
           </SortableItem>
         );
-      case 'feederName':
+      case 'grandTotalUnits':
         return (
           <SortableItem 
-            id="feederName" 
-            key="feederName" 
+            id="grandTotalUnits" 
+            key="grandTotalUnits" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
             label={<label className="text-xs uppercase tracking-widest text-neutral-900 dark:text-slate-100 font-bold">G. Total Units TO BE CHARGED</label>}
@@ -1023,12 +1081,32 @@ export default function NewCase() {
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input 
                 type="text" 
-                value={detectionData.feederName || ''} 
+                value={detectionData.grandTotalUnits || ''} 
                 readOnly
                 className={cn(
                   "w-full bg-neutral-50 dark:bg-slate-800/50 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold",
-                  detectionData.feederName?.includes('D.BILL IS NOT JUSTIFIED') ? "text-indigo-600 animate-blink" : "text-neutral-900 dark:text-slate-100"
+                  detectionData.grandTotalUnits?.includes('D.BILL IS NOT JUSTIFIED') ? "text-indigo-600 animate-blink" : "text-neutral-900 dark:text-slate-100"
                 )} 
+                disabled={isDisabled} 
+              />
+            </div>
+          </SortableItem>
+        );
+      case 'feederName':
+        return (
+          <SortableItem 
+            id="feederName" 
+            key="feederName" 
+            serialNo={serialNo} 
+            onSerialNoChange={onSerialNoChange}
+            label={<label className="text-xs uppercase tracking-widest text-neutral-900 dark:text-slate-100 font-bold">Feeder Name</label>}
+          >
+            <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
+              <input 
+                type="text" 
+                value={detectionData.feederName || ''} 
+                onChange={(e) => setDetectionData({...detectionData, feederName: e.target.value})}
+                className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 font-bold text-neutral-900 dark:text-slate-100"
                 disabled={isDisabled} 
               />
             </div>
@@ -1318,8 +1396,15 @@ export default function NewCase() {
               <input 
                 type="date" 
                 value={detectionData.dBillingMemoDated || ''} 
-                onChange={(e) => setDetectionData({...detectionData, dBillingMemoDated: e.target.value})} 
-                max={today} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && detectionData.dateOfChecking && val < detectionData.dateOfChecking) {
+                    toast.error("D.BILL MEMO DATED cannot be earlier than Date of Checking");
+                    return;
+                  }
+                  setDetectionData({...detectionData, dBillingMemoDated: val});
+                }} 
+                min={detectionData.dateOfChecking}                max={today} 
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-3 focus:outline-none focus:border-indigo-500 transition-all hover:border-indigo-300 font-bold text-neutral-900 dark:text-slate-100" 
                 disabled={isDisabled} 
               />
@@ -2634,19 +2719,26 @@ export default function NewCase() {
         const toDate = new Date(to.getFullYear(), to.getMonth(), 1);
         
         while (currentDate <= toDate) {
-          const monthName = monthNames[currentDate.getMonth()];
+          const monthIdx = currentDate.getMonth();
+          const monthName = monthNames[monthIdx];
           const year = currentDate.getFullYear();
           
-          // Check if this month is the billing month
+          const isMonthMatch = (mStr: string, yStr: string) => {
+            if (!mStr || !yStr) return false;
+            const yearMatch = yStr === year.toString() || yStr === (year % 100).toString();
+            if (!yearMatch) return false;
+            
+            if (isNaN(parseInt(mStr))) {
+              return mStr.toUpperCase().substring(0, 3) === monthName.toUpperCase();
+            }
+            return parseInt(mStr) === monthIdx + 1;
+          };
+
           let isBillingMonth = false;
           if (billData.billingMonth) {
             const parts = billData.billingMonth.split(/[- ]+/).filter(Boolean);
-            const bMonth = parts[0];
-            const bYear = parts[1];
-            if (bMonth && bYear) {
-              const matchesMonth = bMonth.toUpperCase().startsWith(monthName.toUpperCase());
-              const matchesYear = bYear === year.toString() || bYear === (year % 100).toString();
-              if (matchesMonth && matchesYear) {
+            if (parts.length >= 2) {
+              if (isMonthMatch(parts[0], parts[1]) || isMonthMatch(parts[1], parts[0])) {
                 isBillingMonth = true;
               }
             }
@@ -2658,27 +2750,9 @@ export default function NewCase() {
           } else {
             const unitsForMonth = billData.monthWiseUnits.filter(u => {
               if (!u.month) return false;
-              
               const parts = u.month.split(/[- ]+/).filter(Boolean);
-              let uMonth = parts[0];
-              let uYear = parts[1];
-              
-              if (!uMonth || !uYear) return false;
-              
-              // Handle Year-Month format (e.g., "26-Jan")
-              if (!isNaN(parseInt(uMonth)) && isNaN(parseInt(uYear))) {
-                const temp = uMonth;
-                uMonth = uYear;
-                uYear = temp;
-              }
-              
-              // Robust month matching: compare first 3 characters
-              const matchesMonth = uMonth.toUpperCase().substring(0, 3) === monthName.toUpperCase();
-              
-              // Check if year matches
-              const matchesYear = uYear === year.toString() || uYear === (year % 100).toString();
-              
-              return matchesMonth && matchesYear;
+              if (parts.length < 2) return false;
+              return isMonthMatch(parts[0], parts[1]) || isMonthMatch(parts[1], parts[0]);
             });
             
             unitsForMonth.forEach(unitData => {
@@ -2751,14 +2825,14 @@ export default function NewCase() {
 
     const calculatedLossAmount = (totalUnitsForLoss * 60).toString();
 
-    if (detectionData.feederName !== grandTotalStr || detectionData.lossAmount !== calculatedLossAmount) {
+    if (detectionData.grandTotalUnits !== grandTotalStr || detectionData.lossAmount !== calculatedLossAmount) {
       setDetectionData(prev => ({
         ...prev,
-        feederName: grandTotalStr,
+        grandTotalUnits: grandTotalStr,
         lossAmount: calculatedLossAmount
       }));
     }
-  }, [detectionData.netUnitsToBeCharged, detectionData.unitsOfAcPeriod, detectionData.lossAmount, detectionData.feederName]);
+  }, [detectionData.netUnitsToBeCharged, detectionData.unitsOfAcPeriod, detectionData.lossAmount, detectionData.grandTotalUnits]);
 
   React.useEffect(() => {
     if (billData) {
@@ -2913,6 +2987,16 @@ export default function NewCase() {
                   };
                 }) || [],
               });
+
+              setDetectionData(prev => ({
+                ...prev,
+                meterStatus: data.meterStatus || "",
+                feederName: data.feederName || "",
+                meterNumber: data.meterNoOnBill || "",
+                consumerName: data.consumerName || "",
+                address: data.address || "",
+                referenceNumber: data.referenceNumber?.replace(/[^0-9]/g, '') || ""
+              }));
               
               toast.success('Bill data extracted successfully');
               setStep(3);
@@ -3343,6 +3427,16 @@ export default function NewCase() {
             };
           }) || [],
         });
+
+        setDetectionData(prev => ({
+          ...prev,
+          meterStatus: data.meterStatus || "",
+          feederName: data.feederName || "",
+          meterNumber: data.meterNoOnBill || "",
+          consumerName: data.consumerName || "",
+          address: data.address || "",
+          referenceNumber: data.referenceNumber?.replace(/[^0-9]/g, '') || ""
+        }));
         
         setError('');
         setStep(3);
@@ -3392,6 +3486,15 @@ export default function NewCase() {
         })()
       };
       setBillData(billWithDiff);
+      setDetectionData(prev => ({
+        ...prev,
+        meterStatus: data.meterStatus || "",
+        feederName: data.feederName || "",
+        meterNumber: data.meterNoOnBill || "",
+        consumerName: data.consumerName || "",
+        address: data.address || "",
+        referenceNumber: data.referenceNumber?.replace(/[^0-9]/g, '') || ""
+      }));
       setError('');
       setStep(3);
     } catch (err: any) {
@@ -3475,7 +3578,10 @@ export default function NewCase() {
       const newCase: Omit<DetectionCase, 'id'> = {
         userId: user.uid || '',
         employeeName: detectionData.employeeName || '',
+        employeeNameUrdu: detectionData.employeeNameUrdu || '',
         employeeDesignation: detectionData.employeeDesignation || '',
+        employeeCnic: detectionData.employeeCnic || '',
+        employeeMobile: detectionData.employeeMobile || '',
         photoUrl: photoUrl || '',
         billData: sanitizedBillData as BillData,
         dateOfChecking: (detectionData.dateOfChecking || '').split('-').reverse().join('-'), // Convert to DD-MM-YYYY
@@ -3493,10 +3599,15 @@ export default function NewCase() {
         mobileNo: detectionData.mobileNo || '',
         meterMake: detectionData.meterMake || '',
         name: detectionData.name || '',
+        nameUrdu: detectionData.nameUrdu || '',
+        presentOccupier: detectionData.presentOccupier || '',
+        presentOccupierUrdu: detectionData.presentOccupierUrdu || '',
         address: detectionData.address || '',
+        addressUrdu: detectionData.addressUrdu || '',
         sanctionLoad: detectionData.sanctionLoad || '',
         connectedLoad: detectionData.connectedLoad || '',
         loadFactor: detectionData.loadFactor || '',
+        loadItems: detectionData.loadItems || [],
         meterNumber: detectionData.meterNumber || '',
         customerId: detectionData.customerId || '',
         tariff: detectionData.tariff || '',
@@ -3534,7 +3645,15 @@ export default function NewCase() {
         unitsAssessed: detectionData.unitsAssessed,
         unitsAlreadyCharged: detectionData.unitsAlreadyCharged,
         netUnitsToBeCharged: detectionData.netUnitsToBeCharged,
-        feederName: detectionData.feederName,
+        feederName: detectionData.feederName || billData?.feederName || '',
+        grandTotalUnits: detectionData.grandTotalUnits || '',
+        meterStatus: detectionData.meterStatus || billData?.meterStatus || '',
+        dBillingMemoNo: detectionData.dBillingMemoNo || '',
+        dBillingMemoDated: detectionData.dBillingMemoDated || '',
+        lossAmount: detectionData.lossAmount || '',
+        seizureCableSize: detectionData.seizureCableSize || '',
+        seizureCableColor: detectionData.seizureCableColor || '',
+        seizureCableLength: detectionData.seizureCableLength || '',
       };
 
       await addDoc(collection(db, 'cases'), newCase);
@@ -3544,31 +3663,68 @@ export default function NewCase() {
       if (webhookUrl) {
         try {
           const payload = {
-            ref: newCase.referenceNumber,
-            name: newCase.name,
-            address: newCase.address,
-            date: newCase.dateOfChecking,
-            id: newCase.customerId,
-            tariff: newCase.tariff,
-            sLoad: newCase.sanctionLoad,
-            cLoad: newCase.connectedLoad,
-            mNo: newCase.meterNumber,
-            mType: newCase.meterType,
-            mMake: newCase.meterMake,
-            cap: newCase.capacity,
-            mStatus: newCase.meterStatus,
-            pRead: newCase.presentReadingAtSite,
-            prevRead: newCase.previousReading,
-            diff: newCase.difference,
-            uAssessed: newCase.unitsAssessed,
-            uCharged: newCase.netUnitsToBeCharged,
-            month: newCase.billingMonth,
-            fir: newCase.registeredFirNo || newCase.firNo,
-            ps: newCase.policeStation,
-            firDate: newCase.registeredFirDated || newCase.firDated,
-            remarks: newCase.remarks,
-            checked: (newCase.checkedBy || []).join(', '),
-            witness: (newCase.witnesses || []).join(', ')
+            "Date of Checking": newCase.dateOfChecking,
+            "Reference Number": newCase.referenceNumber,
+            "Billing Month": newCase.billingMonth || '',
+            "Consumer Name": newCase.name,
+            "Consumer Name (Urdu)": newCase.nameUrdu || '',
+            "Present Occupier": newCase.presentOccupier || '',
+            "Present Occupier (Urdu)": newCase.presentOccupierUrdu || '',
+            "Address": newCase.address,
+            "Address (Urdu)": newCase.addressUrdu || '',
+            "Customer ID": newCase.customerId,
+            "Tariff": newCase.tariff,
+            "Sanction Load": newCase.sanctionLoad,
+            "Connected Load": newCase.connectedLoad,
+            "Feeder Name": newCase.feederName,
+            "G. Total Units TO BE CHARGED": newCase.grandTotalUnits,
+            "Meter No.": newCase.meterNumber,
+            "Meter Make": newCase.meterMake,
+            "Meter Type": newCase.meterType,
+            "Capacity": newCase.capacity,
+            "Meter Status": newCase.meterStatus,
+            "Meter Slow By (%)": detectionData.meterSlowBy || '',
+            "Discrepancy": (newCase.discrepancy || []).join(', '),
+            "Notice No.": newCase.noticeNo || '',
+            "Notice Dated": newCase.noticeDated || '',
+            "FIR Request No.": newCase.firNo || '',
+            "FIR Request Dated": newCase.firDated || '',
+            "Registered FIR No.": newCase.registeredFirNo || '',
+            "Registered FIR Dated": newCase.registeredFirDated || '',
+            "Police Station": newCase.policeStation || '',
+            "No. of AC": newCase.noOfAC || '',
+            "Split AC Count": newCase.splitAcCount || '',
+            "Window AC Count": newCase.windowAcCount || '',
+            "AC Type": newCase.acType || '',
+            "AC Period From": newCase.acPeriodFrom || '',
+            "AC Period To": newCase.acPeriodTo || '',
+            "AC Period Months": newCase.acPeriodMonths || '',
+            "Units of AC Period": newCase.unitsOfAcPeriod || '',
+            "Detection Period From": newCase.detectionPeriodFrom || '',
+            "Detection Period To": newCase.detectionPeriodTo || '',
+            "Detection Period Months": newCase.detectionPeriodMonths || '',
+            "Units Assessed": newCase.unitsAssessed || '',
+            "Units Already Charged": newCase.unitsAlreadyCharged || '',
+            "Net Units to be Charged": newCase.netUnitsToBeCharged || '',
+            "D.BILL MEMO NO.": newCase.dBillingMemoNo || '',
+            "D.BILL MEMO DATED": newCase.dBillingMemoDated || '',
+            "Loss Amount": newCase.lossAmount || '',
+            "Seizure Cable Size": newCase.seizureCableSize || '',
+            "Seizure Cable Color": newCase.seizureCableColor || '',
+            "Seizure Cable Length": newCase.seizureCableLength || '',
+            "Checked By": (newCase.checkedBy || []).join(', '),
+            "Witnesses": (newCase.witnesses || []).join(', '),
+            "Present Reading at Site": newCase.presentReadingAtSite,
+            "E-Mail Address": newCase.email,
+            "Mobile Number": newCase.mobileNo,
+            "Load Factor": newCase.loadFactor,
+            "Connected Load Details": (newCase.loadItems || []).map(i => `${i.name}(${i.qty}x${i.watts}=${i.total}W)`).join('; '),
+            "Remarks": newCase.remarks,
+            "Employee Name": newCase.employeeName,
+            "Employee Name (Urdu)": newCase.employeeNameUrdu || '',
+            "Employee Designation": newCase.employeeDesignation,
+            "Employee CNIC": newCase.employeeCnic || '',
+            "Employee Mobile": newCase.employeeMobile || '',
           };
 
           fetch(webhookUrl, {
@@ -4830,7 +4986,7 @@ export default function NewCase() {
 
       {/* Hidden Print Templates - Only render in Step 4 to improve performance */}
       {step === 4 && (
-        <div className="fixed top-0 left-[-9999px]">
+        <div className="fixed top-0 left-[-9999px] w-[210mm]">
           {(() => {
             const commonData = {
               ...detectionData,

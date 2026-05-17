@@ -117,6 +117,7 @@ export interface DetectionCase {
   unitsAlreadyCharged?: string;
   netUnitsToBeCharged?: string;
   feederName?: string;
+  grandTotalUnits?: string;
   meterSlowBy?: string;
   employeeCnic?: string;
   employeeMobile?: string;

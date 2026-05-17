@@ -313,7 +313,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
   const calculatedReadings = getCalculatedReadings();
 
   const renderDetectionBill = () => (
-    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight p-6 md:p-[20mm]">
+    <div className="print-page bg-white text-black font-sans w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight p-6 md:p-[20mm]">
       <div className="flex items-center justify-between mb-4 border-b-2 border-black pb-2">
         <div className="text-center flex-1">
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">DETECTION BILL PROFORMA</h1>
@@ -366,10 +366,6 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">FIR T/O Dated:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{formatDate(data.firDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
         </div>
         <div className="flex justify-between gap-1 text-[7pt]">
-          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">D.BILL MEMO NO:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{data.dBillingMemoNo || '۔۔۔۔۔۔۔۔'}</span></div>
-          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden"><span className="whitespace-nowrap uppercase text-[7.5pt]">D.BILL MEMO DATED:</span><span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{formatDate(data.dBillingMemoDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span></div>
-        </div>
-        <div className="flex justify-between gap-1 text-[7pt]">
           <div className={cn("flex gap-1 items-end min-w-0 font-bold", !data.registeredFirNo ? "text-red-600 font-bold" : "text-black")}>
             <span className="whitespace-nowrap uppercase text-[7.5pt]">Registered FIR No:</span>
             <span className="border-b border-black whitespace-nowrap">{data.registeredFirNo || "(FIR PENDING)"}</span>
@@ -403,14 +399,25 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           ) : <div />}
           <div className="flex gap-3 items-end"><span className="whitespace-nowrap font-bold">Detection Bill Period : -</span><span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.detectionPeriodTo)}</span> <span className="font-bold">(<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.detectionPeriodMonths}</span> Months)</span></div>
         </div>
-        {data.noOfAC && parseInt(data.noOfAC) > 0 && (data.acPeriodFrom || data.acPeriodTo) && (
-          <div className="flex justify-between gap-4">
-            <div className="flex gap-3 items-end">
-              <span className="whitespace-nowrap font-bold">AC Period : -</span>
-              <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodFrom)}</span> To <span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{formatDate(data.acPeriodTo)}</span> <span className="font-bold">(<span className="border-b border-black text-center whitespace-nowrap text-black font-bold">{data.acPeriodMonths}</span> Months)</span>
+        <div className="flex justify-between gap-1 text-[7.5pt]">
+          {data.noOfAC && parseInt(data.noOfAC) > 0 && (data.acPeriodFrom || data.acPeriodTo) ? (
+            <div className="flex gap-1 items-end min-w-0 font-bold">
+              <span className="whitespace-nowrap uppercase text-[7.5pt]">AC Period : -</span>
+              <span className="border-b border-black text-center whitespace-nowrap text-black">{formatDate(data.acPeriodFrom)}</span>
+              <span className="mx-0.5">To</span>
+              <span className="border-b border-black text-center whitespace-nowrap text-black">{formatDate(data.acPeriodTo)}</span>
+              <span className="ml-1">({data.acPeriodMonths} Months)</span>
             </div>
+          ) : <div />}
+          <div className="flex gap-1 items-end min-w-0 font-bold">
+            <span className="whitespace-nowrap uppercase text-[7.5pt]">D.BILL MEMO NO:</span>
+            <span className="border-b border-black whitespace-nowrap text-black">{data.dBillingMemoNo || '۔۔۔۔۔۔۔۔'}</span>
           </div>
-        )}
+          <div className="flex gap-1 items-end min-w-0 font-bold overflow-hidden">
+            <span className="whitespace-nowrap uppercase text-[7.5pt]">D.BILL MEMO DATED:</span>
+            <span className="border-b border-black whitespace-nowrap text-black overflow-hidden text-ellipsis">{formatDate(data.dBillingMemoDated) || '۔۔۔۔۔۔۔۔۔۔۔۔'}</span>
+          </div>
+        </div>
       </div>
 
       <div className="mt-2">
@@ -842,7 +849,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
 
   const renderNotice = () => {
     return (
-      <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight flex flex-col p-6 md:p-[20mm]">
+      <div className="print-page bg-white text-black font-sans w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[10px] md:text-[11px] leading-tight flex flex-col p-6 md:p-[20mm]">
         <div className="flex items-center justify-between mb-6 border-b-2 border-black pb-2">
           <div className="text-center flex-1">
             <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">NOTICE</h1>
@@ -1391,7 +1398,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
       <div className="print-container bg-white urdu-font p-0 m-0" ref={ref} dir="rtl" style={{ fontSize: '14pt', lineHeight: '1.5' }}>
         {/* FIR Page */}
         <div 
-          className="print-page w-full md:w-[210mm] mx-auto p-4 md:p-[25.4mm] text-black bg-white"
+          className="print-page w-[210mm] mx-auto p-4 md:p-[25.4mm] text-black bg-white"
           style={{ pageBreakAfter: hasSeizureMemo ? 'always' : 'auto', breakAfter: hasSeizureMemo ? 'page' : 'auto' }}
         >
             <div className="text-center mb-6 space-y-1">
@@ -1585,7 +1592,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
   };
 
   const renderFIRRequest = () => (
-    <div className="print-page bg-white text-black font-sans w-full md:w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[11px] md:text-[12px] leading-relaxed p-6 md:p-[20mm]">
+    <div className="print-page bg-white text-black font-sans w-[210mm] mx-auto border border-neutral-200 md:border-none shadow-sm md:shadow-none text-[11px] md:text-[12px] leading-relaxed p-6 md:p-[20mm]">
       <div className="flex items-center justify-between mb-8 border-b-2 border-black pb-4">
         <div className="text-center flex-1">
           <h1 className="text-base sm:text-lg font-bold uppercase tracking-widest font-sans">FIR REQUEST</h1>

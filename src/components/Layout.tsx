@@ -1,6 +1,6 @@
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogOut, LayoutDashboard, PlusCircle, FileText, Settings, ShieldAlert, Menu, X, Trash2, MessageSquare, ExternalLink, Zap } from 'lucide-react';
+import { LogOut, LayoutDashboard, PlusCircle, FileText, Settings, ShieldAlert, Menu, X, Trash2, MessageSquare, ExternalLink, Zap, Activity } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { auth as firebaseAuth } from '../firebase';
@@ -11,6 +11,38 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState<number | null>(null);
+
+  useEffect(() => {
+    const checkStep = () => {
+      const savedStep = localStorage.getItem('lesco_new_case_step');
+      if (savedStep) {
+        try {
+          const step = JSON.parse(savedStep);
+          if (step > 1) {
+            setActiveStep(step);
+          } else {
+            setActiveStep(null);
+          }
+        } catch (e) {
+          setActiveStep(null);
+        }
+      } else {
+        setActiveStep(null);
+      }
+    };
+
+    checkStep();
+    // Also listen for storage changes in case it's updated in another tab or elsewhere
+    window.addEventListener('storage', checkStep);
+    // And check periodically since NewCase might update it
+    const interval = setInterval(checkStep, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', checkStep);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await firebaseAuth.signOut();
@@ -19,6 +51,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+    ...(activeStep ? [{ icon: Activity, label: `Active Case (S${activeStep})`, path: '/new-case', pulse: true }] : []),
     { icon: FileText, label: 'Past Cases', path: '/cases' },
     { icon: MessageSquare, label: 'AI Chat', path: '/chat' },
     { icon: Zap, label: 'Feeder Monitoring', path: '/feeder-monitoring' },
@@ -35,23 +68,30 @@ export default function Layout({ children }: { children: ReactNode }) {
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
-        {menuItems.map((item) => (
+        {menuItems.map((item: any) => (
           <Link
             key={item.path}
             to={item.path}
             onClick={() => setIsMobileMenuOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
+              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative",
               location.pathname === item.path
                 ? "bg-brand-primary text-white shadow-lg shadow-indigo-600/20 font-medium"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+              item.pulse && "text-emerald-600 dark:text-emerald-400 font-bold"
             )}
           >
             <item.icon className={cn(
               "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
-              location.pathname === item.path ? "text-white" : "text-slate-400 group-hover:text-brand-primary dark:text-slate-500 dark:group-hover:text-indigo-400"
+              location.pathname === item.path ? "text-white" : (item.pulse ? "text-emerald-500 font-bold" : "text-slate-400 group-hover:text-brand-primary dark:text-slate-500 dark:group-hover:text-indigo-400")
             )} />
             {item.label}
+            {item.pulse && (
+              <span className="absolute right-4 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+            )}
           </Link>
         ))}
       </nav>
