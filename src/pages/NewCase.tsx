@@ -3796,6 +3796,41 @@ export default function NewCase() {
 
       setIsSaved(true);
       setStep(4);
+      
+      // Auto-upload to drive
+      setTimeout(async () => {
+        const templatesToUpload = ['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Urdu'];
+        for (const type of templatesToUpload) {
+          try {
+            let templateRef = null;
+            if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
+            else if (type === 'NOTICE') templateRef = printRefNotice;
+            else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
+
+            if (templateRef && templateRef.current) {
+              const dataUrl = await domToJpeg(templateRef.current, {
+                scale: 2, // slightly lower scale for faster batch upload
+                quality: 0.90,
+                backgroundColor: '#ffffff',
+              });
+              
+              const { ref: storageRef, uploadString } = await import('firebase/storage');
+              const { storage } = await import('../firebase');
+              
+              const fileName = type === 'DETECTION BILL PROFORMA' 
+                ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
+                : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
+              
+              const fileRef = storageRef(storage, `My Assistant/${fileName}`);
+              await uploadString(fileRef, dataUrl, 'data_url');
+            }
+          } catch (uploadErr) {
+            console.error(`Auto-upload failed for ${type}:`, uploadErr);
+          }
+        }
+        toast.success("All templates uploaded to My Assistant folder successfully.");
+      }, 500);
+
     } catch (err: any) {
       console.error("Save case error:", err);
       setError(err.message || "Failed to save case. Please try again.");
