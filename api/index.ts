@@ -30,22 +30,70 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/extract-bill", async (req, res) => {
   try {
-    console.log("extract-bill called. type of req.body:", typeof req.body, "keys:", req.body ? Object.keys(req.body) : "none");
-    const { image } = req.body || {};
-    if (!image) return res.status(400).json({ error: "Missing image data. Body keys: " + (req.body ? Object.keys(req.body).join(",") : "none") });
+    console.log(`[extract-bill] type of req.body: ${typeof req.body}, isArray: ${Array.isArray(req.body)}`);
+    if (req.body) {
+      console.log(`[extract-bill] req.body keys: ${Object.keys(req.body).join(", ")}`);
+    }
+    const { base64Data, image, model: requestedModel = "gemini-flash-latest" } = req.body || {};
+    const imgData = image || base64Data;
+    if (!imgData) {
+      return res.status(400).json({ error: `Missing image data. Body keys: ${req.body ? Object.keys(req.body).join(", ") : 'none'}` });
+    }
 
-    const model = getAI().models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{
-        role: "user",
-        parts: [
-          { inlineData: { mimeType: "image/jpeg", data: image } },
-          { text: `Extract the following details from this electricity bill image into a valid JSON object.
+    const modelName = "gemini-flash-latest";
+    const ai = getAI();
+    
+    console.log(`Analyzing bill using model: ${modelName}, data length: ${imgData.length}`);
+
+    const result = await ai.models.generateContent({
+      model: modelName,
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inlineData: { mimeType: "image/jpeg", data: imgData } },
+            { text: `Extract all electricity bill details from this image into a JSON object.
+        
+=== IMPORTANT: ACCURACY ===
+- DO NOT hallucinate values. If a number is unclear or NOT VISIBLE in the screenshot, use an empty string "" instead of "N/A" where possible, especially for numeric fields.
+- DO NOT repeat values (like "55") across months if they are different on the bill.
+- For historical tables, extract EXACTLY what is written in each row.
+- Ensure the 'Month' and 'Year' match the table rows precisely (e.g., "MAR 25").
+- SPECIFIC GUARD: The status code "SS" (Status Same) is frequently misread as "55". If you see "SS" or something looking like "55" in a column where it could be a status code (like Units or Reading), verify carefully. If it is a status code, output "SS".
+- DO NOT fill in months that are not present in the image table. If only 10 months are visible, output only those 10 months.
+
+=== MONTH WISE UNITS TABLE (CONSUMPTION DATA) ===
+- If a value in the table is "N/A", empty, or unclear, use an empty string "" for that specific field (units, bill, adj, or payment). 
+- DO NOT combine multiple fields into one. Each field must be its own value in the object.
+- If a row is partially unreadable, still extract the readable parts (like Month and Units).
+
 === FIELDS TO EXTRACT ===
-- referenceNumber, consumerName, address, sanctionedLoad, customerId, tariff, billingMonth, currentBill, deferredAmount, presentReading, previousReading, meterNoOnBill, subDivisionName, feederName, meterStatus, monthWiseUnits
-RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
-        ]
-      }],
+- referenceNumber: exact 14 digits
+- consumerName: full name
+- address: full address
+- sanctionedLoad: e.g., "1.00 kW"
+- customerId: e.g., "01-12345-6789123"
+- tariff: e.g., "A-1a(01)"
+- billingMonth: month and year, e.g., "MAR 26"
+- consumedUnits: Total units consumed this month
+- currentBill: monthly bill amount
+- deferredAmount: deferred amount if any
+- presentReading: latest index reading
+- previousReading: previous index reading
+- meterNoOnBill: meter serial number
+- subDivisionName: e.g., "FATEH SHER"
+- feederName: e.g., "CIVIL LINES"
+- meterStatus: e.g., "NORMAL"
+- monthWiseUnits: Array of { month, reading, units, bill, adj, payment }
+  (Extract from the consumption history table. Usually 12-13 months are visible.
+   Columns are usually: Month, Units, Bill, Adj, Payment/Balance.
+   If 'DF', 'SS', or 'Est. Def.' is present with a value, include it, e.g., "DF 81").
+
+=== RESPONSE ===
+Return ONLY JSON.` }
+          ]
+        }
+      ],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -58,6 +106,7 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
             customerId: { type: Type.STRING },
             tariff: { type: Type.STRING },
             billingMonth: { type: Type.STRING },
+            consumedUnits: { type: Type.STRING },
             currentBill: { type: Type.STRING },
             deferredAmount: { type: Type.STRING },
             presentReading: { type: Type.STRING },
@@ -72,6 +121,7 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
                 type: Type.OBJECT,
                 properties: {
                   month: { type: Type.STRING },
+                  reading: { type: Type.STRING },
                   units: { type: Type.STRING },
                   bill: { type: Type.STRING },
                   adj: { type: Type.STRING },
@@ -85,14 +135,11 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
       },
     });
 
-    const result = await model;
-    const cleanText = result.text;
-    if (!cleanText || cleanText.trim() === 'undefined') {
-      throw new Error("The AI model returned an empty or invalid response.");
-    }
-
+    const cleanText = (result.text || '').trim();
+    if (!cleanText || cleanText === 'undefined') throw new Error("The AI model returned an empty response. Please try a clearer picture.");
+    
     try {
-      let jsonStr = cleanText.trim();
+      let jsonStr = cleanText;
       if (jsonStr.startsWith('```json')) {
         jsonStr = jsonStr.replace(/^```json/, '');
         jsonStr = jsonStr.replace(/```$/, '');
@@ -101,15 +148,18 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
         jsonStr = jsonStr.replace(/```$/, '');
       }
       jsonStr = jsonStr.trim();
-      res.json(JSON.parse(jsonStr));
+      
+      const parsed = JSON.parse(jsonStr);
+      res.json(parsed);
     } catch (parseErr) {
       console.error("JSON Parse Error on text:", cleanText);
       res.status(500).json({ 
-        error: "The AI returned data in an invalid format.",
-        raw: cleanText.substring(0, 500)
+        error: "The AI returned data in an invalid format.", 
+        raw: cleanText.substring(0, 500) 
       });
     }
   } catch (e: any) {
+    console.error("Extraction error:", e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -117,15 +167,19 @@ RULES: If a field is missing, use "N/A". Return ONLY the JSON object.` }
 app.post("/api/chat", async (req, res) => {
   try {
     const { input } = req.body;
-    const result = await getAI().models.generateContent({ 
-      model: "gemini-3-flash-preview",
+    if (!input) return res.status(400).json({ error: "No input provided" });
+
+    const ai = getAI();
+    const result = await ai.models.generateContent({ 
+      model: "gemini-flash-latest",
       contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
       config: {
-        systemInstruction: "You are an expert assistant. Be professional, helpful, and concise."
+        systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
       }
     });
     res.json({ text: result.text });
   } catch (error: any) {
+    console.error("Chat error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -133,12 +187,16 @@ app.post("/api/chat", async (req, res) => {
 app.post("/api/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
-    const result = await getAI().models.generateContent({ 
-      model: "gemini-3-flash-preview",
+    if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+
+    const ai = getAI();
+    const result = await ai.models.generateContent({ 
+      model: "gemini-flash-latest",
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
     res.json({ text: result.text });
   } catch (error: any) {
+    console.error("Generate error:", error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -19,128 +19,44 @@ export async function extractBillData(base64Image: string) {
     throw new Error("Invalid image data. The image might be too small or corrupted.");
   }
 
-  console.log(`Extracting bill data via Client SDK. Image data length: ${base64Data.length}`);
+  console.log(`Extracting bill data via API Proxy. Image data length: ${base64Data.length}`);
 
   try {
-    const ai = getAI();
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-latest", // Using most widely available flash model for better reliability
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: base64Data } },
-            { text: `Extract all electricity bill details from this image into a JSON object.
-          
-=== IMPORTANT: ACCURACY ===
-- DO NOT hallucinate values. If a number is unclear or NOT VISIBLE in the screenshot, use "N/A".
-- DO NOT repeat values (like "55") across months if they are different on the bill.
-- For historical tables, extract EXACTLY what is written in each row.
-- Ensure the 'Month' matches the table row (e.g., "MAR 25").
-- SPECIFIC GUARD: The status code "SS" (Status Same) is frequently misread as "55". If you see "SS" or something looking like "55" in a column where it could be a status code (like Units or Reading), verify carefully. If it is a status code, output "SS".
-- DO NOT fill in months that are not present in the image table. If only 10 months are visible, output only those 10 months.
-
-=== FIELDS TO EXTRACT ===
-- referenceNumber: exact 14 digits
-- consumerName: full name
-- address: full address
-- sanctionedLoad: e.g., "1.00 kW"
-- customerId: e.g., "01-12345-6789123"
-- tariff: e.g., "A-1a(01)"
-- billingMonth: month and year, e.g., "MAR 26"
-- consumedUnits: Total units consumed this month
-- currentBill: monthly bill amount
-- deferredAmount: deferred amount if any
-- presentReading: latest index reading
-- previousReading: previous index reading
-- meterNoOnBill: meter serial number
-- subDivisionName: e.g., "FATEH SHER"
-- feederName: e.g., "CIVIL LINES"
-- meterStatus: e.g., "NORMAL"
-- monthWiseUnits: Array of { month, reading, units, bill, adj, payment }
-  (From the CONSUMPTION DATA table. Extract last 12-13 months. 
-   IMPORTANT: If 'DF', 'SS', or 'Est. Def.' is present with a value, include it, e.g., "DF 81". 
-   NOTE: 'SS' is a common status code on these bills; do NOT misread it as '55').
-
-=== RESPONSE ===
-Return ONLY JSON.` }
-          ]
-        }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            referenceNumber: { type: Type.STRING },
-            consumerName: { type: Type.STRING },
-            address: { type: Type.STRING },
-            sanctionedLoad: { type: Type.STRING },
-            customerId: { type: Type.STRING },
-            tariff: { type: Type.STRING },
-            billingMonth: { type: Type.STRING },
-            consumedUnits: { type: Type.STRING },
-            currentBill: { type: Type.STRING },
-            deferredAmount: { type: Type.STRING },
-            presentReading: { type: Type.STRING },
-            previousReading: { type: Type.STRING },
-            meterNoOnBill: { type: Type.STRING },
-            subDivisionName: { type: Type.STRING },
-            feederName: { type: Type.STRING },
-            meterStatus: { type: Type.STRING },
-            monthWiseUnits: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  month: { type: Type.STRING },
-                  reading: { type: Type.STRING },
-                  units: { type: Type.STRING },
-                  bill: { type: Type.STRING },
-                  adj: { type: Type.STRING },
-                  payment: { type: Type.STRING },
-                }
-              }
-            }
-          },
-          required: ["referenceNumber", "consumerName"],
-        }
-      }
+    const response = await fetch('/api/extract-bill', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ base64Data: base64Data })
     });
 
-    const text = result.text;
-    if (!text || text.trim() === 'undefined' || text.trim() === 'null') {
-      throw new Error("The AI model returned an empty or invalid response. Please try a clearer picture.");
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Server error: ${response.status}`);
     }
-    
-    try {
-      const trimmed = text.trim();
-      return JSON.parse(trimmed);
-    } catch (e) {
-      console.warn("Failed to parse JSON result directly, attempting cleanup", text);
-      const cleaned = text.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
-      if (!cleaned || cleaned === 'undefined' || cleaned === 'null') {
-        throw new Error("The AI model returned an invalid response format.");
-      }
-      return JSON.parse(cleaned);
-    }
-  } catch (error: any) {
-    console.error("Extraction API Error:", error);
-    throw new Error(error.message || "Failed to extract bill data");
+
+    return await response.json();
+  } catch (err: any) {
+    console.error("Extraction API Error:", err);
+    throw new Error(err.message || "Failed to contact extraction service.");
   }
 }
 
 export async function chatWithGemini(input: string) {
   try {
-    const ai = getAI();
-    const result = await ai.models.generateContent({ 
-      model: "gemini-flash-latest",
-      contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
-      config: {
-        systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
-      }
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: input })
     });
-    return result.text;
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.text;
   } catch (error: any) {
     console.error("Chat API Error:", error);
     throw new Error(error.message || "Failed to get chat response");
@@ -149,12 +65,19 @@ export async function chatWithGemini(input: string) {
 
 export async function generateGeminiContent(prompt: string) {
   try {
-    const ai = getAI();
-    const result = await ai.models.generateContent({ 
-      model: "gemini-flash-latest",
-      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
     });
-    return result.text;
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.text;
   } catch (error: any) {
     console.error("Generate API Error:", error);
     throw new Error(error.message || "Failed to generate content");
@@ -163,12 +86,10 @@ export async function generateGeminiContent(prompt: string) {
 
 export async function translateToUrduAI(text: string) {
   try {
-    const ai = getAI();
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: [{
-        role: "user",
-        parts: [{ text: `Translate or transliterate this English text to Urdu specifically for use in official legal/utility documents (FIR, Notice). 
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: `Translate or transliterate this English text to Urdu specifically for use in official legal/utility documents (FIR, Notice). 
         Rules:
         1. Return ONLY the Urdu text.
         2. NO English explanation.
@@ -176,10 +97,15 @@ export async function translateToUrduAI(text: string) {
         4. NO markdown bold or code blocks.
         5. Just the clean Urdu string.
 
-        Text: ${text}` }]
-      }]
+        Text: ${text}` })
     });
-    let translated = result.text.trim();
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    let translated = data.text.trim();
     // Cleanup common AI prefixing/formatting
     translated = translated.replace(/^(Urdu translation|Translation|Urdu|Urdu:):\s*/i, '');
     translated = translated.replace(/[`*]+/g, ''); // Remove code blocks and bold markers
