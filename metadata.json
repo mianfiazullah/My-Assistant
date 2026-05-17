@@ -3,5 +3,8 @@
   "description": "Generate Detection Bill Proforma, Notice, and FIR Request documents based on official templates.",
   "requestFramePermissions": [
     "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
