@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Download, FileText, ChevronRight, Hash, Calendar, User, Loader2, X, MapPin, Zap, Activity, Home, ShieldAlert, ExternalLink, Users, Printer, Eye, Trash2, Edit2, Copy, Check } from 'lucide-react';
+import { Search, Filter, Download, FileText, ChevronRight, Hash, Calendar, User, Loader2, X, MapPin, Zap, Activity, Home, ShieldAlert, ExternalLink, Users, Printer, Eye, Trash2, Edit2, Copy, Check, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
@@ -93,6 +93,103 @@ export default function Cases() {
     
     if (ref) {
         printTemplate(ref);
+    }
+  };
+
+  const downloadAsJpeg = async (type: string, fileData: any) => {
+    let templateRef = null;
+    if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
+    else if (type === 'NOTICE') templateRef = printRefNotice;
+    else if (type === 'FIR Request') templateRef = printRefFIR;
+    else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
+    else if (type === 'Detection Register') templateRef = printRefRegister;
+
+    if (templateRef && templateRef.current) {
+      try {
+        toast.loading('Generating image for download...', { id: 'downloadJpeg' });
+        
+        let domToJpeg;
+        try {
+          const mod = await import('modern-screenshot');
+          domToJpeg = mod.domToJpeg;
+        } catch {
+          throw new Error('Image generation library not available.');
+        }
+
+        const dataUrl = await domToJpeg(templateRef.current, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+        });
+        
+        const link = document.createElement('a');
+        const fileName = type === 'DETECTION BILL PROFORMA' 
+          ? `D_Bill_Performa_${fileData?.referenceNumber || 'Case'}.jpg`
+          : `${type.replace(/\s+/g, '_')}_${fileData?.referenceNumber || 'Case'}.jpg`;
+        link.download = fileName;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success(`Successfully downloaded ${fileName}!`, { id: 'downloadJpeg' });
+      } catch (err) {
+        console.error('Error downloading:', err);
+        toast.error('Failed to download image.', { id: 'downloadJpeg' });
+      }
+    } else {
+        toast.error('Template is not ready for download.');
+    }
+  };
+
+  const uploadToDrive = async (type: string, fileData: any) => {
+    let templateRef = null;
+    if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
+    else if (type === 'NOTICE') templateRef = printRefNotice;
+    else if (type === 'FIR Request') templateRef = printRefFIR;
+    else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
+    else if (type === 'Detection Register') templateRef = printRefRegister;
+
+    if (templateRef && templateRef.current) {
+      try {
+        toast.loading('Uploading to My Assistant folder...', { id: 'uploadDrive' });
+        
+        let domToJpeg;
+        try {
+          const mod = await import('modern-screenshot');
+          domToJpeg = mod.domToJpeg;
+        } catch {
+          throw new Error('Image generation library not available.');
+        }
+
+        const dataUrl = await domToJpeg(templateRef.current, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+        });
+        
+        const { ref: storageRef, uploadString, getDownloadURL } = await import('firebase/storage');
+        const { storage } = await import('../firebase');
+        
+        const fileName = type === 'DETECTION BILL PROFORMA' 
+          ? `D_Bill_Performa_${fileData?.referenceNumber || 'Case'}.jpg`
+          : `${type.replace(/\s+/g, '_')}_${fileData?.referenceNumber || 'Case'}.jpg`;
+        
+        const fileRef = storageRef(storage, `My Assistant/${fileName}`);
+        
+        await uploadString(fileRef, dataUrl, 'data_url');
+        await getDownloadURL(fileRef);
+        
+        toast.success(`Successfully saved ${fileName} to Drive!`, { id: 'uploadDrive' });
+      } catch (err: any) {
+        console.error('Error uploading:', err);
+        const errMsg = err?.message || String(err);
+        if (errMsg.includes('retry-limit-exceeded')) {
+           toast.error('Firebase Storage is not initialized or rules are blocking access. Go to Firebase Console -> Storage and click Get Started.', { id: 'uploadDrive', duration: 10000 });
+        } else {
+           toast.error('Failed to upload. Make sure you have permission to write to storage.', { id: 'uploadDrive' });
+        }
+      }
+    } else {
+        toast.error('Template is not ready for upload.');
     }
   };
 
@@ -577,6 +674,18 @@ export default function Cases() {
               <div className="p-6 border-b border-neutral-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 z-10">
                 <h2 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Document Preview: {previewDoc.type}</h2>
                 <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => downloadAsJpeg(previewDoc.type, previewDoc.data)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                  >
+                    <Download className="w-4 h-4" /> Download JPG
+                  </button>
+                  <button 
+                    onClick={() => uploadToDrive(previewDoc.type, previewDoc.data)}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                  >
+                    <Save className="w-4 h-4" /> Drive Sync
+                  </button>
                   <button 
                     onClick={() => triggerPrint(previewDoc.type)}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"

@@ -3237,6 +3237,51 @@ export default function NewCase() {
     }
   };
 
+  const uploadToDrive = async (type: string) => {
+    let templateRef = null;
+    if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
+    else if (type === 'NOTICE') templateRef = printRefNotice;
+    else if (type === 'FIR Request') templateRef = printRefFIR;
+    else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
+    else if (type === 'Detection Register') templateRef = printRefRegister;
+
+    if (templateRef && templateRef.current) {
+      try {
+        toast.loading('Uploading to My Assistant folder...', { id: 'uploadDrive' });
+        const dataUrl = await domToJpeg(templateRef.current, {
+          scale: 3,
+          quality: 0.95,
+          backgroundColor: '#ffffff',
+        });
+        
+        // Import Storage dynamically to avoid altering top-level imports significantly
+        const { ref: storageRef, uploadString, getDownloadURL } = await import('firebase/storage');
+        const { storage } = await import('../firebase');
+        
+        const fileName = type === 'DETECTION BILL PROFORMA' 
+          ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
+          : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
+        
+        // Upload to "My Assistant" folder
+        const fileRef = storageRef(storage, `My Assistant/${fileName}`);
+        
+        await uploadString(fileRef, dataUrl, 'data_url');
+        const downloadUrl = await getDownloadURL(fileRef);
+        console.log('File available at', downloadUrl);
+        
+        toast.success(`Successfully saved ${fileName} to My Assistant folder in Cloud Storage!`, { id: 'uploadDrive' });
+      } catch (err: any) {
+        console.error('Error uploading to drive:', err);
+        const errMsg = err?.message || String(err);
+        if (errMsg.includes('retry-limit-exceeded')) {
+           toast.error('Firebase Storage is not initialized or rules are blocking access. Go to Firebase Console -> Storage and click Get Started.', { id: 'uploadDrive', duration: 10000 });
+        } else {
+           toast.error('Failed to upload. Make sure you are logged in and have permission to write to storage.', { id: 'uploadDrive' });
+        }
+      }
+    }
+  };
+
   const processFile = (file: File) => {
     setError('');
     const reader = new FileReader();
@@ -4854,7 +4899,19 @@ export default function NewCase() {
                                 title="Download as JPG"
                               >
                                 <Download className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
-                                <span className="text-[10px] sm:text-xs font-bold sm:hidden">JPG</span>
+                                <span className="text-[10px] sm:text-xs font-bold">JPG</span>
+                              </button>
+                              
+                              <button 
+                                onClick={() => {
+                                  uploadToDrive(template.name);
+                                  setHasGenerated(true);
+                                }}
+                                className="flex-1 sm:flex-none justify-center bg-white dark:bg-slate-800 border-2 border-neutral-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 text-neutral-700 dark:text-slate-200 p-2 sm:p-3 rounded-xl transition-all flex items-center gap-1 sm:gap-2 shadow-sm whitespace-nowrap"
+                                title="Upload to Drive (Cloud)"
+                              >
+                                <Save className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
+                                <span className="text-[10px] sm:text-xs font-bold">Drive Sync</span>
                               </button>
                               <button 
                                 onClick={() => {

@@ -11,6 +11,7 @@ import QuickEdit from './pages/QuickEdit';
 import Admin from './pages/Admin';
 import Chat from './pages/Chat';
 import Trash from './pages/Trash';
+import Drive from './pages/Drive';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -101,6 +102,12 @@ export default function App() {
             <Route path="/trash" element={
               <ProtectedRoute>
                 <Trash />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/drive" element={
+              <ProtectedRoute>
+                <Drive />
               </ProtectedRoute>
             } />
 

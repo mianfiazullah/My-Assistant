@@ -797,7 +797,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
           </div>
           <div className="flex justify-start gap-8 mt-4">
             <div className="flex items-center">
-              <span className="font-bold border-[3px] border-black px-3 py-0.5 inline-flex items-center gap-2">
+              <span className="font-bold border-[3px] border-black px-3 py-0.5 inline-flex items-center gap-2 whitespace-nowrap">
                 <span className="text-[10px] text-black uppercase">
                   {data.discrepancy?.includes('Meter Slow By') ? `Net units to be charged as per slowness ${data.meterSlowBy || ''}` : 'G. Total units to be charged'} : -
                 </span>
@@ -805,16 +805,16 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                   "text-sm text-black border-b-[3px] border-double border-black font-bold"
                 )}>
                   {
-                    (data.feederName || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
+                    (data.grandTotalUnits || data.netUnitsToBeCharged) === 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
                       ? 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD' 
-                      : (data.feederName || (parseInt(data.netUnitsToBeCharged || '0').toLocaleString()))
+                      : (parseInt(((data.grandTotalUnits || data.netUnitsToBeCharged) || '0').toString().replace(/,/g, '')).toLocaleString())
                   }
                 </span>
               </span>
-              <span className="text-[10px] text-black flex items-center ml-2">
+              <span className="text-[10px] text-black flex items-center ml-2 whitespace-nowrap">
                 <span className="font-bold border-b border-black">
-                  = ({parseInt(data.unitsAssessed || '0').toLocaleString()} - {parseInt(data.unitsAlreadyCharged || '0').toLocaleString()}
-                  {(!data.unitsOfAcPeriod || parseInt(data.unitsOfAcPeriod) === 0) ? '' : ` + ${parseInt(data.unitsOfAcPeriod).toLocaleString()}`})
+                  = ({parseInt((data.unitsAssessed || '0').toString().replace(/,/g, '')).toLocaleString()} - {parseInt((data.unitsAlreadyCharged || '0').toString().replace(/,/g, '')).toLocaleString()}
+                  {(!data.unitsOfAcPeriod || parseInt(data.unitsOfAcPeriod) === 0) ? '' : ` + ${parseInt((data.unitsOfAcPeriod).toString().replace(/,/g, '')).toLocaleString()}`})
                 </span>
               </span>
             </div>
