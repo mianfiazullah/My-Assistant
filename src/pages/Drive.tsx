@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { getStorage, ref, listAll, getDownloadURL, getMetadata, deleteObject } from 'firebase/storage';
+import { getStorage, ref as fbRef, listAll, getDownloadURL, getMetadata, deleteObject } from 'firebase/storage';
 import { storage } from '../firebase';
-import { FileImage, Download, Trash2, Calendar, FileText, Loader2, ExternalLink } from 'lucide-react';
+import { FileImage, Download, Trash2, Calendar, FileText, Loader2, ExternalLink, Cloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../firebase';
 
 interface DriveFile {
   name: string;
@@ -19,12 +21,38 @@ export default function Drive() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
+
+  const handleConnectGoogleDrive = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        localStorage.setItem('google_drive_token', credential.accessToken);
+        setDriveToken(credential.accessToken);
+        toast.success('Successfully connected to Google Drive!');
+      } else {
+        toast.error('Failed to get Google Drive access token.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error('Error connecting Google Drive: ' + error.message);
+    }
+  };
+
+  const handleDisconnectGoogleDrive = () => {
+    localStorage.removeItem('google_drive_token');
+    setDriveToken(null);
+    toast.success('Disconnected from Google Drive.');
+  };
 
   const fetchFiles = async () => {
     try {
       setLoading(true);
       setErrorDetails(null);
-      const listRef = ref(storage, 'My Assistant');
+      const listRef = fbRef(storage, 'My Assistant');
       const res = await listAll(listRef);
 
       const filesData = await Promise.all(
@@ -50,7 +78,6 @@ export default function Drive() {
       console.error("Error fetching files from drive:", error);
       const errMsg = error instanceof Error ? error.message : String(error);
       setErrorDetails(errMsg);
-      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -65,7 +92,7 @@ export default function Drive() {
     
     try {
       setDeleting(file.fullPath);
-      const fileRef = ref(storage, file.fullPath);
+      const fileRef = fbRef(storage, file.fullPath);
       await deleteObject(fileRef);
       setFiles(prev => prev.filter(f => f.fullPath !== file.fullPath));
       toast.success(`${file.name} deleted successfully`);
@@ -87,7 +114,7 @@ export default function Drive() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
             <svg className="w-8 h-8 text-indigo-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -97,13 +124,36 @@ export default function Drive() {
           </h1>
           <p className="text-slate-500 mt-2">Saved Proformas and Generated Images synchronized automatically.</p>
         </div>
-        <button
-          onClick={fetchFiles}
-          disabled={loading}
-          className="px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-        >
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          {driveToken ? (
+            <button
+              onClick={handleDisconnectGoogleDrive}
+              className="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-medium border border-red-200 hover:bg-red-100 transition-colors flex items-center gap-2 text-sm"
+              title="Stop auto-uploading to actual Google Drive"
+            >
+              <Cloud className="w-4 h-4" />
+              Disconnect Google Drive
+            </button>
+          ) : (
+            <button
+              onClick={handleConnectGoogleDrive}
+              className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-medium border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-2 text-sm"
+              title="Auto-upload PDFs and JPEGs to your actual Google Drive instead of just Firebase Storage"
+            >
+              <Cloud className="w-4 h-4" />
+              Connect to Google Drive
+            </button>
+          )}
+
+          <button
+            onClick={fetchFiles}
+            disabled={loading}
+            className="px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition font-medium text-sm"
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {loading ? (

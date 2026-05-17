@@ -3269,9 +3269,24 @@ export default function NewCase() {
         const downloadUrl = await getDownloadURL(fileRef);
         console.log('File available at', downloadUrl);
         
-        toast.success(`Successfully saved ${fileName} to My Assistant folder in Cloud Storage!`, { id: 'uploadDrive' });
+        // Try uploading to actual Google Drive
+        const googleTokens = localStorage.getItem('google_drive_token');
+        if (googleTokens) {
+          try {
+            const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
+            const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+            await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
+            toast.success(`Successfully saved ${fileName} to both Firebase and Google Drive!`, { id: 'uploadDrive' });
+          } catch (driveErr: any) {
+            console.error("Google Drive upload error:", driveErr);
+            toast.error(`Firebase upload succeeded, but Google Drive failed: ${driveErr.message}`, { id: 'uploadDrive' });
+          }
+        } else {
+          toast.success(`Successfully saved ${fileName} to My Assistant folder in Cloud Storage!`, { id: 'uploadDrive' });
+        }
       } catch (err: any) {
         console.error('Error uploading to drive:', err);
+
         const errMsg = err?.message || String(err);
         if (errMsg.includes('retry-limit-exceeded')) {
            toast.error('Firebase Storage is not initialized or rules are blocking access. Go to Firebase Console -> Storage and click Get Started.', { id: 'uploadDrive', duration: 10000 });
@@ -3823,6 +3838,18 @@ export default function NewCase() {
               
               const fileRef = storageRef(storage, `My Assistant/${fileName}`);
               await uploadString(fileRef, dataUrl, 'data_url');
+              
+              // Upload to Google Drive if credentials exist
+              const googleTokens = localStorage.getItem('google_drive_token');
+              if (googleTokens) {
+                try {
+                  const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
+                  const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+                  await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
+                } catch (driveErr) {
+                  console.error(`Google Drive upload failed for ${type}:`, driveErr);
+                }
+              }
             }
           } catch (uploadErr) {
             console.error(`Auto-upload failed for ${type}:`, uploadErr);

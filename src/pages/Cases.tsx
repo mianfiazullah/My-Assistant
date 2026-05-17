@@ -178,7 +178,20 @@ export default function Cases() {
         await uploadString(fileRef, dataUrl, 'data_url');
         await getDownloadURL(fileRef);
         
-        toast.success(`Successfully saved ${fileName} to Drive!`, { id: 'uploadDrive' });
+        const googleTokens = localStorage.getItem('google_drive_token');
+        if (googleTokens) {
+          try {
+            const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
+            const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+            await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
+            toast.success(`Successfully saved ${fileName} to both Firebase and Google Drive!`, { id: 'uploadDrive' });
+          } catch (driveErr: any) {
+            console.error("Google Drive upload error:", driveErr);
+            toast.error(`Firebase upload succeeded, but Google Drive failed: ${driveErr.message}`, { id: 'uploadDrive' });
+          }
+        } else {
+          toast.success(`Successfully saved ${fileName} to Drive!`, { id: 'uploadDrive' });
+        }
       } catch (err: any) {
         console.error('Error uploading:', err);
         const errMsg = err?.message || String(err);

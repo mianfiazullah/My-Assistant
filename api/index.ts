@@ -13,11 +13,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 let _ai: any = null;
 function getAI() {
   if (!_ai) {
-    const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY;
-    if (!key || key === "MY_GEMINI_API_KEY") {
-      throw new Error("Gemini API Key is not configured. Please add your GEMINI_API_KEY, VITE_GEMINI_API_KEY, or API_KEY to your Vercel Environment Variables.");
+    const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GOOGLE_API_KEY;
+    const config: any = {};
+    if (key && key !== "MY_GEMINI_API_KEY") {
+      config.apiKey = key;
     }
-    _ai = new GoogleGenAI({ apiKey: key });
+    _ai = new GoogleGenAI(config);
   }
   return _ai;
 }
