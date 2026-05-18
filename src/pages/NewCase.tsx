@@ -33,7 +33,8 @@ import {
   Trash2,
   Calendar,
   Languages,
-  ChevronDown
+  ChevronDown,
+  Cloud
 } from 'lucide-react';
 import { 
   DndContext, 
@@ -62,7 +63,8 @@ import { BillData, DetectionCase, LoadItem } from '../types';
 import { jsPDF } from 'jspdf';
 import { ProformaTemplates } from '../components/ProformaTemplates';
 import { collection, addDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
 
 import { extractBillData, translateToUrduAI } from '../lib/gemini';
@@ -1556,7 +1558,12 @@ export default function NewCase() {
                   type="text"
                   value={detectionData.presentOccupier || ''}
                   onChange={(e) => {
-                    setDetectionData({...detectionData, presentOccupier: e.target.value});
+                    const newValue = e.target.value;
+                    if (newValue.trim().toLowerCase() === 'muhammad afzal') {
+                      toast.error('This name "Muhammad Afzal" is restricted for this field.', { id: 'restricted-name' });
+                      return;
+                    }
+                    setDetectionData({...detectionData, presentOccupier: newValue});
                     if (aiUrduTranslations['presentOccupier']) {
                       setAiUrduTranslations(prev => {
                         const next = { ...prev };
@@ -3237,48 +3244,152 @@ export default function NewCase() {
     }
   };
 
-  const uploadToDrive = async (type: string) => {
-    let templateRef = null;
-    if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
-    else if (type === 'NOTICE') templateRef = printRefNotice;
-    else if (type === 'FIR Request') templateRef = printRefFIR;
-    else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
-    else if (type === 'Detection Register') templateRef = printRefRegister;
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [isUploadedToDrive, setIsUploadedToDrive] = useState(false);
+  const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
 
-    if (templateRef && templateRef.current) {
+  const connectDriveAndUpload = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/drive.file');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        localStorage.setItem('google_drive_token', credential.accessToken);
+        setDriveToken(credential.accessToken);
+        toast.success('Drive connected! You can now upload the templates.');
+      }
+    } catch (err: any) {
+      toast.error('Failed to connect: ' + err.message);
+    }
+  };
+
+  const handleBulkUploadToDrive = async () => {
+    let googleTokens = localStorage.getItem('google_drive_token');
+    
+    if (!googleTokens) {
+      toast('Google Drive not connected', {
+        description: 'Please connect your account to backup templates.',
+        action: {
+          label: 'Connect Now',
+          onClick: () => connectDriveAndUpload()
+        }
+      });
+      return;
+    }
+
+    try {
+      setIsBulkUploading(true);
+      toast.loading('Creating combined PDF for Google Drive...', { id: 'bulkUpload' });
+      
+      const templates = ['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Urdu'];
+      
+      // Give time for DOM to ensure refs are attached
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const { createOrGetFolder, uploadToGoogleDrive, listFilesFromGoogleDrive } = await import('../lib/googleDrive');
+      
+      let folderId;
+      let existingFiles: any[] = [];
       try {
-        toast.loading('Uploading to My Assistant folder...', { id: 'uploadDrive' });
-        const dataUrl = await domToJpeg(templateRef.current, {
-          scale: 3,
-          quality: 0.95,
-          backgroundColor: '#ffffff',
-        });
-        
-        const googleTokens = localStorage.getItem('google_drive_token');
-        if (!googleTokens) {
-          toast.error('Please connect Google Drive in the "My Assistant Drive" tab first.', { id: 'uploadDrive' });
+        folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+        existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
+      } catch (folderErr: any) {
+        if (folderErr.message.includes('expired')) {
+          localStorage.removeItem('google_drive_token');
+          setDriveToken(null);
+          toast.error('Drive access expired', {
+            id: 'bulkUpload',
+            description: 'Please reconnect and try again.',
+            action: {
+              label: 'Reconnect',
+              onClick: () => connectDriveAndUpload()
+            }
+          });
           return;
         }
-
-        const fileName = type === 'DETECTION BILL PROFORMA' 
-          ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
-          : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
-
-        try {
-          const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
-          const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
-          await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
-          toast.success(`Successfully saved ${fileName} to Google Drive!`, { id: 'uploadDrive' });
-        } catch (driveErr: any) {
-          console.error("Google Drive upload error:", driveErr);
-          toast.error(`Google Drive upload failed: ${driveErr.message}`, { id: 'uploadDrive' });
-        }
-      } catch (err: any) {
-        console.error('Error uploading to drive:', err);
-
-        const errMsg = err?.message || String(err);
-        toast.error(`Failed to save image: ${errMsg}`, { id: 'uploadDrive' });
+        throw new Error(`Cloud Folder Access Failed: ${folderErr.message}`);
       }
+
+      let finalFileName = `Case_${billData?.referenceNumber || 'Templates'}.pdf`;
+
+      // Check if this case PDF already exists
+      if (existingFiles.some(f => f.name === finalFileName)) {
+        // If it exists, try to make it unique by adding checking date
+        const dateStr = detectionData.dateOfChecking ? `_Checked_${detectionData.dateOfChecking.replace(/[/\\?%*:|"<>]/g, '-')}` : '';
+        finalFileName = `Case_${billData?.referenceNumber || 'Templates'}${dateStr}.pdf`;
+        
+        // If even the date-stamped one exists, then we skip
+        if (existingFiles.some(f => f.name === finalFileName)) {
+          toast.success(`Templates already backed up for this date!`, { 
+            id: 'bulkUpload',
+            description: finalFileName
+          });
+          setIsUploadedToDrive(true);
+          setIsBulkUploading(false);
+          return;
+        }
+      }
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let pageCount = 0;
+
+      for (const type of templates) {
+        let templateRef = null;
+        if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
+        else if (type === 'NOTICE') templateRef = printRefNotice;
+        else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
+
+        if (templateRef && templateRef.current) {
+          try {
+            toast.loading(`Capturing ${type}...`, { id: 'bulkUpload' });
+            // Wait slightly between captures
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            const dataUrl = await domToJpeg(templateRef.current, {
+              scale: 2,
+              quality: 0.92,
+              backgroundColor: '#ffffff',
+            });
+
+            if (pageCount > 0) {
+              pdf.addPage();
+            }
+
+            // A4 dimensions are 210 x 297 mm
+            pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+            pageCount++;
+          } catch (itemErr: any) {
+            console.error(`Item ${type} failed to capture:`, itemErr);
+          }
+        }
+      }
+      
+      if (pageCount > 0) {
+        toast.loading('Uploading PDF to Google Drive...', { id: 'bulkUpload' });
+        
+        const pdfBlob = pdf.output('blob');
+        const reader = new FileReader();
+        const dataUrl = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(pdfBlob);
+        });
+
+        await uploadToGoogleDrive(googleTokens, folderId, dataUrl, finalFileName, 'application/pdf');
+        
+        setIsUploadedToDrive(true);
+        toast.success(`Successfully backed up PDF to Drive!`, { 
+          id: 'bulkUpload',
+          description: finalFileName
+        });
+      } else {
+        toast.error('Could not capture templates. Please try again.', { id: 'bulkUpload' });
+      }
+    } catch (err: any) {
+      console.error('Bulk upload error:', err);
+      toast.error(`Sync Failed: ${err.message || 'Unknown error'}`, { id: 'bulkUpload' });
+    } finally {
+      setIsBulkUploading(false);
     }
   };
 
@@ -3571,6 +3682,10 @@ export default function NewCase() {
       }
     }
 
+    if (detectionData.presentOccupier?.trim().toLowerCase() === 'muhammad afzal') {
+      errors.push('The name "Muhammad Afzal" is not allowed in Present Occupier field.');
+    }
+    
     if (errors.length > 0) {
       setValidationErrors(errors);
       setError(errors[0]);
@@ -3797,46 +3912,15 @@ export default function NewCase() {
       setIsSaved(true);
       setStep(4);
       
-      // Auto-upload to drive
+      // Auto-upload to drive (ensure DOM is ready)
       setTimeout(async () => {
-        const templatesToUpload = ['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Urdu'];
-        for (const type of templatesToUpload) {
-          try {
-            let templateRef = null;
-            if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
-            else if (type === 'NOTICE') templateRef = printRefNotice;
-            else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
+        handleBulkUploadToDrive();
+      }, 1500);
 
-            if (templateRef && templateRef.current) {
-              const dataUrl = await domToJpeg(templateRef.current, {
-                scale: 2, // slightly lower scale for faster batch upload
-                quality: 0.90,
-                backgroundColor: '#ffffff',
-              });
-              
-              const googleTokens = localStorage.getItem('google_drive_token');
-              if (googleTokens) {
-                const fileName = type === 'DETECTION BILL PROFORMA' 
-                  ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
-                  : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
-                  
-                try {
-                  const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
-                  const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
-                  await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
-                } catch (driveErr) {
-                  console.error(`Google Drive upload failed for ${type}:`, driveErr);
-                }
-              }
-            }
-          } catch (uploadErr) {
-            console.error(`Auto-upload failed for ${type}:`, uploadErr);
-          }
-        }
-        if (localStorage.getItem('google_drive_token')) {
-          toast.success("All templates uploaded to My Assistant Drive securely.");
-        }
-      }, 500);
+      toast.dismiss();
+      toast.success("All templates backed up to 'My Assistant' Drive folder.", {
+        description: "PDF report saved successfully."
+      });
 
     } catch (err: any) {
       console.error("Save case error:", err);
@@ -4946,17 +5030,6 @@ export default function NewCase() {
                               
                               <button 
                                 onClick={() => {
-                                  uploadToDrive(template.name);
-                                  setHasGenerated(true);
-                                }}
-                                className="flex-1 sm:flex-none justify-center bg-white dark:bg-slate-800 border-2 border-neutral-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 text-neutral-700 dark:text-slate-200 p-2 sm:p-3 rounded-xl transition-all flex items-center gap-1 sm:gap-2 shadow-sm whitespace-nowrap"
-                                title="Upload to Drive (Cloud)"
-                              >
-                                <Save className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
-                                <span className="text-[10px] sm:text-xs font-bold">Drive Sync</span>
-                              </button>
-                              <button 
-                                onClick={() => {
                                   triggerPrint(template.name, true);
                                   setHasGenerated(true);
                                 }}
@@ -4983,28 +5056,77 @@ export default function NewCase() {
                   <h3 className="text-xl font-bold text-neutral-900 dark:text-slate-100">Final Step: Record Case</h3>
                   <p className="text-neutral-500 dark:text-slate-400 mt-2">After reviewing the templates above, save the case to the database and sync with Google Sheets.</p>
                 </div>
-                <button
-                  onClick={saveCase}
-                  disabled={isSaving}
-                  className={cn(
-                    "w-full max-w-md mx-auto py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-3 text-lg",
-                    isSaving
-                      ? "bg-neutral-200 dark:bg-slate-800 text-neutral-400 dark:text-slate-500 shadow-none cursor-not-allowed"
-                      : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 scale-100 hover:scale-[1.02] active:scale-95"
+
+                <div className="flex flex-col gap-3 w-full max-w-md mx-auto">
+                  {!driveToken && (
+                    <button
+                      onClick={connectDriveAndUpload}
+                      className="w-full py-4 rounded-2xl font-bold border-2 border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-all flex items-center justify-center gap-3 text-lg"
+                    >
+                      <Cloud className="w-6 h-6 animate-pulse" />
+                      <span>Connect Google Drive</span>
+                    </button>
                   )}
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-6 h-6 animate-spin" /> 
-                      <span>Saving Case...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-6 h-6" /> 
-                      <span>Confirm & Save Case to Database</span>
-                    </>
+
+                  {driveToken && (
+                    <button
+                      onClick={handleBulkUploadToDrive}
+                      disabled={isBulkUploading || isSaving || isUploadedToDrive}
+                      className={cn(
+                        "w-full py-4 rounded-2xl font-bold border-2 transition-all flex items-center justify-center gap-3 text-lg",
+                        isBulkUploading || isUploadedToDrive
+                          ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
+                          : "bg-white dark:bg-slate-900 border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 active:scale-95 shadow-sm"
+                      )}
+                    >
+                      {isBulkUploading ? (
+                        <>
+                          <Loader2 className="w-6 h-6 animate-spin" /> 
+                          <span>Uploading to Drive...</span>
+                        </>
+                      ) : isUploadedToDrive ? (
+                        <>
+                          <CheckCircle className="w-6 h-6" /> 
+                          <span>Templates Baked Up!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Cloud className="w-6 h-6" /> 
+                          <span>Bulk Upload (PDF) to Drive</span>
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
+
+                  <button
+                    onClick={saveCase}
+                    disabled={isSaving || isBulkUploading || !isUploadedToDrive}
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-3 text-lg border-2 border-transparent",
+                      isSaving || isBulkUploading || !isUploadedToDrive
+                        ? "bg-neutral-200 dark:bg-slate-800 text-neutral-400 dark:text-slate-500 shadow-none cursor-not-allowed"
+                        : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 scale-100 hover:scale-[1.02] active:scale-95"
+                    )}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin" /> 
+                        <span>Saving Case...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-6 h-6" /> 
+                        <span>Final: Save Case to Database</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {!isUploadedToDrive && driveToken && (
+                    <p className="text-center text-xs text-neutral-500 dark:text-slate-400 animate-pulse">
+                      * Please upload templates to Drive first to enable saving.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -5083,9 +5205,12 @@ export default function NewCase() {
         </div>
       </div>
 
-      {/* Hidden Print Templates - Only render in Step 4 to improve performance */}
+      {/* Hidden Print Templates - Rendered off-screen for capture and printing */}
       {step === 4 && (
-        <div className="fixed top-0 left-[-9999px] w-[210mm]">
+        <div 
+          className="fixed pointer-events-none -z-50 w-[210mm]"
+          style={{ left: '-10000px', top: '0', opacity: 0.01 }}
+        >
           {(() => {
             const commonData = {
               ...detectionData,

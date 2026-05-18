@@ -123,7 +123,7 @@ export default function Cases() {
         
         const link = document.createElement('a');
         const fileName = type === 'DETECTION BILL PROFORMA' 
-          ? `D_Bill_Performa_${fileData?.referenceNumber || 'Case'}.jpg`
+          ? `D_Bill_Proforma_${fileData?.referenceNumber || 'Case'}.jpg`
           : `${type.replace(/\s+/g, '_')}_${fileData?.referenceNumber || 'Case'}.jpg`;
         link.download = fileName;
         link.href = dataUrl;
@@ -138,60 +138,6 @@ export default function Cases() {
       }
     } else {
         toast.error('Template is not ready for download.');
-    }
-  };
-
-  const uploadToDrive = async (type: string, fileData: any) => {
-    let templateRef = null;
-    if (type === 'DETECTION BILL PROFORMA') templateRef = printRefDetectionBill;
-    else if (type === 'NOTICE') templateRef = printRefNotice;
-    else if (type === 'FIR Request') templateRef = printRefFIR;
-    else if (type === 'FIR Urdu') templateRef = printRefFIRUrdu;
-    else if (type === 'Detection Register') templateRef = printRefRegister;
-
-    if (templateRef && templateRef.current) {
-      try {
-        toast.loading('Uploading to My Assistant folder...', { id: 'uploadDrive' });
-        
-        let domToJpeg;
-        try {
-          const mod = await import('modern-screenshot');
-          domToJpeg = mod.domToJpeg;
-        } catch {
-          throw new Error('Image generation library not available.');
-        }
-
-        const dataUrl = await domToJpeg(templateRef.current, {
-          scale: 3,
-          backgroundColor: '#ffffff',
-        });
-        
-        const googleTokens = localStorage.getItem('google_drive_token');
-        if (!googleTokens) {
-          toast.error('Please connect Google Drive in the "My Assistant Drive" tab first.', { id: 'uploadDrive' });
-          return;
-        }
-
-        const fileName = type === 'DETECTION BILL PROFORMA' 
-          ? `D_Bill_Performa_${fileData?.referenceNumber || 'Case'}.jpg`
-          : `${type.replace(/\s+/g, '_')}_${fileData?.referenceNumber || 'Case'}.jpg`;
-
-        try {
-          const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
-          const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
-          await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
-          toast.success(`Successfully saved ${fileName} to Google Drive!`, { id: 'uploadDrive' });
-        } catch (driveErr: any) {
-          console.error("Google Drive upload error:", driveErr);
-          toast.error(`Google Drive upload failed: ${driveErr.message}`, { id: 'uploadDrive' });
-        }
-      } catch (err: any) {
-        console.error('Error uploading:', err);
-        const errMsg = err?.message || String(err);
-        toast.error(`Error saving image: ${errMsg}`, { id: 'uploadDrive' });
-      }
-    } else {
-        toast.error('Template is not ready for upload.');
     }
   };
 
@@ -681,12 +627,6 @@ export default function Cases() {
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
                   >
                     <Download className="w-4 h-4" /> Download JPG
-                  </button>
-                  <button 
-                    onClick={() => uploadToDrive(previewDoc.type, previewDoc.data)}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
-                  >
-                    <Save className="w-4 h-4" /> Drive Sync
                   </button>
                   <button 
                     onClick={() => triggerPrint(previewDoc.type)}
