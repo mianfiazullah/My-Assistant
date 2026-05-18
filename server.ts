@@ -196,7 +196,11 @@ Return ONLY JSON.` }
       }
     } catch (e: any) {
       console.error("Extraction error:", e);
-      res.status(500).json({ error: e.message });
+      let errorMsg = e.message;
+      if (e.message?.includes('API key not valid')) {
+        errorMsg = 'Invalid Gemini API Key. Please update your API Key in the AI Studio platform or Vercel Environment Variables.';
+      }
+      res.status(500).json({ error: errorMsg });
     }
   });
 

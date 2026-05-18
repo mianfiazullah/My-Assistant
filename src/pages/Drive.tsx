@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react';
-import { getStorage, ref as fbRef, listAll, getDownloadURL, getMetadata, deleteObject } from 'firebase/storage';
-import { storage } from '../firebase';
 import { FileImage, Download, Trash2, Calendar, FileText, Loader2, ExternalLink, Cloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
+import { createOrGetFolder, listFilesFromGoogleDrive, deleteFileFromGoogleDrive } from '../lib/googleDrive';
 
 interface DriveFile {
+  id: string;
   name: string;
   url: string;
   timeCreated: string;
   size: number;
   contentType: string;
-  fullPath: string;
+  thumbnailLink?: string;
 }
 
 export default function Drive() {
   const [files, setFiles] = useState<DriveFile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
@@ -45,56 +45,56 @@ export default function Drive() {
   const handleDisconnectGoogleDrive = () => {
     localStorage.removeItem('google_drive_token');
     setDriveToken(null);
+    setFiles([]);
     toast.success('Disconnected from Google Drive.');
   };
 
   const fetchFiles = async () => {
+    if (!driveToken) return;
+    
     try {
       setLoading(true);
       setErrorDetails(null);
-      const listRef = fbRef(storage, 'My Assistant');
-      const res = await listAll(listRef);
-
-      const filesData = await Promise.all(
-        res.items.map(async (itemRef) => {
-          const url = await getDownloadURL(itemRef);
-          const metadata = await getMetadata(itemRef);
-          return {
-            name: itemRef.name,
-            url,
-            timeCreated: metadata.timeCreated,
-            size: metadata.size,
-            contentType: metadata.contentType || '',
-            fullPath: itemRef.fullPath
-          };
-        })
-      );
-
-      // Sort by newest first
-      filesData.sort((a, b) => new Date(b.timeCreated).getTime() - new Date(a.timeCreated).getTime());
+      const folderId = await createOrGetFolder(driveToken, 'My Assistant');
+      const driveFiles = await listFilesFromGoogleDrive(driveToken, folderId);
       
+      const filesData = driveFiles.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        url: item.webViewLink || item.webContentLink,
+        timeCreated: item.createdTime,
+        size: parseInt(item.size || '0', 10),
+        contentType: item.mimeType || '',
+        thumbnailLink: item.thumbnailLink
+      }));
+
       setFiles(filesData);
     } catch (error) {
-      console.error("Error fetching files from drive:", error);
+      console.error("Error fetching files from Google drive:", error);
       const errMsg = error instanceof Error ? error.message : String(error);
       setErrorDetails(errMsg);
+      if (errMsg.includes('expired')) {
+        handleDisconnectGoogleDrive(); // prompt user to reconnect
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFiles();
-  }, []);
+    if (driveToken) {
+      fetchFiles();
+    }
+  }, [driveToken]);
 
   const handleDelete = async (file: DriveFile) => {
+    if (!driveToken) return;
     if (!window.confirm(`Are you sure you want to delete ${file.name}?`)) return;
     
     try {
-      setDeleting(file.fullPath);
-      const fileRef = fbRef(storage, file.fullPath);
-      await deleteObject(fileRef);
-      setFiles(prev => prev.filter(f => f.fullPath !== file.fullPath));
+      setDeleting(file.id);
+      await deleteFileFromGoogleDrive(driveToken, file.id);
+      setFiles(prev => prev.filter(f => f.id !== file.id));
       toast.success(`${file.name} deleted successfully`);
     } catch (error) {
       console.error("Error deleting file:", error);
@@ -215,7 +215,7 @@ export default function Drive() {
           <AnimatePresence>
             {files.map((file) => (
               <motion.div
-                key={file.fullPath}
+                key={file.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -224,7 +224,7 @@ export default function Drive() {
                 <div className="aspect-video bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-center relative overflow-hidden">
                    {file.contentType.startsWith('image/') ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={file.url} alt={file.name} className="object-cover w-full h-full" />
+                      <img src={file.thumbnailLink || file.url} alt={file.name} referrerPolicy="no-referrer" className="object-cover w-full h-full" />
                    ) : (
                       <FileText className="w-16 h-16 text-slate-300 dark:text-slate-600" />
                    )}
@@ -240,11 +240,10 @@ export default function Drive() {
                       </a>
                       <a 
                         href={file.url} 
-                        download={file.name}
                         target="_blank"
                         rel="noreferrer"
                         className="p-3 bg-indigo-600 text-white rounded-full hover:scale-110 transition-transform"
-                        title="Download"
+                        title="Open in Drive"
                       >
                         <Download className="w-5 h-5" />
                       </a>
@@ -268,11 +267,11 @@ export default function Drive() {
                       
                       <button 
                         onClick={() => handleDelete(file)}
-                        disabled={deleting === file.fullPath}
+                        disabled={deleting === file.id}
                         className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded"
                         title="Delete file"
                       >
-                        {deleting === file.fullPath ? (
+                        {deleting === file.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Trash2 className="w-4 h-4" />

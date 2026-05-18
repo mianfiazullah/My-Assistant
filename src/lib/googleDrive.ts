@@ -20,6 +20,30 @@ export const createOrGetFolder = async (accessToken: string, folderName: string)
   return createData.id;
 };
 
+export const listFilesFromGoogleDrive = async (accessToken: string, folderId: string) => {
+  const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,size,createdTime,webContentLink,webViewLink,thumbnailLink)&orderBy=createdTime desc`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Google Drive access expired. Please reconnect in Settings.');
+    throw new Error('Failed to list Drive files');
+  }
+  const data = await response.json();
+  return data.files || [];
+};
+
+export const deleteFileFromGoogleDrive = async (accessToken: string, fileId: string) => {
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Google Drive access expired. Please reconnect.');
+    throw new Error('Failed to delete Drive file');
+  }
+  return true;
+};
 export const uploadToGoogleDrive = async (accessToken: string, folderId: string, base64Data: string, fileName: string, mimeType: string) => {
   const metadata = { name: fileName, parents: [folderId] };
   const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });

@@ -3254,45 +3254,30 @@ export default function NewCase() {
           backgroundColor: '#ffffff',
         });
         
-        // Import Storage dynamically to avoid altering top-level imports significantly
-        const { ref: storageRef, uploadString, getDownloadURL } = await import('firebase/storage');
-        const { storage } = await import('../firebase');
-        
+        const googleTokens = localStorage.getItem('google_drive_token');
+        if (!googleTokens) {
+          toast.error('Please connect Google Drive in the "My Assistant Drive" tab first.', { id: 'uploadDrive' });
+          return;
+        }
+
         const fileName = type === 'DETECTION BILL PROFORMA' 
           ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
           : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
-        
-        // Upload to "My Assistant" folder
-        const fileRef = storageRef(storage, `My Assistant/${fileName}`);
-        
-        await uploadString(fileRef, dataUrl, 'data_url');
-        const downloadUrl = await getDownloadURL(fileRef);
-        console.log('File available at', downloadUrl);
-        
-        // Try uploading to actual Google Drive
-        const googleTokens = localStorage.getItem('google_drive_token');
-        if (googleTokens) {
-          try {
-            const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
-            const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
-            await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
-            toast.success(`Successfully saved ${fileName} to both Firebase and Google Drive!`, { id: 'uploadDrive' });
-          } catch (driveErr: any) {
-            console.error("Google Drive upload error:", driveErr);
-            toast.error(`Firebase upload succeeded, but Google Drive failed: ${driveErr.message}`, { id: 'uploadDrive' });
-          }
-        } else {
-          toast.success(`Successfully saved ${fileName} to My Assistant folder in Cloud Storage!`, { id: 'uploadDrive' });
+
+        try {
+          const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
+          const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+          await uploadToGoogleDrive(googleTokens, folderId, dataUrl, fileName, 'image/jpeg');
+          toast.success(`Successfully saved ${fileName} to Google Drive!`, { id: 'uploadDrive' });
+        } catch (driveErr: any) {
+          console.error("Google Drive upload error:", driveErr);
+          toast.error(`Google Drive upload failed: ${driveErr.message}`, { id: 'uploadDrive' });
         }
       } catch (err: any) {
         console.error('Error uploading to drive:', err);
 
         const errMsg = err?.message || String(err);
-        if (errMsg.includes('retry-limit-exceeded')) {
-           toast.error('Firebase Storage is not initialized or rules are blocking access. Go to Firebase Console -> Storage and click Get Started.', { id: 'uploadDrive', duration: 10000 });
-        } else {
-           toast.error('Failed to upload. Make sure you are logged in and have permission to write to storage.', { id: 'uploadDrive' });
-        }
+        toast.error(`Failed to save image: ${errMsg}`, { id: 'uploadDrive' });
       }
     }
   };
@@ -3829,19 +3814,12 @@ export default function NewCase() {
                 backgroundColor: '#ffffff',
               });
               
-              const { ref: storageRef, uploadString } = await import('firebase/storage');
-              const { storage } = await import('../firebase');
-              
-              const fileName = type === 'DETECTION BILL PROFORMA' 
-                ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
-                : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
-              
-              const fileRef = storageRef(storage, `My Assistant/${fileName}`);
-              await uploadString(fileRef, dataUrl, 'data_url');
-              
-              // Upload to Google Drive if credentials exist
               const googleTokens = localStorage.getItem('google_drive_token');
               if (googleTokens) {
+                const fileName = type === 'DETECTION BILL PROFORMA' 
+                  ? `D_Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
+                  : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
+                  
                 try {
                   const { createOrGetFolder, uploadToGoogleDrive } = await import('../lib/googleDrive');
                   const folderId = await createOrGetFolder(googleTokens, 'My Assistant');
@@ -3855,7 +3833,9 @@ export default function NewCase() {
             console.error(`Auto-upload failed for ${type}:`, uploadErr);
           }
         }
-        toast.success("All templates uploaded to My Assistant folder successfully.");
+        if (localStorage.getItem('google_drive_token')) {
+          toast.success("All templates uploaded to My Assistant Drive securely.");
+        }
       }, 500);
 
     } catch (err: any) {
