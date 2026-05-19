@@ -199,6 +199,17 @@ Return ONLY JSON.` }
       let errorMsg = e.message;
       if (e.message?.includes('API key not valid')) {
         errorMsg = 'Invalid Gemini API Key. Please update your API Key in the AI Studio platform or Vercel Environment Variables.';
+      } else if (e.message?.includes('429') || e.message?.includes('RESOURCE_EXHAUSTED') || e.message?.includes('quota')) {
+        errorMsg = 'Gemini API Free Tier quota exceeded limit. Please wait and try again, or use the official LESCO fallback portal.';
+      } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
+        try {
+          const jsonStart = errorMsg.indexOf('{');
+          const jsonStr = errorMsg.substring(jsonStart);
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        } catch (_) {}
       }
       res.status(500).json({ error: errorMsg });
     }
@@ -220,7 +231,19 @@ Return ONLY JSON.` }
       res.json({ text: result.text });
     } catch (error: any) {
       console.error("Chat error:", error);
-      res.status(500).json({ error: error.message });
+      let errorMsg = error.message;
+      if (errorMsg?.includes('429') || errorMsg?.includes('RESOURCE_EXHAUSTED') || errorMsg?.includes('quota')) {
+        errorMsg = 'Gemini API Free Tier quota exceeded. Please wait and try again.';
+      } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
+        try {
+          const jsonStart = errorMsg.indexOf('{');
+          const parsed = JSON.parse(errorMsg.substring(jsonStart));
+          if (parsed.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        } catch (_) {}
+      }
+      res.status(500).json({ error: errorMsg });
     }
   });
 
@@ -237,7 +260,19 @@ Return ONLY JSON.` }
       res.json({ text: result.text });
     } catch (error: any) {
       console.error("Generate error:", error);
-      res.status(500).json({ error: error.message });
+      let errorMsg = error.message;
+      if (errorMsg?.includes('429') || errorMsg?.includes('RESOURCE_EXHAUSTED') || errorMsg?.includes('quota')) {
+        errorMsg = 'Gemini API Free Tier quota exceeded. Please wait and try again.';
+      } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
+        try {
+          const jsonStart = errorMsg.indexOf('{');
+          const parsed = JSON.parse(errorMsg.substring(jsonStart));
+          if (parsed.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        } catch (_) {}
+      }
+      res.status(500).json({ error: errorMsg });
     }
   });
 
