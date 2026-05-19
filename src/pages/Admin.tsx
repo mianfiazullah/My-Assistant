@@ -8,7 +8,7 @@ export default function Admin() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [activeStep, setActiveStep] = useState<number | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzXzjN4H0kVSuOfyNHdDb_rig-UVh7bqdvRnUPl7IGR1NNpljX3CRsm6OAVyU5gfRlZ/exec');
+  const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec');
 
   useEffect(() => {
     const savedStep = localStorage.getItem('lesco_new_case_step');

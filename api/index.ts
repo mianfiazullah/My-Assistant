@@ -328,4 +328,27 @@ app.post("/api/fetch-bill", async (req, res) => {
   }
 });
 
+// Proxy for Google Sheets Webhooks (GAS)
+app.post("/api/webhook-proxy", async (req, res) => {
+  try {
+    const { webhookUrl, payload } = req.body;
+    if (!webhookUrl) {
+      return res.status(400).json({ error: "webhookUrl is required" });
+    }
+
+    // Google Apps Script requires specific handling or just standard POST.
+    // Standard POST with JSON body should work via axios as it handles redirects.
+    const response = await axios.post(webhookUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, data: response.data });
+  } catch (error: any) {
+    console.error("Webhook Proxy Error:", error);
+    res.status(500).json({ error: error.message || "Failed to proxy webhook" });
+  }
+});
+
 export default app;

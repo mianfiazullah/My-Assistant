@@ -8,9 +8,17 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAuthReady: boolean;
+  driveToken: string | null;
+  setDriveToken: (token: string | null) => void;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, isAuthReady: false });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  loading: true, 
+  isAuthReady: false,
+  driveToken: null,
+  setDriveToken: () => {}
+});
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -18,6 +26,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [driveToken, setDriveTokenState] = useState<string | null>(localStorage.getItem('google_drive_token'));
+
+  const setDriveToken = (token: string | null) => {
+    if (token) {
+      localStorage.setItem('google_drive_token', token);
+    } else {
+      localStorage.removeItem('google_drive_token');
+    }
+    setDriveTokenState(token);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -83,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthReady }}>
+    <AuthContext.Provider value={{ user, loading, isAuthReady, driveToken, setDriveToken }}>
       {children}
     </AuthContext.Provider>
   );

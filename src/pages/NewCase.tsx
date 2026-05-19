@@ -142,7 +142,7 @@ function SortableItem(props: {
 }
 
 export default function NewCase() {
-  const { user } = useAuth();
+  const { user, driveToken, setDriveToken } = useAuth();
   
   const resetCase = () => {
     localStorage.removeItem('lesco_new_case_step');
@@ -3246,7 +3246,6 @@ export default function NewCase() {
 
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const [isUploadedToDrive, setIsUploadedToDrive] = useState(false);
-  const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
 
   const connectDriveAndUpload = async () => {
     try {
@@ -3255,7 +3254,6 @@ export default function NewCase() {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
-        localStorage.setItem('google_drive_token', credential.accessToken);
         setDriveToken(credential.accessToken);
         toast.success('Drive connected! You can now upload the templates.');
       }
@@ -3265,9 +3263,7 @@ export default function NewCase() {
   };
 
   const handleBulkUploadToDrive = async () => {
-    let googleTokens = localStorage.getItem('google_drive_token');
-    
-    if (!googleTokens) {
+    if (!driveToken) {
       toast('Google Drive not connected', {
         description: 'Please connect your account to backup templates.',
         action: {
@@ -3292,11 +3288,10 @@ export default function NewCase() {
       let folderId;
       let existingFiles: any[] = [];
       try {
-        folderId = await createOrGetFolder(googleTokens, 'My Assistant');
-        existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
+        folderId = await createOrGetFolder(driveToken, 'My Assistant');
+        existingFiles = await listFilesFromGoogleDrive(driveToken, folderId);
       } catch (folderErr: any) {
         if (folderErr.message.includes('expired')) {
-          localStorage.removeItem('google_drive_token');
           setDriveToken(null);
           toast.error('Drive access expired', {
             id: 'bulkUpload',
@@ -3375,7 +3370,7 @@ export default function NewCase() {
           reader.readAsDataURL(pdfBlob);
         });
 
-        await uploadToGoogleDrive(googleTokens, folderId, dataUrl, finalFileName, 'application/pdf');
+        await uploadToGoogleDrive(driveToken, folderId, dataUrl, finalFileName, 'application/pdf');
         
         setIsUploadedToDrive(true);
         toast.success(`Successfully backed up PDF to Drive!`, { 
@@ -3819,7 +3814,7 @@ export default function NewCase() {
       await addDoc(collection(db, 'cases'), newCase);
       
       // 3. Save to Google Sheets (Client-side Webhook Automation)
-      const webhookUrl = localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzXzjN4H0kVSuOfyNHdDb_rig-UVh7bqdvRnUPl7IGR1NNpljX3CRsm6OAVyU5gfRlZ/exec';
+      const webhookUrl = localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
       if (webhookUrl) {
         try {
           const payload = {
@@ -3887,13 +3882,18 @@ export default function NewCase() {
             "Employee Mobile": newCase.employeeMobile || '',
           };
 
-          await fetch(webhookUrl, {
+          const response = await fetch('/api/webhook-proxy', {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ webhookUrl, payload }),
           });
-          console.log('Case sent to Google Sheets via Webhook');
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to sync to sheets via proxy');
+          }
+
+          console.log('Case sent to Google Sheets via Proxy');
           toast.success("Saved to Google Sheets.");
         } catch (sheetsErr) {
           console.error("Failed to sync to Google Sheets:", sheetsErr);

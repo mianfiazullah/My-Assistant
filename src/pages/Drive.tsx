@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
 import { createOrGetFolder, listFilesFromGoogleDrive, deleteFileFromGoogleDrive } from '../lib/googleDrive';
+import { useAuth } from '../contexts/AuthContext';
 
 interface DriveFile {
   id: string;
@@ -17,11 +18,11 @@ interface DriveFile {
 }
 
 export default function Drive() {
+  const { driveToken, setDriveToken } = useAuth();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
 
   const handleConnectGoogleDrive = async () => {
     try {
@@ -30,7 +31,6 @@ export default function Drive() {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
-        localStorage.setItem('google_drive_token', credential.accessToken);
         setDriveToken(credential.accessToken);
         toast.success('Successfully connected to Google Drive!');
       } else {
@@ -43,7 +43,6 @@ export default function Drive() {
   };
 
   const handleDisconnectGoogleDrive = () => {
-    localStorage.removeItem('google_drive_token');
     setDriveToken(null);
     setFiles([]);
     toast.success('Disconnected from Google Drive.');

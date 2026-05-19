@@ -380,6 +380,28 @@ Return ONLY JSON.` }
     }
   });
 
+  // Proxy for Google Sheets Webhooks (GAS)
+  app.post("/api/webhook-proxy", async (req, res) => {
+    try {
+      const { webhookUrl, payload } = req.body;
+      if (!webhookUrl) {
+        return res.status(400).json({ error: "webhookUrl is required" });
+      }
+
+      const axios = (await import('axios')).default;
+      const response = await axios.post(webhookUrl, payload, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      res.json({ success: true, data: response.data });
+    } catch (error: any) {
+      console.error("Webhook Proxy Error:", error);
+      res.status(500).json({ error: error.message || "Failed to proxy webhook" });
+    }
+  });
+
   // Real LESCO Bill Scraping Endpoint
   app.post("/api/fetch-bill", async (req, res) => {
     const { referenceNumber } = req.body;

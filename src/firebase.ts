@@ -10,6 +10,7 @@ import firebaseConfig from '../firebase-applet-config.json';
 console.log('Firebase Config Loaded:', {
   projectId: firebaseConfig.projectId,
   authDomain: firebaseConfig.authDomain,
+  // @ts-ignore
   databaseId: firebaseConfig.firestoreDatabaseId
 });
 
@@ -17,6 +18,7 @@ console.log('Firebase Config Loaded:', {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
+// @ts-ignore
 const databaseId = firebaseConfig.firestoreDatabaseId || '(default)';
 console.log(`Initializing Firestore with Database ID: ${databaseId}`);
 
