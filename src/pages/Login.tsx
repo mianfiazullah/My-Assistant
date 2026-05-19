@@ -25,7 +25,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl text-center space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">LESCO Assistant</h1>
+          <h1 className="text-3xl font-bold">My Assistant</h1>
           <p className="text-slate-500">Sign in to manage your cases</p>
         </div>
         <button

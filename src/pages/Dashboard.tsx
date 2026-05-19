@@ -28,6 +28,7 @@ export default function Dashboard() {
     { label: 'Sync Efficiency', value: '98%', icon: BarChart3, color: 'text-purple-600', bg: 'bg-purple-100' },
   ]);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const q = query(collection(db, 'cases'), orderBy('createdAt', 'desc'));
@@ -74,7 +75,17 @@ export default function Dashboard() {
           <input
             type="date"
             value={dateRange.start}
-            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+            max={today}
+            onChange={(e) => {
+              const newStart = e.target.value;
+              setDateRange(prev => {
+                const nextState = { ...prev, start: newStart };
+                if (prev.end && newStart > prev.end) {
+                  nextState.end = newStart;
+                }
+                return nextState;
+              });
+            }}
             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
           />
         </div>
@@ -83,7 +94,15 @@ export default function Dashboard() {
           <input
             type="date"
             value={dateRange.end}
-            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+            min={dateRange.start || undefined}
+            max={today}
+            onChange={(e) => {
+              const newEnd = e.target.value;
+              if (dateRange.start && newEnd < dateRange.start) {
+                return;
+              }
+              setDateRange(prev => ({ ...prev, end: newEnd }));
+            }}
             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all"
           />
         </div>

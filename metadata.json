@@ -1,5 +1,5 @@
 {
-  "name": "LESCO Assistant",
+  "name": "My Assistant",
   "description": "Assistant for LESCO inspections, theft detection, and case management.",
   "requestFramePermissions": [
     "camera",

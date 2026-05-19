@@ -34,7 +34,7 @@ export default function Layout() {
         <div className="p-6">
           <h1 className="text-xl font-bold text-brand-primary flex items-center gap-2">
             <Zap className="fill-brand-primary" />
-            LESCO Assistant
+            My Assistant
           </h1>
         </div>
         
