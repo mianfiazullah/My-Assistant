@@ -288,24 +288,21 @@ export default function QuickEdit() {
 
       // 3. Save to Google Sheets (Parallel/Async)
       try {
-        const webhookUrl = localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
-        
-        const payload = {
-          "Timestamp": new Date().toLocaleString(),
-          "Reference Number": data.referenceNumber,
-          "Consumer Name": data.name,
-          "Address": data.address,
-          "Billing Month": data.billingMonth,
-          "Consumed Units": data.netUnitsToBeCharged,
-          "Total Bill": data.billData?.currentBill,
-          "Meter Status": data.meterStatus,
-          "Action": "Update/QuickEdit"
-        };
-
-        fetch("/api/webhook-proxy", {
+        fetch("/api/save-to-sheets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ webhookUrl, payload })
+          body: safeStringify({
+            data: {
+              referenceNumber: data.referenceNumber,
+              consumerName: data.name,
+              address: data.address,
+              billingMonth: data.billingMonth,
+              consumedUnits: data.netUnitsToBeCharged,
+              currentBill: data.billData?.currentBill,
+              sanctionedLoad: data.sanctionLoad,
+              meterStatus: data.meterStatus
+            }
+          })
         }).then(res => res.json()).then(result => {
           if (result.success) console.log("Saved to Google Sheets (QuickEdit)");
         }).catch(e => console.error("Sheets Background Error (QuickEdit):", e));

@@ -15,7 +15,6 @@ export default function Login() {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/drive.file');
       await signInWithPopup(auth, provider);
       navigate('/');
     } catch (err: any) {

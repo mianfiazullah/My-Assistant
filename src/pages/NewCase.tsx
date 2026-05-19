@@ -142,7 +142,7 @@ function SortableItem(props: {
 }
 
 export default function NewCase() {
-  const { user, driveToken, setDriveToken } = useAuth();
+  const { user } = useAuth();
   
   const resetCase = () => {
     localStorage.removeItem('lesco_new_case_step');
@@ -3246,6 +3246,7 @@ export default function NewCase() {
 
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const [isUploadedToDrive, setIsUploadedToDrive] = useState(false);
+  const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
 
   const connectDriveAndUpload = async () => {
     try {
@@ -3254,6 +3255,7 @@ export default function NewCase() {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
+        localStorage.setItem('google_drive_token', credential.accessToken);
         setDriveToken(credential.accessToken);
         toast.success('Drive connected! You can now upload the templates.');
       }
@@ -3263,7 +3265,9 @@ export default function NewCase() {
   };
 
   const handleBulkUploadToDrive = async () => {
-    if (!driveToken) {
+    let googleTokens = localStorage.getItem('google_drive_token');
+    
+    if (!googleTokens) {
       toast('Google Drive not connected', {
         description: 'Please connect your account to backup templates.',
         action: {
@@ -3288,10 +3292,11 @@ export default function NewCase() {
       let folderId;
       let existingFiles: any[] = [];
       try {
-        folderId = await createOrGetFolder(driveToken, 'My Assistant');
-        existingFiles = await listFilesFromGoogleDrive(driveToken, folderId);
+        folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+        existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
       } catch (folderErr: any) {
         if (folderErr.message.includes('expired')) {
+          localStorage.removeItem('google_drive_token');
           setDriveToken(null);
           toast.error('Drive access expired', {
             id: 'bulkUpload',
@@ -3370,7 +3375,7 @@ export default function NewCase() {
           reader.readAsDataURL(pdfBlob);
         });
 
-        await uploadToGoogleDrive(driveToken, folderId, dataUrl, finalFileName, 'application/pdf');
+        await uploadToGoogleDrive(googleTokens, folderId, dataUrl, finalFileName, 'application/pdf');
         
         setIsUploadedToDrive(true);
         toast.success(`Successfully backed up PDF to Drive!`, { 
@@ -3882,17 +3887,11 @@ export default function NewCase() {
             "Employee Mobile": newCase.employeeMobile || '',
           };
 
-          const response = await fetch('/api/webhook-proxy', {
+          await fetch('/api/webhook-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ webhookUrl, payload }),
           });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Failed to sync to sheets via proxy');
-          }
-
           console.log('Case sent to Google Sheets via Proxy');
           toast.success("Saved to Google Sheets.");
         } catch (sheetsErr) {
