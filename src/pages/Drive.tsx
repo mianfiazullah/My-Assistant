@@ -20,6 +20,7 @@ export default function Drive() {
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<DriveFile | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
 
@@ -87,18 +88,18 @@ export default function Drive() {
     }
   }, [driveToken]);
 
-  const handleDelete = async (file: DriveFile) => {
-    if (!driveToken) return;
-    if (!window.confirm(`Are you sure you want to delete ${file.name}?`)) return;
+  const handleDelete = async () => {
+    if (!driveToken || !fileToDelete) return;
     
     try {
-      setDeleting(file.id);
-      await deleteFileFromGoogleDrive(driveToken, file.id);
-      setFiles(prev => prev.filter(f => f.id !== file.id));
-      toast.success(`${file.name} deleted successfully`);
-    } catch (error) {
+      setDeleting(fileToDelete.id);
+      await deleteFileFromGoogleDrive(driveToken, fileToDelete.id);
+      setFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
+      toast.success(`${fileToDelete.name} deleted successfully`);
+      setFileToDelete(null);
+    } catch (error: any) {
       console.error("Error deleting file:", error);
-      toast.error('Failed to delete file');
+      toast.error(`Failed to delete file: ${error.message || 'Unknown error'}`);
     } finally {
       setDeleting(null);
     }
@@ -266,7 +267,7 @@ export default function Drive() {
                       </span>
                       
                       <button 
-                        onClick={() => handleDelete(file)}
+                        onClick={() => setFileToDelete(file)}
                         disabled={deleting === file.id}
                         className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded"
                         title="Delete file"
@@ -285,6 +286,44 @@ export default function Drive() {
           </AnimatePresence>
         </div>
       )}
+
+      <AnimatePresence>
+        {fileToDelete && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center space-y-6"
+            >
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
+                <Trash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Delete File?</h3>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">
+                  Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-slate-200">{fileToDelete.name}</span>? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setFileToDelete(null)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  disabled={!!deleting}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-red-600 hover:bg-red-500 transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -39,8 +39,10 @@ export const deleteFileFromGoogleDrive = async (accessToken: string, fileId: str
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    console.error('Google Drive Delete Error:', response.status, errorBody);
     if (response.status === 401) throw new Error('Google Drive access expired. Please reconnect.');
-    throw new Error('Failed to delete Drive file');
+    throw new Error(`Failed to delete Drive file: ${errorBody.error?.message || response.statusText || 'Unknown error'}`);
   }
   return true;
 };

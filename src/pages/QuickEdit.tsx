@@ -264,6 +264,7 @@ export default function QuickEdit() {
           return data.acType || '';
         })(),
         userId: user.uid,
+        firNumber: data.registeredFirNo || '',
         updatedAt: new Date().toISOString(),
         billData: {
           ...existingCase?.billData,
@@ -282,7 +283,7 @@ export default function QuickEdit() {
         await addDoc(collection(db, 'cases'), {
           ...caseData,
           createdAt: new Date().toISOString(),
-          firNumber: `FIR-${Math.floor(100000 + Math.random() * 900000)}`,
+          firNumber: data.registeredFirNo || '',
         });
       }
 

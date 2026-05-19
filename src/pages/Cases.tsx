@@ -261,9 +261,9 @@ export default function Cases() {
                       <h3 className="text-base sm:text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100 truncate">{item.billData.consumerName}</h3>
                       <span className={cn(
                         "px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
-                        item.firNumber ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
+                        item.registeredFirNo ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
                       )}>
-                        {item.firNumber ? 'Completed' : 'Pending FIR'}
+                        {item.registeredFirNo ? 'Completed' : 'Pending FIR'}
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-sm text-neutral-500 dark:text-slate-400">
@@ -441,9 +441,9 @@ export default function Cases() {
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      selectedCase.firNumber ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
+                      selectedCase.registeredFirNo ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
                     )}>
-                      {selectedCase.firNumber ? `FIR: ${selectedCase.firNumber}` : 'Pending FIR'}
+                      {selectedCase.registeredFirNo ? `FIR: ${selectedCase.registeredFirNo}` : 'Pending FIR'}
                     </span>
                   </div>
                 </div>

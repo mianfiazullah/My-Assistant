@@ -111,7 +111,7 @@ export default function Dashboard() {
       setStats(prev => [
         { ...prev[0], value: snapshot.size.toString() },
         { ...prev[1], value: cases.filter(c => new Date(c.createdAt).getMonth() === new Date().getMonth()).length.toString() },
-        { ...prev[2], value: cases.filter(c => !c.firNumber).length.toString() },
+        { ...prev[2], value: cases.filter(c => !c.registeredFirNo).length.toString() },
         { ...prev[3], value: '1' },
       ]);
       
@@ -313,9 +313,9 @@ export default function Dashboard() {
                         <td className="px-8 py-5">
                           <span className={cn(
                             "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
-                            item.firNumber ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                            item.registeredFirNo ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                           )}>
-                            {item.firNumber ? 'Completed' : 'Pending'}
+                            {item.registeredFirNo ? 'Completed' : 'Pending'}
                           </span>
                         </td>
                         <td className="px-8 py-5">
@@ -383,9 +383,9 @@ export default function Dashboard() {
                     </div>
                     <span className={cn(
                       "px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
-                      item.firNumber ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                      item.registeredFirNo ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                     )}>
-                      {item.firNumber ? 'Done' : 'Pending'}
+                      {item.registeredFirNo ? 'Done' : 'Pending'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2">

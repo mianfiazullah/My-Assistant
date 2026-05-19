@@ -143,6 +143,7 @@ function SortableItem(props: {
 
 export default function NewCase() {
   const { user } = useAuth();
+  const isUploadingRef = useRef(false);
   
   const resetCase = () => {
     localStorage.removeItem('lesco_new_case_step');
@@ -3265,6 +3266,8 @@ export default function NewCase() {
   };
 
   const handleBulkUploadToDrive = async () => {
+    if (isUploadingRef.current || isUploadedToDrive) return;
+    
     let googleTokens = localStorage.getItem('google_drive_token');
     
     if (!googleTokens) {
@@ -3279,6 +3282,7 @@ export default function NewCase() {
     }
 
     try {
+      isUploadingRef.current = true;
       setIsBulkUploading(true);
       toast.loading('Creating combined PDF for Google Drive...', { id: 'bulkUpload' });
       
@@ -3390,6 +3394,7 @@ export default function NewCase() {
       toast.error(`Sync Failed: ${err.message || 'Unknown error'}`, { id: 'bulkUpload' });
     } finally {
       setIsBulkUploading(false);
+      isUploadingRef.current = false;
     }
   };
 
@@ -3774,7 +3779,7 @@ export default function NewCase() {
         witnesses: (detectionData.witnesses || []).filter(w => w.trim() !== ''),
         remarks: detectionData.remarks || '',
         createdAt: new Date().toISOString(),
-        firNumber: `FIR-${Math.floor(100000 + Math.random() * 900000)}`,
+        firNumber: detectionData.registeredFirNo || '',
         referenceNumber: detectionData.referenceNumber || billData.referenceNumber || '',
         billingMonth: billData.billingMonth,
         noticeNo: detectionData.noticeNo,
@@ -3918,8 +3923,8 @@ export default function NewCase() {
       }, 1500);
 
       toast.dismiss();
-      toast.success("All templates backed up to 'My Assistant' Drive folder.", {
-        description: "PDF report saved successfully."
+      toast.success("Case saved successfully!", {
+        description: "Cloud backup to Google Drive starting..."
       });
 
     } catch (err: any) {
