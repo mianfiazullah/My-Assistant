@@ -32,7 +32,11 @@ export async function extractBillData(base64Image: string) {
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      let msg = errData.error;
+      if (typeof msg === 'object' && msg !== null) {
+        msg = msg.message || JSON.stringify(msg);
+      }
+      throw new Error(msg || `Server error: ${response.status}`);
     }
 
     return await response.json();
@@ -52,7 +56,11 @@ export async function chatWithGemini(input: string) {
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      let msg = errData.error;
+      if (typeof msg === 'object' && msg !== null) {
+        msg = msg.message || JSON.stringify(msg);
+      }
+      throw new Error(msg || `Server error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -73,7 +81,11 @@ export async function generateGeminiContent(prompt: string) {
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      let msg = errData.error;
+      if (typeof msg === 'object' && msg !== null) {
+        msg = msg.message || JSON.stringify(msg);
+      }
+      throw new Error(msg || `Server error: ${response.status}`);
     }
 
     const data = await response.json();

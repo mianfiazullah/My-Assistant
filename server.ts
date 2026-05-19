@@ -201,6 +201,8 @@ Return ONLY JSON.` }
         errorMsg = 'Invalid Gemini API Key. Please update your API Key in the AI Studio platform or Vercel Environment Variables.';
       } else if (e.message?.includes('429') || e.message?.includes('RESOURCE_EXHAUSTED') || e.message?.includes('quota')) {
         errorMsg = 'Gemini API Free Tier quota exceeded limit. Please wait and try again, or use the official LESCO fallback portal.';
+      } else if (e.message?.includes('503') || e.message?.includes('UNAVAILABLE') || e.message?.includes('high demand')) {
+        errorMsg = 'Google AI service is currently experiencing high demand. Please try again later, or use the official LESCO fallback portal.';
       } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
         try {
           const jsonStart = errorMsg.indexOf('{');
@@ -234,6 +236,8 @@ Return ONLY JSON.` }
       let errorMsg = error.message;
       if (errorMsg?.includes('429') || errorMsg?.includes('RESOURCE_EXHAUSTED') || errorMsg?.includes('quota')) {
         errorMsg = 'Gemini API Free Tier quota exceeded. Please wait and try again.';
+      } else if (errorMsg?.includes('503') || errorMsg?.includes('UNAVAILABLE') || errorMsg?.includes('high demand')) {
+        errorMsg = 'Google AI service is currently experiencing high demand. Please try again later.';
       } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
         try {
           const jsonStart = errorMsg.indexOf('{');
@@ -263,6 +267,8 @@ Return ONLY JSON.` }
       let errorMsg = error.message;
       if (errorMsg?.includes('429') || errorMsg?.includes('RESOURCE_EXHAUSTED') || errorMsg?.includes('quota')) {
         errorMsg = 'Gemini API Free Tier quota exceeded. Please wait and try again.';
+      } else if (errorMsg?.includes('503') || errorMsg?.includes('UNAVAILABLE') || errorMsg?.includes('high demand')) {
+        errorMsg = 'Google AI service is currently experiencing high demand. Please try again later.';
       } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
         try {
           const jsonStart = errorMsg.indexOf('{');

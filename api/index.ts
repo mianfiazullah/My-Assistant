@@ -161,7 +161,41 @@ Return ONLY JSON.` }
     }
   } catch (e: any) {
     console.error("Extraction error:", e);
-    res.status(500).json({ error: e.message });
+    let errorMsg = "";
+    if (typeof e === 'string') {
+      errorMsg = e;
+    } else if (e?.message) {
+      errorMsg = String(e.message);
+    } else {
+      try { errorMsg = JSON.stringify(e); } catch(_) { errorMsg = "Unknown error"; }
+    }
+    
+    if (errorMsg.includes('API key not valid')) {
+      errorMsg = 'Invalid Gemini API Key. Please update your API Key in the AI Studio platform or Vercel Environment Variables.';
+    } else if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+      errorMsg = 'Gemini API Free Tier quota exceeded limit. Please wait and try again, or use the official LESCO fallback portal.';
+    } else if (errorMsg.includes('503') || errorMsg.includes('UNAVAILABLE') || errorMsg.includes('high demand') || errorMsg.includes('capacity')) {
+      errorMsg = 'Google AI service is currently experiencing high demand and is unavailable. Please try again later, or use the official LESCO fallback portal.';
+    } else if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
+      try {
+        const jsonStart = errorMsg.indexOf('{');
+        const jsonStr = errorMsg.substring(jsonStart);
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.error?.message) {
+          errorMsg = parsed.error.message;
+        } else if (parsed.message) {
+          errorMsg = parsed.message;
+        }
+      } catch (_) {}
+    }
+    // Handle the case where errorMsg itself is outputted as stringified JSON starting with {"error":
+    if (errorMsg.startsWith('{"error"')) {
+      try {
+        const p = JSON.parse(errorMsg);
+        if (p.error?.message) errorMsg = p.error.message;
+      } catch(_) {}
+    }
+    res.status(500).json({ error: errorMsg });
   }
 });
 
@@ -181,7 +215,37 @@ app.post("/api/chat", async (req, res) => {
     res.json({ text: result.text });
   } catch (error: any) {
     console.error("Chat error:", error);
-    res.status(500).json({ error: error.message });
+    let errorMsg = "";
+    if (typeof error === 'string') {
+      errorMsg = error;
+    } else if (error?.message) {
+      errorMsg = String(error.message);
+    } else {
+      try { errorMsg = JSON.stringify(error); } catch(_) { errorMsg = "Unknown error"; }
+    }
+
+    if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+      errorMsg = 'Gemini API Free Tier quota exceeded. Please wait and try again.';
+    } else if (errorMsg.includes('503') || errorMsg.includes('UNAVAILABLE') || errorMsg.includes('high demand') || errorMsg.includes('capacity')) {
+      errorMsg = 'Google AI service is currently experiencing high demand. Please try again later.';
+    } else if (errorMsg.includes('{') && errorMsg.includes('}')) {
+      try {
+        const jsonStart = errorMsg.indexOf('{');
+        const parsed = JSON.parse(errorMsg.substring(jsonStart));
+        if (parsed.error?.message) {
+          errorMsg = parsed.error.message;
+        } else if (parsed.message) {
+          errorMsg = parsed.message;
+        }
+      } catch (_) {}
+    }
+    if (errorMsg.startsWith('{"error"')) {
+      try {
+        const p = JSON.parse(errorMsg);
+        if (p.error?.message) errorMsg = p.error.message;
+      } catch(_) {}
+    }
+    res.status(500).json({ error: errorMsg });
   }
 });
 
@@ -198,7 +262,37 @@ app.post("/api/generate", async (req, res) => {
     res.json({ text: result.text });
   } catch (error: any) {
     console.error("Generate error:", error);
-    res.status(500).json({ error: error.message });
+    let errorMsg = "";
+    if (typeof error === 'string') {
+      errorMsg = error;
+    } else if (error?.message) {
+      errorMsg = String(error.message);
+    } else {
+      try { errorMsg = JSON.stringify(error); } catch(_) { errorMsg = "Unknown error"; }
+    }
+
+    if (errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+      errorMsg = 'Gemini API Free Tier quota exceeded. Please wait and try again.';
+    } else if (errorMsg.includes('503') || errorMsg.includes('UNAVAILABLE') || errorMsg.includes('high demand') || errorMsg.includes('capacity')) {
+      errorMsg = 'Google AI service is currently experiencing high demand. Please try again later.';
+    } else if (errorMsg.includes('{') && errorMsg.includes('}')) {
+      try {
+        const jsonStart = errorMsg.indexOf('{');
+        const parsed = JSON.parse(errorMsg.substring(jsonStart));
+        if (parsed.error?.message) {
+          errorMsg = parsed.error.message;
+        } else if (parsed.message) {
+          errorMsg = parsed.message;
+        }
+      } catch (_) {}
+    }
+    if (errorMsg.startsWith('{"error"')) {
+      try {
+        const p = JSON.parse(errorMsg);
+        if (p.error?.message) errorMsg = p.error.message;
+      } catch(_) {}
+    }
+    res.status(500).json({ error: errorMsg });
   }
 });
 
