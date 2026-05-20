@@ -1,9 +1,8 @@
 {
   "name": "My Assistant",
-  "description": "Assistant for LESCO inspections, theft detection, and case management.",
+  "description": "Generate Detection Bill Proforma, Notice, and FIR Request documents based on official templates.",
   "requestFramePermissions": [
-    "camera",
-    "microphone"
+    "camera"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

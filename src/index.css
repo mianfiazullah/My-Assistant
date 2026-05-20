@@ -1,22 +1,164 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Nastaliq+Urdu:wght@400..700&display=swap');
+@import "tailwindcss";
 
-:root {
-  --brand-primary: #3b82f6;
+@font-face {
+  font-family: 'Jameel Noori Nastaleeq';
+  src: url('https://cdn.jsdelivr.net/gh/Suhail-Abbas/Jameel-Noori-Nastaleeq/Jameel%20Noori%20Nastaleeq.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-urdu: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+  
+  --color-brand-primary: #1E1B4B; /* Very dark premium indigo */
+  --color-brand-secondary: #4F46E5; /* Bright Indigo */
+  --color-brand-dark: #000000;
+
+  /* Overriding reds to premium indigo/violet to instantly re-theme the entire app */
+  --color-rose-600: #312E81;
+  --color-rose-500: #4338CA;
+  
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  --animate-blink: blink 1s step-start infinite;
 }
 
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+@layer base {
+  body {
+    @apply bg-[#F4F4F5] text-slate-900 antialiased font-sans font-light dark:bg-slate-950 dark:text-slate-100;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight font-semibold text-slate-900 dark:text-slate-50;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-page {
+    width: 210mm;
+    padding: 10mm;
+    margin: 0;
+    position: relative;
+    background: white !important;
+    color: black !important;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 80px;
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.03);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 0;
+  user-select: none;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+}
+
+.dark .watermark {
+  color: rgba(255, 255, 255, 0.03);
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl shadow-indigo-900/5 transition-all dark:bg-slate-900/50 dark:border-white/10;
+  }
+  
+  .urdu-font {
+    font-family: var(--font-urdu);
+    line-height: 1.8;
+    font-feature-settings: "kern" 1;
+  }
+  
+  .bento-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6;
+  }
+  
+  .btn-primary {
+    @apply bg-slate-900 hover:bg-black text-white px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base rounded-2xl font-medium shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center justify-center gap-2 border border-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:border-indigo-500 dark:shadow-indigo-900/20;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base rounded-2xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700;
+  }
+}
+
+/* React Datepicker Custom Styles */
+.react-datepicker {
+  @apply font-sans border-neutral-200 rounded-2xl shadow-2xl overflow-hidden border dark:bg-slate-900 dark:border-slate-800;
+}
+
+.react-datepicker__header {
+  @apply bg-neutral-50/80 backdrop-blur-md border-b border-neutral-100 pt-4 dark:bg-slate-800/80 dark:border-slate-700;
+}
+
+.react-datepicker__current-month {
+  @apply text-slate-900 font-semibold text-sm uppercase tracking-wider dark:text-slate-100;
+}
+
+.react-datepicker__day-name {
+  @apply text-slate-400 font-semibold text-[10px] uppercase dark:text-slate-500;
+}
+
+.react-datepicker__day {
+  @apply text-slate-700 rounded-lg transition-colors hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white shadow-lg shadow-indigo-600/30;
+}
+
+.react-datepicker__day--keyboard-selected {
+  @apply bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400;
+}
+
+.react-datepicker__navigation {
+  @apply top-4;
+}
+
+.react-datepicker__day--today {
+  @apply font-bold text-indigo-600 dark:text-indigo-400;
 }
