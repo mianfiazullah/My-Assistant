@@ -26,19 +26,27 @@ function getAI() {
 }
 
 // Initialize Firebase Admin lazily
-let bucket: any;
-try {
-  if (admin.apps.length === 0) {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-      storageBucket: 'gen-lang-client-0432558200.firebasestorage.app'
-    });
-    console.log('Firebase Admin initialized successfully');
+let _bucket: any = null;
+let _firebaseAdminInitialized = false;
+
+function getBucket() {
+  if (!_firebaseAdminInitialized) {
+    _firebaseAdminInitialized = true;
+    try {
+      if (admin.apps.length === 0) {
+        admin.initializeApp({
+          credential: admin.credential.applicationDefault(),
+          storageBucket: 'gen-lang-client-0432558200.firebasestorage.app'
+        });
+        console.log('Firebase Admin initialized successfully');
+      }
+      _bucket = admin.storage().bucket();
+    } catch (error: any) {
+      console.error('Firebase Admin initialization failed:', error.message);
+      console.warn('Server will continue without Firebase Admin features (Upload Proxy will fail)');
+    }
   }
-  bucket = admin.storage().bucket();
-} catch (error: any) {
-  console.error('Firebase Admin initialization failed:', error.message);
-  console.warn('Server will continue without Firebase Admin features (Upload Proxy will fail)');
+  return _bucket;
 }
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -348,6 +356,7 @@ app.post("/api/fetch-bill", async (req, res) => {
 
 // Upload Proxy Route
 app.post("/api/upload", upload.single('file'), async (req, res) => {
+  const bucket = getBucket();
   if (!bucket) {
     return res.status(500).json({ error: "Firebase Admin not initialized. Upload unavailable." });
   }
