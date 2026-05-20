@@ -276,8 +276,8 @@ export default function NewCase() {
     nameUrdu: '',
     addressUrdu: '',
     employeeNameUrdu: '',
-    presentOccupier: 'Muhammad Afzal',
-    presentOccupierUrdu: 'محمد افضل',
+    presentOccupier: '',
+    presentOccupierUrdu: '',
     loadItems: [
       { name: 'E/Saver', qty: '', watts: 18, total: 0 },
       { name: 'Tube Light', qty: '', watts: 40, total: 0 },
