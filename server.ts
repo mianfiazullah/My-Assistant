@@ -12,8 +12,15 @@ import multer from 'multer';
 import { GoogleGenAI, Type } from "@google/genai";
 import { google } from "googleapis";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+let __filename = "";
+let __dirname = "";
+try {
+  __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (e) {
+  __filename = typeof __filename !== 'undefined' ? __filename : "";
+  __dirname = typeof __dirname !== 'undefined' ? __dirname : "";
+}
 
 // Initialize AI lazily
 let _ai: any = null;
