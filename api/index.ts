@@ -4,6 +4,8 @@ import https from "https";
 import * as cheerio from "cheerio";
 import { GoogleGenAI, Type } from "@google/genai";
 import multer from 'multer';
+import admin from "firebase-admin";
+import { google } from "googleapis";
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -21,6 +23,22 @@ function getAI() {
     _ai = new GoogleGenAI(config);
   }
   return _ai;
+}
+
+// Initialize Firebase Admin lazily
+let bucket: any;
+try {
+  if (admin.apps.length === 0) {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+      storageBucket: 'gen-lang-client-0432558200.firebasestorage.app'
+    });
+    console.log('Firebase Admin initialized successfully');
+  }
+  bucket = admin.storage().bucket();
+} catch (error: any) {
+  console.error('Firebase Admin initialization failed:', error.message);
+  console.warn('Server will continue without Firebase Admin features (Upload Proxy will fail)');
 }
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -325,6 +343,123 @@ app.post("/api/fetch-bill", async (req, res) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Upload Proxy Route
+app.post("/api/upload", upload.single('file'), async (req, res) => {
+  if (!bucket) {
+    return res.status(500).json({ error: "Firebase Admin not initialized. Upload unavailable." });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  const { template } = req.body;
+  const file = req.file;
+  const blob = bucket.file(`templates/${template}`);
+  const blobStream = blob.createWriteStream({
+    metadata: { contentType: file.mimetype }
+  });
+
+  blobStream.on('error', (err: any) => {
+    res.status(500).json({ error: err.message });
+  });
+
+  blobStream.on('finish', async () => {
+    try {
+      const publicUrl = await blob.getSignedUrl({
+        action: 'read',
+        expires: '03-01-2500'
+      });
+      res.status(200).json({ url: publicUrl[0] });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to generate signed URL: " + err.message });
+    }
+  });
+
+  blobStream.end(file.buffer);
+});
+
+// Google Sheets Helper
+async function getSheetsClient() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
+  if (!email || !key) {
+    throw new Error("Google Sheets credentials are not configured.");
+  }
+
+  const auth = new google.auth.JWT({
+    email,
+    key,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+  });
+
+  return google.sheets({ version: "v4", auth });
+}
+
+app.post("/api/save-to-sheets", async (req, res) => {
+  try {
+    const spreadsheetId = process.env.GOOGLE_SHEETS_ID;
+    if (!spreadsheetId) {
+      return res.status(400).json({ error: "GOOGLE_SHEETS_ID is not configured." });
+    }
+
+    const { data } = req.body;
+    if (!data) {
+      return res.status(400).json({ error: "No data provided to save." });
+    }
+
+    const sheets = await getSheetsClient();
+    
+    // Prepare row data - flatten the case object into an array
+    // Order: Timestamp, Ref #, Name, Address, Billing Month, Units, Bill Amount, Sanctioned Load, Status
+    const row = [
+      new Date().toLocaleString(),
+      data.referenceNumber || "N/A",
+      data.consumerName || "N/A",
+      data.address || "N/A",
+      data.billingMonth || "N/A",
+      data.consumedUnits || "0",
+      data.currentBill || "0",
+      data.sanctionedLoad || "N/A",
+      data.meterStatus || "NORMAL"
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId, range: "Sheet1!A:I", // Appends to the first sheet
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [row],
+      },
+    });
+
+    res.json({ success: true, message: "Data saved to Google Sheets successfully." });
+  } catch (error: any) {
+    console.error("Sheets Error:", error);
+    res.status(500).json({ error: error.message || "Failed to save to Google Sheets." });
+  }
+});
+
+// Proxy for Google Sheets Webhooks (GAS)
+app.post("/api/webhook-proxy", async (req, res) => {
+  try {
+    const { webhookUrl, payload } = req.body;
+    if (!webhookUrl) {
+      return res.status(400).json({ error: "webhookUrl is required" });
+    }
+
+    const axios = (await import('axios')).default;
+    const response = await axios.post(webhookUrl, payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, data: response.data });
+  } catch (error: any) {
+    console.error("Webhook Proxy Error:", error);
+    res.status(500).json({ error: error.message || "Failed to proxy webhook" });
   }
 });
 
