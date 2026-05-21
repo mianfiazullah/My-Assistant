@@ -324,33 +324,293 @@ app.post("/api/generate", async (req, res) => {
 
 app.post("/api/fetch-bill", async (req, res) => {
   const { referenceNumber } = req.body;
-  if (!referenceNumber) return res.status(400).json({ error: "Reference Number is required" });
+  
+  if (!referenceNumber) {
+    return res.status(400).json({ error: "Reference Number is required" });
+  }
+
+  // Clean reference number (remove spaces/hyphens)
   const cleanRef = referenceNumber.replace(/[^0-9]/g, '');
+  
+  if (cleanRef.length !== 14) {
+    return res.status(400).json({ error: "Reference Number must be 14 digits" });
+  }
 
   try {
-    const url = `https://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`;
-    const agent = new https.Agent({
-      // rejectUnauthorized: false - removed for security
-    });
-    const response = await axios.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      httpsAgent: agent,
-      timeout: 15000
-    });
+    console.log(`Scraping LESCO bill for: ${cleanRef}`);
+    
+    // Special case for demo/testing
+    const demoRefs = ['00000000000000', '11111111111111', '22222222222222', '33333333333333'];
+    if (demoRefs.includes(cleanRef)) {
+      return res.json({
+        consumerName: `DEMO CONSUMER (${cleanRef})`,
+        address: "123 LESCO Street, Gulberg III, Lahore",
+        referenceNumber: cleanRef,
+        unitsConsumed: 450,
+        amountDue: 15420,
+        billingMonth: "FEB 2026",
+        sanctionedLoad: "5 kW",
+        connectionType: "A1-R",
+        currentBill: 15000,
+        deferredAmount: 420,
+        previousReading: "12050",
+        monthWiseUnitsConsumed: "Jan: 300, Feb: 350, Mar: 450",
+        monthWiseUnits: [
+          { month: "FEB 25", units: 300, bill: 12000, adj: 0, payment: 12000 },
+          { month: "MAR 25", units: 350, bill: 14000, adj: 0, payment: 14000 },
+          { month: "APR 25", units: 450, bill: 18000, adj: 0, payment: 18000 },
+          { month: "MAY 25", units: 400, bill: 16000, adj: 0, payment: 16000 },
+          { month: "JUN 25", units: 500, bill: 20000, adj: 0, payment: 20000 },
+          { month: "JUL 25", units: 600, bill: 24000, adj: 0, payment: 24000 },
+          { month: "AUG 25", units: 550, bill: 22000, adj: 0, payment: 22000 },
+          { month: "SEP 25", units: 480, bill: 19000, adj: 0, payment: 19000 },
+          { month: "OCT 25", units: 420, bill: 17000, adj: 0, payment: 17000 },
+          { month: "NOV 25", units: 380, bill: 15000, adj: 0, payment: 15000 },
+          { month: "DEC 25", units: 320, bill: 13000, adj: 0, payment: 13000 },
+          { month: "JAN 26", units: 310, bill: 12500, adj: 0, payment: 12500 },
+          { month: "FEB 26", units: 450, bill: 15000, adj: 0, payment: 15000 },
+        ]
+      });
+    }
+
+    const urls = [
+      `https://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`,
+      `http://bill.pitc.com.pk/lescobill/general?refno=${cleanRef}`,
+      `http://pitc.com.pk:36247/lescobill/general?refno=${cleanRef}`,
+      `http://pitc.com.pk/lescobill/general?refno=${cleanRef}`,
+      `http://bill.pitc.com.pk:36247/lescobill/general?refno=${cleanRef}`,
+      `http://www.lesco.gov.pk:36247/lescobill/general?refno=${cleanRef}`,
+      `http://103.226.216.244:36247/lescobill/general?refno=${cleanRef}`,
+      `http://103.226.216.244/lescobill/general?refno=${cleanRef}`,
+      `http://103.226.216.2/lescobill/general?refno=${cleanRef}`,
+      `http://103.226.216.2:36247/lescobill/general?refno=${cleanRef}`,
+      `http://103.85.131.210/lescobill/general?refno=${cleanRef}`,
+      `http://103.85.131.210:36247/lescobill/general?refno=${cleanRef}`,
+      `http://www.lesco.gov.pk/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `https://www.lesco.gov.pk/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `http://103.85.131.210/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `https://lesco.com.pk/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `http://lesco.com.pk/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `http://lesco.gov.pk/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `http://103.226.216.244/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+      `http://103.226.216.2/Modules/CustomerBill/CheckBill.aspx?RefNo=${cleanRef}`,
+    ];
+
+    // Remove duplicates
+    const uniqueUrls = [...new Set(urls)];
+    
+    let response: any = null;
+    let lastError = "";
+
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0'
+    ];
+
+    // Try fetching from all URLs in parallel with staggered starts
+    try {
+      console.log(`Starting parallel fetch for reference: ${cleanRef} with ${uniqueUrls.length} mirrors`);
+      
+      const agent = new https.Agent({
+        // rejectUnauthorized: false - removed for security
+      });
+
+      response = await Promise.any(uniqueUrls.map(async (url, index) => {
+        let attempts = 0;
+        const maxAttempts = 2; 
+        
+        // Add a small staggered delay for each mirror to avoid being flagged
+        await new Promise(resolve => setTimeout(resolve, index * 200));
+
+        while (attempts < maxAttempts) {
+          try {
+            attempts++;
+            
+            const res = await axios.get(url, {
+              headers: {
+                'User-Agent': userAgents[(index + attempts) % userAgents.length],
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Connection': 'keep-alive',
+              },
+              httpsAgent: agent,
+              timeout: 30000 // Increased from 15s to 30s
+            });
+
+            const data = res.data.toString();
+
+            if (data.includes("Reference Number Not Found") || data.includes("Invalid Reference Number") || data.includes("Record Not Found") || data.includes("not found in our record")) {
+              throw new Error("Reference Number not found");
+            }
+
+            if (data.includes("busy") || data.includes("Too many requests") || data.includes("try again later") || data.includes("Service Unavailable") || data.includes("Server Error")) {
+              throw new Error("Portal is busy");
+            }
+
+            if (data.includes("Consumer Name") || data.includes("NAME & ADDRESS") || data.includes("Reference No") || data.includes("BILLING MONTH") || data.includes("LESCO BILL")) {
+              console.log(`Successfully fetched from: ${url} (Attempt ${attempts})`);
+              return res;
+            } else {
+              throw new Error("Invalid page content or portal busy");
+            }
+          } catch (err: any) {
+            if (attempts >= maxAttempts || err.message === "Reference Number not found") {
+              throw err;
+            }
+            // Wait a bit before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }));
+    } catch (err: any) {
+      // Promise.any throws AggregateError if all fail
+      if (err.name === 'AggregateError') {
+        lastError = err.errors.map((e: any) => e.message).join(' | ');
+      } else {
+        lastError = err.message || "All LESCO portals are currently unresponsive";
+      }
+      console.error(`All parallel fetches failed for ${cleanRef}: ${lastError}`);
+    }
+
+    if (!response) {
+      const errorMsg = lastError.includes('timeout') 
+        ? "LESCO servers took too long to respond. This usually happens during peak hours. Please try again in a few minutes or enter details manually."
+        : `LESCO servers are currently unresponsive (${lastError}). Please enter details manually.`;
+      throw new Error(errorMsg);
+    }
 
     const $ = cheerio.load(response.data);
-    // Simplified scraping logic for the proxy
-    const consumerName = $(`td:contains("NAME & ADDRESS")`).next('td').text().trim().split('\n')[0] || "Unknown";
-    const amountDue = parseInt($(`td:contains("TOTAL PAYABLE")`).next('td').text().replace(/[^0-9]/g, '')) || 0;
+    
+    // Improved extraction logic for PITC/LESCO layout
+    const getTextByLabel = (label: string) => {
+      const lowerLabel = label.toLowerCase();
+      let val = "";
+      
+      $('*').each((i, el) => {
+        const text = $(el).text().trim().toLowerCase();
+        if (text === lowerLabel || text.startsWith(lowerLabel + ':') || text.startsWith(lowerLabel + ' :')) {
+          // Try next sibling
+          val = $(el).next().text().trim();
+          if (!val) {
+            // Try parent's last child
+            val = $(el).parent().children().last().text().trim();
+          }
+          // If the value is still the label or empty, try to find in the same row
+          if (!val || val.toLowerCase() === lowerLabel) {
+            val = $(el).closest('tr').find('td').last().text().trim();
+          }
+          if (val && val.toLowerCase() !== lowerLabel) return false; // break
+        }
+      });
 
-    res.json({
-      consumerName,
-      amountDue,
-      referenceNumber: cleanRef,
-      // ... include other fields if needed, or stick to essential for proxy
+      // Fallback: search for label anywhere and get next text node
+      if (!val) {
+        $(`td:contains("${label}")`).each((i, el) => {
+          const nextText = $(el).next().text().trim();
+          if (nextText) {
+            val = nextText;
+            return false;
+          }
+        });
+      }
+
+      return val;
+    };
+
+    // Specific logic for Name & Address which is often in a larger block
+    let consumerName = "";
+    let address = "";
+    
+    const nameAddrTd = $(`td:contains("NAME & ADDRESS"), td:contains("Name & Address")`).next('td');
+    if (nameAddrTd.length) {
+      const text = nameAddrTd.text().trim();
+      const parts = text.split('\n').map(p => p.trim()).filter(p => p);
+      consumerName = parts[0] || "";
+      address = parts.slice(1).join(', ') || "";
+    }
+
+    if (!consumerName) consumerName = getTextByLabel("NAME") || getTextByLabel("Consumer Name") || "Unknown Consumer";
+    if (!address) address = getTextByLabel("ADDRESS") || "Address not found";
+
+    const monthWiseUnits: { month: string, units: number, bill?: number, adj?: number, payment?: number }[] = [];
+    $('table').each((i, table) => {
+      const text = $(table).text().toUpperCase();
+      if (text.includes('MONTH') && text.includes('UNITS')) {
+        $(table).find('tr').each((j, tr) => {
+          const tds = $(tr).find('td');
+          // LESCO historical table usually has: Month, Units, Bill, Adj, Payment, Balance
+          if (tds.length >= 2) {
+            const month = $(tds[0]).text().trim();
+            const unitsText = $(tds[1]).text().replace(/[^0-9]/g, '');
+            const units = parseInt(unitsText);
+            
+            if (month && month.length >= 3 && month.length <= 6 && !isNaN(units)) {
+              const entry: any = { month, units };
+              
+              if (tds.length >= 3) {
+                const billText = $(tds[2]).text().replace(/[^0-9]/g, '');
+                if (billText) entry.bill = parseInt(billText);
+              }
+              if (tds.length >= 4) {
+                const adjText = $(tds[3]).text().replace(/[^0-9-]/g, '');
+                if (adjText) entry.adj = parseInt(adjText);
+              }
+              if (tds.length >= 5) {
+                const paymentText = $(tds[4]).text().replace(/[^0-9]/g, '');
+                if (paymentText) entry.payment = parseInt(paymentText);
+              }
+              
+              if (monthWiseUnits.length < 24) { // Limit to 2 years of history
+                monthWiseUnits.push(entry);
+              }
+            }
+          }
+        });
+      }
     });
+
+    // Sort by month if possible, or just keep as is
+    // LESCO tables are usually reverse chronological
+
+    const billData = {
+      consumerName: consumerName,
+      address: address,
+      referenceNumber: cleanRef,
+      unitsConsumed: parseInt((getTextByLabel("UNITS CONSUMED") || getTextByLabel("Units") || "0").replace(/[^0-9]/g, '')) || 0,
+      amountDue: parseFloat((getTextByLabel("TOTAL PAYABLE") || getTextByLabel("Payable") || "0").replace(/[^0-9.]/g, '')) || 0,
+      billingMonth: getTextByLabel("BILLING MONTH") || getTextByLabel("Month") || "N/A",
+      sanctionedLoad: getTextByLabel("LOAD") || getTextByLabel("SANCTIONED LOAD") || getTextByLabel("SANC LOAD") || "N/A",
+      connectionType: getTextByLabel("TARIFF") || "N/A",
+      customerId: getTextByLabel("CONSUMER ID") || getTextByLabel("CUSTOMER ID") || getTextByLabel("CONS ID") || "N/A",
+      currentBill: parseFloat(getTextByLabel("CURRENT BILL").replace(/[^0-9.]/g, '')) || 0,
+      deferredAmount: parseFloat(getTextByLabel("DEFERRED AMOUNT").replace(/[^0-9.]/g, '')) || parseFloat(getTextByLabel("DEFERRED").replace(/[^0-9.]/g, '')) || 0,
+      previousReading: getTextByLabel("PREVIOUS READING") || getTextByLabel("PREV RDG") || getTextByLabel("PREVIOUS") || "N/A",
+      meterNoOnBill: getTextByLabel("METER NO") || getTextByLabel("METER NUMBER") || "N/A",
+      feederName: getTextByLabel("FEEDER") || getTextByLabel("FEEDER NAME") || "N/A",
+      monthWiseUnitsConsumed: getTextByLabel("MONTH WISE UNITS CONSUMED") || "N/A",
+      monthWiseUnits: monthWiseUnits.length > 0 ? monthWiseUnits : undefined,
+    };
+
+    // Final check - if we got nothing, it's a failure
+    if (billData.consumerName === "Unknown" && billData.amountDue === 0) {
+      console.error("Scraping failed: No data extracted from portal");
+      throw new Error("Could not parse bill data. The portal structure might have changed.");
+    }
+
+    console.log(`Sending bill data for ref: ${cleanRef}, units: ${billData.monthWiseUnits?.length || 0}`);
+    res.json(billData);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error("Scraping error:", error.message);
+    
+    res.status(500).json({ 
+      error: error.message || "Failed to fetch actual bill data.",
+      details: error.stack
+    });
   }
 });
 
