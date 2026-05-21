@@ -16,7 +16,13 @@ let _ai: any = null;
 function getAI() {
   if (!_ai) {
     const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GOOGLE_API_KEY;
-    const config: any = {};
+    const config: any = {
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    };
     if (key && key !== "MY_GEMINI_API_KEY") {
       config.apiKey = key;
     }
@@ -55,19 +61,59 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+function cleanAndParseJSON(text: string) {
+  const cleanText = text.trim();
+  if (!cleanText || cleanText === 'undefined') {
+    throw new Error("Empty response from AI");
+  }
+  
+  // Try direct parsing first
+  try {
+    return JSON.parse(cleanText);
+  } catch (err) {
+    // If direct parse fails, find boundaries of JSON object or array
+    const startObj = cleanText.indexOf('{');
+    const startArr = cleanText.indexOf('[');
+    
+    if (startObj !== -1 || startArr !== -1) {
+      const isObject = startObj !== -1 && (startArr === -1 || startObj < startArr);
+      const startIdx = isObject ? startObj : startArr;
+      const endToken = isObject ? '}' : ']';
+      const endIdx = cleanText.lastIndexOf(endToken);
+      
+      if (endIdx !== -1 && endIdx > startIdx) {
+        const potentialJson = cleanText.substring(startIdx, endIdx + 1);
+        try {
+          return JSON.parse(potentialJson);
+        } catch (subErr) {
+          console.error("Sub-parsing of extracted JSON block failed. Raw potential content:", potentialJson);
+        }
+      }
+    }
+    
+    // Last ditch fallback: strip any Markdown codes and try once more
+    let cleaned = cleanText
+      .replace(/^```json/gi, '')
+      .replace(/^```/g, '')
+      .replace(/```$/g, '')
+      .trim();
+    return JSON.parse(cleaned);
+  }
+}
+
 app.post("/api/extract-bill", async (req, res) => {
   try {
     console.log(`[extract-bill] type of req.body: ${typeof req.body}, isArray: ${Array.isArray(req.body)}`);
     if (req.body) {
       console.log(`[extract-bill] req.body keys: ${Object.keys(req.body).join(", ")}`);
     }
-    const { base64Data, image, model: requestedModel = "gemini-flash-latest" } = req.body || {};
+    const { base64Data, image, model: requestedModel = "gemini-3.5-flash" } = req.body || {};
     const imgData = image || base64Data;
     if (!imgData) {
       return res.status(400).json({ error: `Missing image data. Body keys: ${req.body ? Object.keys(req.body).join(", ") : 'none'}` });
     }
 
-    const modelName = "gemini-flash-latest";
+    const modelName = requestedModel === "gemini-flash-latest" || requestedModel === "gemini-1.5-flash" ? "gemini-3.5-flash" : requestedModel;
     const ai = getAI();
     
     console.log(`Analyzing bill using model: ${modelName}, data length: ${imgData.length}`);
@@ -166,20 +212,10 @@ Return ONLY JSON.` }
     if (!cleanText || cleanText === 'undefined') throw new Error("The AI model returned an empty response. Please try a clearer picture.");
     
     try {
-      let jsonStr = cleanText;
-      if (jsonStr.startsWith('```json')) {
-        jsonStr = jsonStr.replace(/^```json/, '');
-        jsonStr = jsonStr.replace(/```$/, '');
-      } else if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```/, '');
-        jsonStr = jsonStr.replace(/```$/, '');
-      }
-      jsonStr = jsonStr.trim();
-      
-      const parsed = JSON.parse(jsonStr);
+      const parsed = cleanAndParseJSON(cleanText);
       res.json(parsed);
-    } catch (parseErr) {
-      console.error("JSON Parse Error on text:", cleanText);
+    } catch (parseErr: any) {
+      console.error("JSON Parse Error on text:", cleanText, parseErr);
       res.status(500).json({ 
         error: "The AI returned data in an invalid format.", 
         raw: cleanText.substring(0, 500) 
@@ -232,7 +268,7 @@ app.post("/api/chat", async (req, res) => {
 
     const ai = getAI();
     const result = await ai.models.generateContent({ 
-      model: "gemini-flash-latest",
+      model: "gemini-3.5-flash",
       contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
       config: {
         systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
@@ -282,7 +318,7 @@ app.post("/api/generate", async (req, res) => {
 
     const ai = getAI();
     const result = await ai.models.generateContent({ 
-      model: "gemini-flash-latest",
+      model: "gemini-3.5-flash",
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
     res.json({ text: result.text });
