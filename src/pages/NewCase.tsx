@@ -145,6 +145,26 @@ export default function NewCase() {
   const { user } = useAuth();
   const isUploadingRef = useRef(false);
   
+  const validateSubDivisionRestriction = (refNumber: string) => {
+    if (!user) return { valid: true };
+    const isSuperAdmin = user.email?.toLowerCase() === 'mianfiazullah@gmail.com';
+    if (isSuperAdmin) return { valid: true };
+
+    const subDivStr = user.subDivision || '';
+    const digitsOnly = subDivStr.replace(/[^0-9]/g, '');
+
+    if (digitsOnly.length > 0) {
+      const cleanRefNum = refNumber.replace(/[^0-9]/g, '');
+      if (!cleanRefNum.includes(digitsOnly)) {
+        return {
+          valid: false,
+          error: `Access Denied: Your assigned sub-division is "${subDivStr}". You can only scan/fetch bills containing your subdivision code "${digitsOnly}".`
+        };
+      }
+    }
+    return { valid: true };
+  };
+  
   const resetCase = () => {
     localStorage.removeItem('lesco_new_case_step');
     localStorage.removeItem('lesco_new_case_photo');
@@ -2947,6 +2967,15 @@ export default function NewCase() {
           try {
             const data = await extractBillData(dataUrl);
             if (data) {
+              const checkRef = (data.referenceNumber || '').replace(/[^0-9]/g, '');
+              const validation = validateSubDivisionRestriction(checkRef);
+              if (!validation.valid) {
+                setError(validation.error);
+                toast.error(validation.error);
+                setIsScanning(false);
+                return;
+              }
+
               if (data.referenceNumber) {
                 setReferenceNumber(data.referenceNumber.replace(/[^0-9]/g, ''));
               }
@@ -3531,6 +3560,16 @@ export default function NewCase() {
 
         const data = await extractBillData(resizedBase64);
         
+        const checkRef = (data.referenceNumber || '').replace(/[^0-9]/g, '');
+        const validation = validateSubDivisionRestriction(checkRef);
+        if (!validation.valid) {
+          setError(validation.error);
+          toast.error(validation.error);
+          setIsScanning(false);
+          e.target.value = ''; // Reset input value
+          return;
+        }
+
         if (data.referenceNumber) {
           setReferenceNumber(data.referenceNumber.replace(/[^0-9]/g, ''));
         }
@@ -3615,6 +3654,13 @@ export default function NewCase() {
     const cleanRef = referenceNumber.replace(/[^0-9]/g, '');
     if (cleanRef.length !== 14) {
       setError('Reference Number must be exactly 14 digits.');
+      return;
+    }
+
+    const validation = validateSubDivisionRestriction(cleanRef);
+    if (!validation.valid) {
+      setError(validation.error);
+      toast.error(validation.error);
       return;
     }
     
