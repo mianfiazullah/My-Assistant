@@ -9,6 +9,7 @@ export default function Admin() {
   const [copied, setCopied] = useState(false);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec');
+  const [webhookUrl2, setWebhookUrl2] = useState(localStorage.getItem('google_sheets_webhook_2') || '');
 
   useEffect(() => {
     const savedStep = localStorage.getItem('lesco_new_case_step');
@@ -24,10 +25,76 @@ export default function Admin() {
     }
   }, []);
 
-  const saveWebhook = () => {
+  const saveWebhooks = () => {
     localStorage.setItem('google_sheets_webhook', webhookUrl);
-    toast.success('Google Sheets link saved successfully!');
+    localStorage.setItem('google_sheets_webhook_2', webhookUrl2);
+    toast.success('Google Sheets links saved successfully!');
   };
+
+  const getTestPayload = () => ({ 
+    "Date of Checking": '16-05-2026',
+    "Reference Number": '12345678901234',
+    "Billing Month": 'MAY 26',
+    "Consumer Name": 'TEST CONSUMER',
+    "Consumer Name (Urdu)": 'ٹیسٹ صارف',
+    "Present Occupier": 'TEST OCCUPIER',
+    "Present Occupier (Urdu)": 'ٹیسٹ قابض',
+    "Address": '123 TEST STREET, LESCO AREA',
+    "Address (Urdu)": '123 ٹیسٹ اسٹریٹ',
+    "Customer ID": 'ID123456',
+    "Tariff": 'A-1',
+    "Sanction Load": '5 kW',
+    "Connected Load": '2.5 kW',
+    "Feeder Name": 'RADHA KISHAN',
+    "G. Total Units TO BE CHARGED": '1500',
+    "Meter No.": 'M-7890',
+    "Meter Make": 'Creative',
+    "Meter Type": 'S-Phase Static',
+    "Capacity": '10-40 Amp',
+    "Meter Status": 'Normal',
+    "Meter Slow By (%)": '0%',
+    "Discrepancy": 'Direct Supply From LESCO main Cable, Meter Body Tempered',
+    "Notice No.": 'N-12345',
+    "Notice Dated": '2026-05-01',
+    "FIR Request No.": 'TO-987',
+    "FIR Request Dated": '2026-05-10',
+    "Registered FIR No.": 'PS-444',
+    "Registered FIR Dated": '2026-05-12',
+    "Police Station": 'Kot Radha Kishan',
+    "No. of AC": '2',
+    "Split AC Count": '1',
+    "Window AC Count": '1',
+    "AC Type": 'Mixed',
+    "AC Period From": '2026-04',
+    "AC Period To": '2026-09',
+    "AC Period Months": '6',
+    "Units of AC Period": '1200',
+    "Detection Period From": '2026-01',
+    "Detection Period To": '2026-05',
+    "Detection Period Months": '5',
+    "Units Assessed": '2000',
+    "Units Already Charged": '500',
+    "Net Units to be Charged": '1500',
+    "D.BILL MEMO NO.": 'MEMO-001',
+    "D.BILL MEMO DATED": '2026-05-16',
+    "Loss Amount": '45000',
+    "Seizure Cable Size": '7/029',
+    "Seizure Cable Color": 'Black',
+    "Seizure Cable Length": '10 Foot',
+    "Checked By": 'Sub Divisional Checking Team, M&T Representative',
+    "Witnesses": 'John Doe (S-Phase MI), Jane Smith (LS-I)',
+    "Present Reading at Site": '8540',
+    "E-Mail Address": 'test@example.com',
+    "Mobile Number": '+923001234567',
+    "Load Factor": '20%',
+    "Connected Load Details": 'Light(10x20=200W); Fan(5x80=400W)',
+    "Remarks": 'Test Case for Full Data Logging',
+    "Employee Name": 'ADMIN TESTER',
+    "Employee Name (Urdu)": 'ایڈمن ٹیسٹر',
+    "Employee Designation": 'Assistant Manager',
+    "Employee CNIC": '35202-1234567-1',
+    "Employee Mobile": '+923112233445'
+  });
 
   const headers = [
     "Date of Checking", "Reference Number", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
@@ -99,109 +166,94 @@ export default function Admin() {
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold text-neutral-900 dark:text-slate-100 mb-2">Automatic Google Sheets Connection</h2>
-              <p className="text-neutral-500 dark:text-slate-400 mb-4 text-sm">
-                Paste your Google Apps Script "Web App URL" here to automatically save cases to your sheet.
+              <p className="text-neutral-500 dark:text-slate-400 mb-6 text-sm">
+                Paste your Google Apps Script "Web App URL" here to automatically save cases to your sheets. You can now use 2 sheets simultaneously!
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input 
-                  type="text" 
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  className="flex-1 px-4 py-3 rounded-xl border border-neutral-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-neutral-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
-                />
-                <button
-                  onClick={saveWebhook}
-                  className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
-                >
-                  Save Link
-                </button>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-neutral-500 dark:text-slate-400 mb-1">
+                    Google Sheets Webhook 1 (Primary)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-neutral-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase text-neutral-500 dark:text-slate-400 mb-1">
+                    Google Sheets Webhook 2 (Secondary - Optional)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={webhookUrl2}
+                    onChange={(e) => setWebhookUrl2(e.target.value)}
+                    placeholder="https://script.google.com/macros/s/.../exec (Leave empty if not required)"
+                    className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-neutral-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={saveWebhooks}
+                    className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20 text-sm"
+                  >
+                    Save Links
+                  </button>
+                </div>
               </div>
               
-              <button
-                onClick={async () => {
-                  try {
-                    toast.info('Sending test data...');
-                    await fetch(webhookUrl, {
-                      method: 'POST',
-                      mode: 'no-cors',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ 
-                        "Date of Checking": '16-05-2026',
-                        "Reference Number": '12345678901234',
-                        "Billing Month": 'MAY 26',
-                        "Consumer Name": 'TEST CONSUMER',
-                        "Consumer Name (Urdu)": 'ٹیسٹ صارف',
-                        "Present Occupier": 'TEST OCCUPIER',
-                        "Present Occupier (Urdu)": 'ٹیسٹ قابض',
-                        "Address": '123 TEST STREET, LESCO AREA',
-                        "Address (Urdu)": '123 ٹیسٹ اسٹریٹ',
-                        "Customer ID": 'ID123456',
-                        "Tariff": 'A-1',
-                        "Sanction Load": '5 kW',
-                        "Connected Load": '2.5 kW',
-                        "Feeder Name": 'RADHA KISHAN',
-                        "G. Total Units TO BE CHARGED": '1500',
-                        "Meter No.": 'M-7890',
-                        "Meter Make": 'Creative',
-                        "Meter Type": 'S-Phase Static',
-                        "Capacity": '10-40 Amp',
-                        "Meter Status": 'Normal',
-                        "Meter Slow By (%)": '0%',
-                        "Discrepancy": 'Direct Supply From LESCO main Cable, Meter Body Tempered',
-                        "Notice No.": 'N-12345',
-                        "Notice Dated": '2026-05-01',
-                        "FIR Request No.": 'TO-987',
-                        "FIR Request Dated": '2026-05-10',
-                        "Registered FIR No.": 'PS-444',
-                        "Registered FIR Dated": '2026-05-12',
-                        "Police Station": 'Kot Radha Kishan',
-                        "No. of AC": '2',
-                        "Split AC Count": '1',
-                        "Window AC Count": '1',
-                        "AC Type": 'Mixed',
-                        "AC Period From": '2026-04',
-                        "AC Period To": '2026-09',
-                        "AC Period Months": '6',
-                        "Units of AC Period": '1200',
-                        "Detection Period From": '2026-01',
-                        "Detection Period To": '2026-05',
-                        "Detection Period Months": '5',
-                        "Units Assessed": '2000',
-                        "Units Already Charged": '500',
-                        "Net Units to be Charged": '1500',
-                        "D.BILL MEMO NO.": 'MEMO-001',
-                        "D.BILL MEMO DATED": '2026-05-16',
-                        "Loss Amount": '45000',
-                        "Seizure Cable Size": '7/029',
-                        "Seizure Cable Color": 'Black',
-                        "Seizure Cable Length": '10 Foot',
-                        "Checked By": 'Sub Divisional Checking Team, M&T Representative',
-                        "Witnesses": 'John Doe (S-Phase MI), Jane Smith (LS-I)',
-                        "Present Reading at Site": '8540',
-                        "E-Mail Address": 'test@example.com',
-                        "Mobile Number": '+923001234567',
-                        "Load Factor": '20%',
-                        "Connected Load Details": 'Light(10x20=200W); Fan(5x80=400W)',
-                        "Remarks": 'Test Case for Full Data Logging',
-                        "Employee Name": 'ADMIN TESTER',
-                        "Employee Name (Urdu)": 'ایڈمن ٹیسٹر',
-                        "Employee Designation": 'Assistant Manager',
-                        "Employee CNIC": '35202-1234567-1',
-                        "Employee Mobile": '+923112233445'
-                      })
-                    });
-                    toast.success('Test data sent! Check your Google Sheet.');
-                  } catch (e) {
-                    toast.error('Failed to send test data.');
-                  }
-                }}
-                className="mt-4 flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline"
-              >
-                <Zap className="w-4 h-4" />
-                Test Connection (Send Sample Data)
-              </button>
+              <div className="mt-6 flex flex-wrap gap-4 border-t border-neutral-100 dark:border-slate-800/80 pt-4">
+                <button
+                  onClick={async () => {
+                    if (!webhookUrl) {
+                      toast.error("Webhook 1 is required to run a test.");
+                      return;
+                    }
+                    try {
+                      toast.info('Sending test data to Sheet 1...');
+                      await fetch('/api/webhook-proxy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ webhookUrl, payload: getTestPayload() })
+                      });
+                      toast.success('Test data sent to Sheet 1 successfully!');
+                    } catch (e) {
+                      toast.error('Failed to send test data.');
+                    }
+                  }}
+                  className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline"
+                >
+                  <Zap className="w-4 h-4" />
+                  Test Primary Sheet (1)
+                </button>
+
+                {webhookUrl2 && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        toast.info('Sending test data to Sheet 2...');
+                        await fetch('/api/webhook-proxy', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ webhookUrl: webhookUrl2, payload: getTestPayload() })
+                        });
+                        toast.success('Test data sent to Sheet 2 successfully!');
+                      } catch (e) {
+                        toast.error('Failed to send test data to Sheet 2.');
+                      }
+                    }}
+                    className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Test Secondary Sheet (2)
+                  </button>
+                )}
+              </div>
               
               <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30 italic text-amber-800 dark:text-amber-400 text-xs">
                 <strong>Student Tip:</strong> Remember to set "Who has access" to "Anyone" when deploying your script in Google Sheets!

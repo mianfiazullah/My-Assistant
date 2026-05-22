@@ -145,26 +145,6 @@ export default function NewCase() {
   const { user } = useAuth();
   const isUploadingRef = useRef(false);
   
-  const validateSubDivisionRestriction = (refNumber: string) => {
-    if (!user) return { valid: true };
-    const isSuperAdmin = user.email?.toLowerCase() === 'mianfiazullah@gmail.com';
-    if (isSuperAdmin) return { valid: true };
-
-    const subDivStr = user.subDivision || '';
-    const digitsOnly = subDivStr.replace(/[^0-9]/g, '');
-
-    if (digitsOnly.length > 0) {
-      const cleanRefNum = refNumber.replace(/[^0-9]/g, '');
-      if (!cleanRefNum.includes(digitsOnly)) {
-        return {
-          valid: false,
-          error: `Access Denied: Your assigned sub-division is "${subDivStr}". You can only scan/fetch bills containing your subdivision code "${digitsOnly}".`
-        };
-      }
-    }
-    return { valid: true };
-  };
-  
   const resetCase = () => {
     localStorage.removeItem('lesco_new_case_step');
     localStorage.removeItem('lesco_new_case_photo');
@@ -2967,13 +2947,25 @@ export default function NewCase() {
           try {
             const data = await extractBillData(dataUrl);
             if (data) {
-              const checkRef = (data.referenceNumber || '').replace(/[^0-9]/g, '');
-              const validation = validateSubDivisionRestriction(checkRef);
-              if (!validation.valid) {
-                setError(validation.error);
-                toast.error(validation.error);
-                setIsScanning(false);
-                return;
+              const scannedRef = data.referenceNumber || "";
+              const userEmail = user?.email?.toLowerCase() || "";
+              const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+              
+              if (!isAdmin) {
+                const subDiv = user?.subDivision || "";
+                if (subDiv) {
+                  const cleanRef = scannedRef.replace(/[^0-9]/g, '');
+                  const cleanSub = subDiv.replace(/[^0-9]/g, '');
+                  const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
+                  
+                  if (!isMatch) {
+                    const errMsg = `Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`;
+                    toast.error(errMsg);
+                    setError(errMsg);
+                    setIsScanning(false);
+                    return;
+                  }
+                }
               }
 
               if (data.referenceNumber) {
@@ -3560,14 +3552,26 @@ export default function NewCase() {
 
         const data = await extractBillData(resizedBase64);
         
-        const checkRef = (data.referenceNumber || '').replace(/[^0-9]/g, '');
-        const validation = validateSubDivisionRestriction(checkRef);
-        if (!validation.valid) {
-          setError(validation.error);
-          toast.error(validation.error);
-          setIsScanning(false);
-          e.target.value = ''; // Reset input value
-          return;
+        const scannedRef = data.referenceNumber || "";
+        const userEmail = user?.email?.toLowerCase() || "";
+        const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+        
+        if (!isAdmin) {
+          const subDiv = user?.subDivision || "";
+          if (subDiv) {
+            const cleanRef = scannedRef.replace(/[^0-9]/g, '');
+            const cleanSub = subDiv.replace(/[^0-9]/g, '');
+            const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
+            
+            if (!isMatch) {
+              const errMsg = `Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`;
+              toast.error(errMsg);
+              setError(errMsg);
+              setIsScanning(false);
+              e.target.value = '';
+              return;
+            }
+          }
         }
 
         if (data.referenceNumber) {
@@ -3656,12 +3660,21 @@ export default function NewCase() {
       setError('Reference Number must be exactly 14 digits.');
       return;
     }
-
-    const validation = validateSubDivisionRestriction(cleanRef);
-    if (!validation.valid) {
-      setError(validation.error);
-      toast.error(validation.error);
-      return;
+    
+    const userEmail = user?.email?.toLowerCase() || "";
+    const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+    if (!isAdmin) {
+      const subDiv = user?.subDivision || "";
+      if (subDiv) {
+        const cleanSub = subDiv.replace(/[^0-9]/g, '');
+        const isMatch = cleanSub ? cleanRef.includes(cleanSub) : referenceNumber.toLowerCase().includes(subDiv.toLowerCase());
+        
+        if (!isMatch) {
+          setError(`Fetching restricted! This reference number does not belong to your subdivision (${subDiv}).`);
+          toast.error(`Fetching restricted! This reference number does not belong to your subdivision (${subDiv}).`);
+          return;
+        }
+      }
     }
     
     setIsFetching(true);
@@ -3750,6 +3763,24 @@ export default function NewCase() {
     if (!user) {
       setError('User not authenticated. Please log in again.');
       return;
+    }
+
+    const userEmail = user?.email?.toLowerCase() || "";
+    const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+    if (!isAdmin) {
+      const subDiv = user?.subDivision || "";
+      if (subDiv) {
+        const refNo = detectionData.referenceNumber || billData.referenceNumber || "";
+        const cleanRef = refNo.replace(/[^0-9]/g, '');
+        const cleanSub = subDiv.replace(/[^0-9]/g, '');
+        const isMatch = cleanSub ? cleanRef.includes(cleanSub) : refNo.toLowerCase().includes(subDiv.toLowerCase());
+        
+        if (!isMatch) {
+          setError(`Case creation restricted! This reference number (${refNo || 'None'}) does not belong to your subdivision (${subDiv}).`);
+          toast.error(`Case creation restricted! This reference number (${refNo || 'None'}) does not belong to your subdivision (${subDiv}).`);
+          return;
+        }
+      }
     }
 
     if (!validateForm()) return;
@@ -3871,7 +3902,9 @@ export default function NewCase() {
       
       // 3. Save to Google Sheets (Client-side Webhook Automation)
       const webhookUrl = localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
-      if (webhookUrl) {
+      const webhookUrl2 = localStorage.getItem('google_sheets_webhook_2') || '';
+      
+      if (webhookUrl || webhookUrl2) {
         try {
           const payload = {
             "Date of Checking": newCase.dateOfChecking,
@@ -3938,15 +3971,37 @@ export default function NewCase() {
             "Employee Mobile": newCase.employeeMobile || '',
           };
 
-          await fetch('/api/webhook-proxy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ webhookUrl, payload }),
-          });
-          console.log('Case sent to Google Sheets via Proxy');
+          const promises: Promise<any>[] = [];
+          if (webhookUrl) {
+            promises.push(
+              fetch('/api/webhook-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webhookUrl, payload }),
+              }).then(res => {
+                if (!res.ok) throw new Error("Sheet 1 failed");
+                console.log('Case sent to Google Sheets 1 via Proxy');
+              })
+            );
+          }
+          if (webhookUrl2) {
+            promises.push(
+              fetch('/api/webhook-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webhookUrl: webhookUrl2, payload }),
+              }).then(res => {
+                if (!res.ok) throw new Error("Sheet 2 failed");
+                console.log('Case sent to Google Sheets 2 via Proxy');
+              })
+            );
+          }
+
+          await Promise.all(promises);
           toast.success("Saved to Google Sheets.");
         } catch (sheetsErr) {
           console.error("Failed to sync to Google Sheets:", sheetsErr);
+          toast.error("Failed to sync with one or both Google Sheets.");
         }
       }
 

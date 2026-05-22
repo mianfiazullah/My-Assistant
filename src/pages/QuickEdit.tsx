@@ -252,6 +252,25 @@ export default function QuickEdit() {
     setIsSaving(true);
     setError('');
     
+    const userEmail = user?.email?.toLowerCase() || "";
+    const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+    if (!isAdmin) {
+      const subDiv = user?.subDivision || "";
+      if (subDiv) {
+        const refNo = data.referenceNumber || "";
+        const cleanRef = refNo.replace(/[^0-9]/g, '');
+        const cleanSub = subDiv.replace(/[^0-9]/g, '');
+        const isMatch = cleanSub ? cleanRef.includes(cleanSub) : refNo.toLowerCase().includes(subDiv.toLowerCase());
+        
+        if (!isMatch) {
+          setError(`Saving restricted! This reference number (${refNo || 'None'}) does not belong to your subdivision (${subDiv}).`);
+          toast.error(`Saving restricted! This reference number (${refNo || 'None'}) does not belong to your subdivision (${subDiv}).`);
+          setIsSaving(false);
+          return;
+        }
+      }
+    }
+    
     if (data.noOfAC && parseInt(data.noOfAC.toString()) > 0) {
       const split = parseInt(data.splitAcCount?.toString() || '0');
       const window = parseInt(data.windowAcCount?.toString() || '0');
@@ -410,6 +429,27 @@ export default function QuickEdit() {
           const resizedBase64 = canvas.toDataURL('image/jpeg', 0.8);
 
           const extractedData = await extractBillData(resizedBase64);
+          
+          const scannedRef = extractedData.referenceNumber || "";
+          const userEmail = user?.email?.toLowerCase() || "";
+          const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+          
+          if (!isAdmin) {
+            const subDiv = user?.subDivision || "";
+            if (subDiv) {
+              const cleanRef = scannedRef.replace(/[^0-9]/g, '');
+              const cleanSub = subDiv.replace(/[^0-9]/g, '');
+              const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
+              
+              if (!isMatch) {
+                toast.dismiss(loadingToast);
+                toast.error(`Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`);
+                setIsExtracting(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+              }
+            }
+          }
           
           setData(prev => ({
             ...prev,
