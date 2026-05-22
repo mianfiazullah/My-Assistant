@@ -28,12 +28,7 @@ export default function Dashboard() {
   });
   const [allFilteredCases, setAllFilteredCases] = useState<DetectionCase[]>([]);
   const [showFirDetailsModal, setShowFirDetailsModal] = useState(false);
-  const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
-  const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
-  const [usersSearchFilter, setUsersSearchFilter] = useState('');
-  const [editingUserUid, setEditingUserUid] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ subDivision: string; expiryDate: string } | null>(null);
-  const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'user'>('user');
@@ -76,20 +71,6 @@ export default function Dashboard() {
     const uq = query(collection(db, 'users'));
     const unsubscribeUsers = onSnapshot(uq, (snapshot) => {
       setActiveUsersCount(snapshot.size || 1);
-      const list: User[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        list.push({
-          uid: docSnap.id,
-          name: data.name || 'New Employee',
-          email: data.email || '',
-          role: data.role || 'user',
-          expiryDate: data.expiryDate || '',
-          subDivision: data.subDivision || '',
-          disabled: !!data.disabled,
-        });
-      });
-      setActiveUsersList(list);
     }, (error) => {
       console.warn('Could not fetch active users list: ', error);
     });
@@ -493,43 +474,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleSaveUserEdits = async (targetUid: string) => {
-    if (!editDraft) return;
-    const toastId = toast.loading('Saving user updates...');
-    try {
-      const userDocRef = doc(db, 'users', targetUid);
-      const originalUser = activeUsersList.find(u => u.uid === targetUid);
-      let isoDate = originalUser?.expiryDate || '';
-      if (editDraft.expiryDate) {
-        isoDate = new Date(editDraft.expiryDate + 'T23:59:59Z').toISOString();
-      }
-      await setDoc(userDocRef, {
-        subDivision: editDraft.subDivision,
-        expiryDate: isoDate
-      }, { merge: true });
-      
-      toast.success('User account updated successfully!', { id: toastId });
-      setEditingUserUid(null);
-      setEditDraft(null);
-    } catch (error: any) {
-      console.error('Error updating user:', error);
-      toast.error(`Update failed: ${error.message}`, { id: toastId });
-    }
-  };
 
-  const handleToggleUserDisabled = async (targetUid: string, currentDisabled: boolean) => {
-    const nextState = !currentDisabled;
-    const statusWord = nextState ? 'disabled' : 'enabled';
-    const toastId = toast.loading(`Setting account to ${statusWord}...`);
-    try {
-      const userDocRef = doc(db, 'users', targetUid);
-      await setDoc(userDocRef, { disabled: nextState }, { merge: true });
-      toast.success(`Account successfully ${statusWord}!`, { id: toastId });
-    } catch (error: any) {
-      console.error('Error toggling user status:', error);
-      toast.error(`Action failed: ${error.message}`, { id: toastId });
-    }
-  };
 
   const handleAddNewUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -575,7 +520,7 @@ export default function Dashboard() {
       setNewUserRole('user');
       setNewUserSubDivision('');
       setNewUserExpiryDate('');
-      setShowAddUserForm(false);
+      setShowAddUserModal(false);
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast.error(`Create failed: ${error.message}`, { id: toastId });
@@ -668,6 +613,22 @@ export default function Dashboard() {
           <p className="text-slate-500 dark:text-slate-400 font-medium"></p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {canManageUsers && (
+            <button
+              onClick={() => {
+                setNewUserName('');
+                setNewUserEmail('');
+                setNewUserSubDivision('');
+                setNewUserRole('user');
+                setNewUserExpiryDate('');
+                setShowAddUserModal(true);
+              }}
+              className="px-6 py-3 bg-purple-650 dark:bg-purple-600 hover:bg-purple-500 text-white rounded-2xl font-bold font-sans shadow-lg shadow-purple-600/10 transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center cursor-pointer"
+            >
+              <Users className="w-5 h-5" />
+              Pre-Register User
+            </button>
+          )}
           {activeStep && (
             <button
               onClick={() => navigate('/new-case')}
@@ -778,7 +739,7 @@ export default function Dashboard() {
           const isTotalCard = stat.label === 'Total Cases';
           const isMonthCard = stat.label === 'This Month';
           const isActiveUsersCard = stat.label === 'Active Users';
-          const isClickable = isPendingCard || isTotalCard || isMonthCard || isActiveUsersCard;
+          const isClickable = isPendingCard || isTotalCard || isMonthCard;
           
           return (
             <motion.div
@@ -788,21 +749,17 @@ export default function Dashboard() {
               transition={{ delay: i * 0.1 }}
               onClick={() => {
                 if (isClickable) {
-                  if (isActiveUsersCard) {
-                    setShowActiveUsersModal(true);
-                  } else {
-                    if (isPendingCard) {
-                      setReportType('pending');
-                      setFirStatusFilter('pending');
-                    } else if (isMonthCard) {
-                      setReportType('month');
-                      setFirStatusFilter('all');
-                    } else if (isTotalCard) {
-                      setReportType('total');
-                      setFirStatusFilter('all');
-                    }
-                    setShowFirDetailsModal(true);
+                  if (isPendingCard) {
+                    setReportType('pending');
+                    setFirStatusFilter('pending');
+                  } else if (isMonthCard) {
+                    setReportType('month');
+                    setFirStatusFilter('all');
+                  } else if (isTotalCard) {
+                    setReportType('total');
+                    setFirStatusFilter('all');
                   }
+                  setShowFirDetailsModal(true);
                 }
               }}
               style={{ cursor: isClickable ? 'pointer' : 'default' }}
@@ -1923,13 +1880,13 @@ export default function Dashboard() {
           </div>
         )}
 
-        {showActiveUsersModal && (
+        {showAddUserModal && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-slate-900 w-full max-w-4xl h-[85vh] rounded-[2rem] flex flex-col overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800"
+              className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2rem] flex flex-col overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in-50 duration-200"
             >
               {/* Modal Header */}
               <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
@@ -1938,394 +1895,128 @@ export default function Dashboard() {
                     <Users className="w-5 h-5 animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active System Users</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium font-sans">
-                      Real-time register of authorized employees currently logged into the LESCO Detection Engine
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Pre-Register Employee</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium font-sans animate-pulse">
+                      Authorize access credentials for new LESCO field agents
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowActiveUsersModal(false)}
+                  onClick={() => setShowAddUserModal(false)}
                   className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Search Bar / Filter */}
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/25 dark:bg-slate-950/10 flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full sm:w-96 select-none">
-                  <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="text"
-                    placeholder="Search active users by name or email..."
-                    id="search-active-users"
-                    className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-sans text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-                    onChange={(e) => {
-                      setUsersSearchFilter(e.target.value);
-                    }}
-                  />
-                </div>
-                <div className="flex items-center gap-3 select-none">
-                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-3 py-1 rounded-full border border-purple-100 dark:border-purple-900/10 shrink-0 animate-pulse">
-                    {activeUsersList.length} Online {activeUsersList.length === 1 ? 'User' : 'Users'}
-                  </span>
-                  {canManageUsers && (
-                    <button
-                      onClick={() => setShowAddUserForm(!showAddUserForm)}
-                      className={cn(
-                        "px-4 py-2.5 text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5",
-                        showAddUserForm
-                          ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                          : "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/15"
-                      )}
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      {showAddUserForm ? 'Hide Form' : 'Add Register User'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Body: Active Users list */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {canManageUsers && showAddUserForm && (
-                  <motion.form
-                    initial={{ opacity: 0, y: -12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    onSubmit={handleAddNewUser}
-                    className="p-6 rounded-3xl border border-purple-100 dark:border-purple-900/30 bg-purple-50/10 dark:bg-purple-950/5 space-y-4 mb-6 relative overflow-hidden shadow-sm"
-                  >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
-                    <div className="flex items-center gap-2 mb-2 select-none">
-                      <div className="p-1.5 bg-purple-100 dark:bg-purple-950/45 text-purple-600 dark:text-purple-400 rounded-lg">
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-105">
-                        Pre-Register New LESCO Employee Access
-                      </h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Name */}
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Full Name *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Muhammad Ahmad"
-                          value={newUserName}
-                          onChange={(e) => setNewUserName(e.target.value)}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-101 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all"
-                        />
-                      </div>
-                      {/* Email */}
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Email Address *</label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="e.g. ahmad.lesco@gmail.com"
-                          value={newUserEmail}
-                          onChange={(e) => setNewUserEmail(e.target.value)}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-101 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all"
-                        />
-                      </div>
-                      {/* Sub Division */}
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Sub Division Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Kot Radha Kishan"
-                          value={newUserSubDivision}
-                          onChange={(e) => setNewUserSubDivision(e.target.value)}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-101 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all"
-                        />
-                      </div>
-                      {/* Account Expiry */}
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Account Expires</label>
-                        <input
-                          type="date"
-                          value={newUserExpiryDate}
-                          onChange={(e) => setNewUserExpiryDate(e.target.value)}
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-slate-101 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">System Authorization Role</label>
-                        <div className="flex items-center gap-4 select-none">
-                          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="role"
-                              value="user"
-                              checked={newUserRole === 'user'}
-                              onChange={() => setNewUserRole('user')}
-                              className="text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
-                            />
-                            Field Agent (User)
-                          </label>
-                          <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="role"
-                              value="admin"
-                              checked={newUserRole === 'admin'}
-                              onChange={() => setNewUserRole('admin')}
-                              className="text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
-                            />
-                            Super Admin
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 select-none self-end">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowAddUserForm(false);
-                            setNewUserName('');
-                            setNewUserEmail('');
-                            setNewUserRole('user');
-                            setNewUserSubDivision('');
-                            setNewUserExpiryDate('');
-                          }}
-                          className="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80 rounded-xl transition-all cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-purple-600/10 cursor-pointer flex items-center gap-1"
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Pre-Register User
-                        </button>
-                      </div>
-                    </div>
-                  </motion.form>
-                )}
-                {activeUsersList.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-48 text-center bg-slate-50/50 dark:bg-slate-800/10 rounded-2xl p-6 border border-dashed border-slate-200 dark:border-slate-800">
-                    <Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400 animate-spin mb-3" />
-                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Loading system sessions list...</p>
+              {/* Modal Body / Form */}
+              <form onSubmit={handleAddNewUser} className="p-6 space-y-4">
+                <div className="space-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-405 dark:text-slate-400 uppercase tracking-wider block mb-1 font-sans">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Muhammad Ahmad"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all dark:placeholder:text-slate-600"
+                    />
                   </div>
-                ) : (() => {
-                  const filtered = activeUsersList.filter(u => 
-                    u.name.toLowerCase().includes((usersSearchFilter || '').toLowerCase()) ||
-                    u.email.toLowerCase().includes((usersSearchFilter || '').toLowerCase()) ||
-                    (u.subDivision || '').toLowerCase().includes((usersSearchFilter || '').toLowerCase())
-                  );
 
-                  if (filtered.length === 0) {
-                    return (
-                      <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 dark:bg-slate-800/10 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                        <Users className="w-8 h-8 text-slate-400 mb-3" />
-                        <h4 className="text-sm font-bold text-neutral-900 dark:text-slate-200 mb-1">No matching users found</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Try checking your spelling or search terms.</p>
-                      </div>
-                    );
-                  }
+                  {/* Email */}
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-405 dark:text-slate-400 uppercase tracking-wider block mb-1 font-sans">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. ahmad.lesco@gmail.com"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all dark:placeholder:text-slate-600"
+                    />
+                  </div>
 
-                  return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filtered.map(u => {
-                        const isCurrentUser = u.uid === user?.uid;
-                        // Initial initials for avatar icon
-                        const initials = u.name
-                          .split(' ')
-                          .map(n => n[0])
-                          .slice(0, 2)
-                          .join('')
-                          .toUpperCase();
-
-                        // Unique soft color based on user name
-                        const colors = [
-                          'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100/50 dark:border-indigo-900/10',
-                          'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-100/50 dark:border-purple-900/10',
-                          'bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 border-pink-100/50 dark:border-pink-900/10',
-                          'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-100/50 dark:border-blue-900/10',
-                          'bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 border-teal-100/50 dark:border-teal-900/10',
-                          'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-100/50 dark:border-emerald-900/10'
-                        ];
-                        const hash = u.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        const assignedColor = colors[hash % colors.length];
-                        const canManageUsers = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
-                        const isEditing = editingUserUid === u.uid;
-
-                        return (
-                          <motion.div
-                            key={u.uid}
-                            layoutId={`user-card-${u.uid}`}
-                            className={cn(
-                              "p-5 rounded-2xl border bg-white dark:bg-slate-900 flex flex-col justify-between gap-4 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden",
-                              isCurrentUser 
-                                ? "border-purple-500/40 ring-1 ring-purple-500/20 bg-purple-550/5 dark:bg-purple-950/5" 
-                                : "border-slate-100 dark:border-slate-800"
-                            )}
-                          >
-                            <div className="flex items-start gap-4">
-                              <div className={cn("w-12 h-12 flex items-center justify-center rounded-2xl font-bold border text-sm shrink-0 shadow-sm select-none", assignedColor)}>
-                                {initials}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">
-                                    {u.name}
-                                  </h4>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {isCurrentUser && (
-                                      <span className="text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-400 px-2 py-0.5 rounded-md">
-                                        You
-                                      </span>
-                                    )}
-                                    <span className={cn(
-                                      "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border",
-                                      u.role === 'admin' 
-                                        ? "bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border-red-100 dark:border-red-900/25" 
-                                        : "bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/80"
-                                    )}>
-                                      {u.role}
-                                    </span>
-                                  </div>
-                                </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-1.5">
-                                  {u.email}
-                                </p>
-                                {u.disabled ? (
-                                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-0.5 rounded-full">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                    Account Disabled
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 rounded-full">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Session Active
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs">
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none">Sub Division</span>
-                                {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={editDraft?.subDivision || ''}
-                                    onChange={(e) => setEditDraft(prev => prev ? { ...prev, subDivision: e.target.value } : null)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                    placeholder="Enter subdivision..."
-                                  />
-                                ) : (
-                                  <span className="font-bold text-slate-700 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-800/40 px-2 py-0.5 rounded-md block truncate">
-                                    {u.subDivision || 'N/A'}
-                                  </span>
-                                )}
-                              </div>
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none">Account Expires</span>
-                                {isEditing ? (
-                                  <input
-                                    type="date"
-                                    value={editDraft?.expiryDate || ''}
-                                    onChange={(e) => setEditDraft(prev => prev ? { ...prev, expiryDate: e.target.value } : null)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-900 dark:text-slate-100 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                  />
-                                ) : (
-                                  <span className="font-bold text-slate-700 dark:text-slate-300 font-mono text-[10px] block truncate">
-                                    {u.expiryDate ? format(new Date(u.expiryDate), 'MMM d, yyyy') : 'Never'}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Admin Controls */}
-                            {canManageUsers && (
-                              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2.5 select-none font-sans">
-                                {isEditing ? (
-                                  <>
-                                    <button
-                                      onClick={() => handleSaveUserEdits(u.uid)}
-                                      className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-purple-600/10 cursor-pointer flex items-center justify-center gap-1"
-                                    >
-                                      <Save className="w-3.5 h-3.5" /> Save
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setEditingUserUid(null);
-                                        setEditDraft(null);
-                                      }}
-                                      className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        setEditingUserUid(u.uid);
-                                        setEditDraft({
-                                          subDivision: u.subDivision || '',
-                                          expiryDate: u.expiryDate ? u.expiryDate.split('T')[0] : ''
-                                        });
-                                      }}
-                                      className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-950/65 dark:hover:bg-slate-800 hover:bg-purple-50 border border-slate-100 dark:border-slate-800 hover:border-purple-100 dark:hover:border-slate-700 hover:text-purple-600 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
-                                    >
-                                      <Edit2 className="w-3.5 h-3.5" /> Edit
-                                    </button>
-                                    <button
-                                      onClick={() => handleToggleUserDisabled(u.uid, !!u.disabled)}
-                                      className={cn(
-                                        "flex-1 py-1.5 text-xs font-bold rounded-xl transition-all border cursor-pointer flex items-center justify-center gap-1",
-                                        u.disabled
-                                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100"
-                                          : "bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/30 hover:bg-rose-100"
-                                      )}
-                                    >
-                                      {u.disabled ? (
-                                        <>
-                                          <CheckCircle2 className="w-3.5 h-3.5" /> Enable
-                                        </>
-                                      ) : (
-                                        <>
-                                          <X className="w-3.5 h-3.5" /> Disable
-                                        </>
-                                      )}
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Client ID info */}
-                            <div className="pt-2 text-right border-t border-slate-100/40 dark:border-slate-800/40 select-none">
-                              <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                                ID: {u.uid}
-                              </span>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Sub Division */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider block mb-1 font-sans">Sub Division Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Kot Radha Kishan"
+                        value={newUserSubDivision}
+                        onChange={(e) => setNewUserSubDivision(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all dark:placeholder:text-slate-600"
+                      />
                     </div>
-                  );
-                })()}
-              </div>
+                    {/* Account Expiry */}
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider block mb-1 font-sans">Account Expires *</label>
+                      <input
+                        type="date"
+                        required
+                        value={newUserExpiryDate}
+                        onChange={(e) => setNewUserExpiryDate(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all"
+                      />
+                    </div>
+                  </div>
 
-              {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900 flex justify-end gap-3 select-none">
-                <button
-                  onClick={() => setShowActiveUsersModal(false)}
-                  className="px-5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-bold text-slate-705 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 rounded-xl transition-all cursor-pointer"
-                >
-                  Close Register
-                </button>
-              </div>
+                  {/* System Authorization Role */}
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-450 dark:text-slate-400 uppercase tracking-wider block mb-1 font-sans">System Authorization Role</label>
+                    <div className="flex items-center gap-6 select-none pt-1">
+                      <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="user"
+                          checked={newUserRole === 'user'}
+                          onChange={() => setNewUserRole('user')}
+                          className="text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                        />
+                        Field Agent (User)
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="admin"
+                          checked={newUserRole === 'admin'}
+                          onChange={() => setNewUserRole('admin')}
+                          className="text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                        />
+                        Super Admin
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 dark:border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddUserModal(false);
+                      setNewUserName('');
+                      setNewUserEmail('');
+                      setNewUserRole('user');
+                      setNewUserSubDivision('');
+                      setNewUserExpiryDate('');
+                    }}
+                    className="px-5 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 border border-slate-250 dark:border-slate-800 rounded-xl transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-purple-650 dark:bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-purple-600/10 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Pre-Register User
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
