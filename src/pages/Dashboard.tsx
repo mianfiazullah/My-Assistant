@@ -781,7 +781,7 @@ export default function Dashboard() {
           const isTotalCard = stat.label === 'Total Cases';
           const isMonthCard = stat.label === 'This Month';
           const isActiveUsersCard = stat.label === 'Active Users';
-          const isClickable = isPendingCard || isTotalCard || isMonthCard || isActiveUsersCard;
+          const isClickable = isPendingCard || isTotalCard || isMonthCard || (isActiveUsersCard && canManageUsers);
           
           return (
             <motion.div
