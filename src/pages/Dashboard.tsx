@@ -6,7 +6,7 @@ import { PlusCircle, FileText, Download, TrendingUp, Users, AlertTriangle, Arrow
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { collection, query, orderBy, limit, onSnapshot, deleteDoc, doc, setDoc, getDoc, writeBatch, where, getDocs } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType, auth } from '../firebase';
 import { DetectionCase, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
@@ -16,7 +16,10 @@ import { toast } from 'sonner';
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canManageUsers = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+  const canManageUsers = 
+    user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || 
+    auth.currentUser?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || 
+    user?.role === 'admin';
   const [recentCases, setRecentCases] = useState<DetectionCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewDoc, setPreviewDoc] = useState<{ type: string; data: any; isEditing?: boolean } | null>(null);
@@ -822,6 +825,19 @@ export default function Dashboard() {
                   <stat.icon className={cn("w-6 h-6", stat.color, "group-hover:text-white")} />
                 </div>
                 <div className="flex items-center gap-1.5">
+                  {isActiveUsersCard && canManageUsers && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActiveUsersModal(true);
+                        setShowAddUserForm(true);
+                      }}
+                      className="text-[9px] px-2.5 py-1 font-bold uppercase tracking-wider rounded-lg bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-900/45 transition-colors cursor-pointer flex items-center gap-1 z-10"
+                    >
+                      <PlusCircle className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Add User
+                    </button>
+                  )}
                   {isClickable && (
                     <span className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
                       {isActiveUsersCard ? 'View Users' : 'View Report'}
@@ -1968,7 +1984,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-3 select-none">
                   <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-3 py-1 rounded-full border border-purple-100 dark:border-purple-900/10 shrink-0 animate-pulse">
-                    {activeUsersList.length} Online {activeUsersList.length === 1 ? 'User' : 'Users'}
+                    {activeUsersList.length} Authorized {activeUsersList.length === 1 ? 'User' : 'Users'}
                   </span>
                   {canManageUsers && (
                     <button
@@ -2154,7 +2170,6 @@ export default function Dashboard() {
                         ];
                         const hash = u.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                         const assignedColor = colors[hash % colors.length];
-                        const canManageUsers = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
                         const isEditing = editingUserUid === u.uid;
 
                         return (
