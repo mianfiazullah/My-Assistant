@@ -14,6 +14,7 @@ export interface User {
   role: 'admin' | 'user';
   expiryDate: string;
   subDivision?: string;
+  disabled?: boolean;
 }
 
 export interface MonthWiseUnit {

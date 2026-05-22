@@ -164,31 +164,80 @@ export default function Cases() {
     return () => unsubscribe();
   }, []);
 
-  const filteredCases = cases.filter(c => 
-    (c.name || c.billData.consumerName).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.billData.referenceNumber.includes(searchTerm) ||
-    c.discrepancy.some(d => d.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredCases = cases.filter(c => {
+    const consumerName = c.name || c.billData?.consumerName || "";
+    const refNum = c.referenceNumber || c.billData?.referenceNumber || "";
+    return consumerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           refNum.includes(searchTerm) ||
+           (c.discrepancy && c.discrepancy.some(d => d.toLowerCase().includes(searchTerm.toLowerCase())));
+  });
 
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteCase = async (id: string) => {
     setIsDeleting(true);
+    const toastId = toast.loading('Moving case to trash...');
+    let originalCases: DetectionCase[] | null = null;
     try {
-      const caseDoc = await getDoc(doc(db, 'cases', id));
-      if (caseDoc.exists()) {
-        const caseData = caseDoc.data();
+      console.log('Initiating deletion for case ID:', id);
+      
+      // Try to find case in local state first to make it fast and bypass getDoc cache/local state bugs
+      const localCase = cases.find(c => c.id === id);
+      
+      let caseData: any = null;
+      if (localCase) {
+        console.log('Found case data locally in state:', localCase);
+        // Exclude internal React client state id
+        const { id: _, ...rest } = localCase;
+        caseData = rest;
+      } else {
+        console.log('Case not found locally. Fetching from Firestore...');
+        const caseDoc = await getDoc(doc(db, 'cases', id));
+        if (caseDoc.exists()) {
+          caseData = caseDoc.data();
+        }
+      }
+
+      if (caseData) {
+        // Save current state for potential rollback
+        originalCases = [...cases];
+
+        // Optimistic UI update - instantly remove from state to behave snappily and bypass any snapshot lag
+        setCases(prev => prev.filter(c => c.id !== id));
+
         const batch = writeBatch(db);
         batch.set(doc(db, 'trash', id), {
           ...caseData,
           deletedAt: new Date().toISOString()
         });
         batch.delete(doc(db, 'cases', id));
-        await batch.commit();
+        
+        try {
+          await batch.commit();
+          toast.success('Case moved to trash successfully', { id: toastId });
+        } catch (commitErr) {
+          // Revert optimistic updates
+          if (originalCases) setCases(originalCases);
+          throw commitErr;
+        }
+      } else {
+        toast.error(`Case not found (ID: ${id})`, { id: toastId });
       }
       setCaseToDelete(null);
     } catch (err: any) {
-      handleFirestoreError(err, OperationType.DELETE, 'cases');
+      console.error('Delete case error:', err);
+      let friendlyMessage = 'Failed to delete case.';
+      if (err?.message?.includes('permission-denied') || err?.code === 'permission-denied') {
+        friendlyMessage = 'Permission Denied: Only administrators or the creator of this case can delete it.';
+      } else if (err?.message) {
+        friendlyMessage = err.message;
+      }
+      toast.error(friendlyMessage, { id: toastId, duration: 6000 });
+      try {
+        handleFirestoreError(err, OperationType.DELETE, 'cases');
+      } catch (e) {
+        console.error('Logged Firestore error:', e);
+      }
     } finally {
       setIsDeleting(false);
     }

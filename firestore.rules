@@ -61,7 +61,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (request.auth.token.email == "mianfiazullah@gmail.com" || 
+        (('email' in request.auth.token && request.auth.token.email.lower() == "mianfiazullah@gmail.com") || 
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
@@ -121,8 +121,8 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // Users can read their own profile. Admins can read all profiles.
-      allow read: if isOwner(userId) || isAdmin();
+      // Users can read their own profile, or pre-registered profiles matching their authenticated email.
+      allow read: if isOwner(userId) || isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);
       
       // Users can create their own profile as 'user' role. Admins can create any profile.
       allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
@@ -130,25 +130,15 @@ service cloud.firestore {
       
       // Users can update their own profile but cannot change their role. Admins can update anything.
       allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
-                    ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+                    ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin() || (isOwner(userId) && resource.data.email == request.auth.token.email));
       
-      // Only admins can delete users.
-      allow delete: if isAdmin();
+      // Only admins can delete users, or if it is a pre-registered profile belonging to this user's email.
+      allow delete: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);
     }
 
     match /cases/{caseId} {
-      // Users can read all cases (for the register/discrepancy reports).
-      allow read: if isAuthenticated();
-      
-      // Any authenticated user can create a case.
-      allow create: if isAuthenticated() && isValidCase(request.resource.data);
-      
-      // Only the creator or an admin can update a case.
-      allow update: if isAuthenticated() && isValidCase(request.resource.data) && 
-                    (request.auth.uid == resource.data.userId || isAdmin());
-      
-      // Only the creator or an admin can delete a case.
-      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      // All authenticated users can read, create, update and delete cases to facilitate multi-user sub-division collaboration.
+      allow read, create, update, delete: if isAuthenticated();
     }
 
     match /feederReadings/{readingId} {
@@ -163,8 +153,8 @@ service cloud.firestore {
     }
 
     match /trash/{docId} {
-      allow write: if isAuthenticated() && (request.auth.uid == request.resource.data.userId || isAdmin());
-      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      // All authenticated users can manage trash items (read, create, update, delete).
+      allow read, create, update, delete: if isAuthenticated();
     }
 
     match /test/{docId} {

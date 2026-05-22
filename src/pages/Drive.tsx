@@ -39,7 +39,13 @@ export default function Drive() {
       }
     } catch (error: any) {
       console.error(error);
-      toast.error('Error connecting Google Drive: ' + error.message);
+      if (error?.code === 'auth/popup-blocked' || error?.message?.includes('popup-blocked')) {
+        toast.error('Popup Blocked: The Google authenticating window was blocked. Because you are inside the preview iframe, please open the application in a new tab (using the open-link icon at the top right) and connect there!', {
+          duration: 10000,
+        });
+      } else {
+        toast.error('Error connecting Google Drive: ' + error.message);
+      }
     }
   };
 

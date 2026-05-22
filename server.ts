@@ -83,6 +83,89 @@ async function startServer() {
     });
   });
 
+  function getRobustErrorMessage(error: any): string {
+    console.error("Gemini API Error details:", error);
+    let errorMsg = "";
+    if (typeof error === 'string') {
+      errorMsg = error;
+    } else if (error && typeof error === 'object') {
+      errorMsg = error.message || error.statusText || "";
+      
+      if (error.status) {
+        errorMsg += ` Status: ${error.status}`;
+      }
+      if (error.error?.message) {
+        errorMsg += ` Details: ${error.error.message}`;
+      } else if (error.error?.details) {
+        errorMsg += ` Details: ${JSON.stringify(error.error.details)}`;
+      }
+      
+      if (!errorMsg) {
+        try {
+          errorMsg = JSON.stringify(error);
+        } catch (_) {
+          errorMsg = String(error);
+        }
+      }
+    } else {
+      errorMsg = String(error);
+    }
+
+    const errorLower = errorMsg.toLowerCase();
+    const isQuota = errorLower.includes('429') || 
+                    errorLower.includes('resource_exhausted') || 
+                    errorLower.includes('quota') || 
+                    errorLower.includes('rate limit') || 
+                    errorLower.includes('exceeded limit') || 
+                    errorLower.includes('limit exceeded');
+                    
+    const isInvalidKey = errorLower.includes('api key not valid') || 
+                         errorLower.includes('invalid api key') || 
+                         errorLower.includes('key not found') ||
+                         errorLower.includes('api_key_invalid') ||
+                         errorLower.includes('invalid_api_key');
+                         
+    const isUnavailable = errorLower.includes('503') || 
+                          errorLower.includes('unavailable') || 
+                          errorLower.includes('high demand') || 
+                          errorLower.includes('capacity') ||
+                          errorLower.includes('busy') ||
+                          errorLower.includes('overloaded');
+
+    if (isInvalidKey) {
+      return 'Invalid Gemini API Key. Please update your API Key in the AI Studio platform or Vercel Environment Variables.';
+    }
+    if (isQuota) {
+      return 'Gemini API Free Tier quota exceeded limit. Please wait and try again, or use the official LESCO fallback portal.';
+    }
+    if (isUnavailable) {
+      return 'Google AI service is currently experiencing high demand and is unavailable. Please try again later, or use the official LESCO fallback portal.';
+    }
+
+    if (errorMsg && errorMsg.includes('{') && errorMsg.includes('}')) {
+      try {
+        const jsonStart = errorMsg.indexOf('{');
+        const parsed = JSON.parse(errorMsg.substring(jsonStart));
+        if (parsed.error?.message) {
+          errorMsg = parsed.error.message;
+        } else if (parsed.message) {
+          errorMsg = parsed.message;
+        }
+      } catch (_) {}
+    }
+    
+    if (errorMsg.startsWith('{"error"')) {
+      try {
+        const p = JSON.parse(errorMsg);
+        if (p.error?.message) {
+          errorMsg = p.error.message;
+        }
+      } catch(_) {}
+    }
+
+    return errorMsg || 'An unexpected error occurred during AI analysis. Please try again.';
+  }
+
   function cleanAndParseJSON(text: string) {
     const cleanText = text.trim();
     if (!cleanText || cleanText === 'undefined') {

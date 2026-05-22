@@ -57,7 +57,18 @@ export default function QuickEdit() {
   
   const [data, setData] = useState<Partial<DetectionCase & { referenceNumber: string }>>(() => {
     const savedData = getInitialState('lesco_quick_edit_data', null);
-    if (savedData) return savedData;
+    
+    // Clear and ignore cached data if we specifically routed to a different case
+    if (existingCase) {
+      if (!savedData || savedData.id !== existingCase.id) {
+        localStorage.removeItem('lesco_quick_edit_data');
+        localStorage.setItem('lesco_quick_edit_case', safeStringify(existingCase));
+      } else {
+        return savedData;
+      }
+    } else if (savedData) {
+      return savedData;
+    }
 
     const baseCase = existingCase || getInitialState('lesco_quick_edit_case', null);
     
@@ -312,6 +323,8 @@ export default function QuickEdit() {
       }
       
       setIsSaved(true);
+      localStorage.removeItem('lesco_quick_edit_data');
+      localStorage.setItem('lesco_quick_edit_case', safeStringify({ id: caseId, ...caseData }));
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {
       handleFirestoreError(err, OperationType.WRITE, 'cases');
