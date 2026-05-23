@@ -15,6 +15,8 @@ export interface User {
   expiryDate: string;
   subDivision?: string;
   disabled?: boolean;
+  webhookUrl?: string;
+  webhookUrl2?: string;
 }
 
 export interface MonthWiseUnit {

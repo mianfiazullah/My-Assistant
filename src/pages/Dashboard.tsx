@@ -2,7 +2,7 @@ import { safeStringify } from "../lib/safeStringify";
 import { safeFetchJson } from "../lib/safeFetch";
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PlusCircle, FileText, Download, TrendingUp, Users, AlertTriangle, ArrowRight, Loader2, Eye, X, Printer, Edit2, Save, Zap, ShieldAlert, ClipboardList, Bell, Trash2, ExternalLink, Search, CheckCircle2, ChevronDown, Landmark, ShieldCheck } from 'lucide-react';
+import { PlusCircle, FileText, Download, TrendingUp, Users, AlertTriangle, ArrowRight, Loader2, Eye, X, Printer, Edit2, Save, Zap, ShieldAlert, ClipboardList, Bell, Trash2, ExternalLink, Search, CheckCircle2, ChevronDown, Landmark, ShieldCheck, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { collection, query, orderBy, limit, onSnapshot, deleteDoc, doc, setDoc, getDoc, writeBatch, where, getDocs } from 'firebase/firestore';
@@ -32,13 +32,16 @@ export default function Dashboard() {
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
   const [usersSearchFilter, setUsersSearchFilter] = useState('');
   const [editingUserUid, setEditingUserUid] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ subDivision: string; expiryDate: string } | null>(null);
+  const [editDraft, setEditDraft] = useState<{ subDivision: string; expiryDate: string; webhookUrl: string; webhookUrl2: string } | null>(null);
+  const [expandedScriptUid, setExpandedScriptUid] = useState<string | null>(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'user'>('user');
   const [newUserSubDivision, setNewUserSubDivision] = useState('');
   const [newUserExpiryDate, setNewUserExpiryDate] = useState('');
+  const [newUserWebhookUrl, setNewUserWebhookUrl] = useState('');
+  const [newUserWebhookUrl2, setNewUserWebhookUrl2] = useState('');
   const [policeStationFilter, setPoliceStationFilter] = useState('');
   const [firStatusFilter, setFirStatusFilter] = useState<'all' | 'pending' | 'lodged'>('all');
   const [expandedPs, setExpandedPs] = useState<string | null>(null);
@@ -75,10 +78,15 @@ export default function Dashboard() {
   useEffect(() => {
     const uq = query(collection(db, 'users'));
     const unsubscribeUsers = onSnapshot(uq, (snapshot) => {
-      setActiveUsersCount(snapshot.size || 1);
+      let activeCount = 0;
       const list: User[] = [];
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
+        const isDisabled = !!data.disabled;
+        const isGoogleAccount = !docSnap.id.startsWith('pre-');
+        if (!isDisabled && isGoogleAccount) {
+          activeCount++;
+        }
         list.push({
           uid: docSnap.id,
           name: data.name || 'New Employee',
@@ -86,9 +94,10 @@ export default function Dashboard() {
           role: data.role || 'user',
           expiryDate: data.expiryDate || '',
           subDivision: data.subDivision || '',
-          disabled: !!data.disabled,
+          disabled: isDisabled,
         });
       });
+      setActiveUsersCount(activeCount);
       setActiveUsersList(list);
     }, (error) => {
       console.warn('Could not fetch active users list: ', error);
@@ -505,7 +514,9 @@ export default function Dashboard() {
       }
       await setDoc(userDocRef, {
         subDivision: editDraft.subDivision,
-        expiryDate: isoDate
+        expiryDate: isoDate,
+        webhookUrl: editDraft.webhookUrl,
+        webhookUrl2: editDraft.webhookUrl2
       }, { merge: true });
       
       toast.success('User account updated successfully!', { id: toastId });
@@ -563,7 +574,9 @@ export default function Dashboard() {
         role: newUserRole,
         expiryDate: isoDate,
         subDivision: newUserSubDivision.trim() || 'Gulberg',
-        disabled: false
+        disabled: false,
+        webhookUrl: newUserWebhookUrl.trim(),
+        webhookUrl2: newUserWebhookUrl2.trim()
       };
       
       await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
@@ -575,6 +588,8 @@ export default function Dashboard() {
       setNewUserRole('user');
       setNewUserSubDivision('');
       setNewUserExpiryDate('');
+      setNewUserWebhookUrl('');
+      setNewUserWebhookUrl2('');
       setShowAddUserForm(false);
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -1938,9 +1953,9 @@ export default function Dashboard() {
                     <Users className="w-5 h-5 animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active System Users</h2>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-101">Connected Google Accounts</h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium font-sans">
-                      Real-time register of authorized employees currently logged into the LESCO Detection Engine
+                      Verified Google Workspace profiles authenticated on the LESCO Detection Engine
                     </p>
                   </div>
                 </div>
@@ -1958,38 +1973,24 @@ export default function Dashboard() {
                   <Search className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
-                    placeholder="Search active users by name or email..."
+                    placeholder="Search Google accounts by name or email..."
                     id="search-active-users"
-                    className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-sans text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                    className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-sans text-slate-900 dark:text-slate-101 placeholder:text-slate-400"
                     onChange={(e) => {
                       setUsersSearchFilter(e.target.value);
                     }}
                   />
                 </div>
                 <div className="flex items-center gap-3 select-none">
-                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-3 py-1 rounded-full border border-purple-100 dark:border-purple-900/10 shrink-0 animate-pulse">
-                    {activeUsersList.length} Online {activeUsersList.length === 1 ? 'User' : 'Users'}
+                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-3 py-1 rounded-full border border-purple-100 dark:border-purple-900/10 shrink-0">
+                    {activeUsersList.filter(u => !u.uid.startsWith('pre-')).length} Google Accounts
                   </span>
-                  {canManageUsers && (
-                    <button
-                      onClick={() => setShowAddUserForm(!showAddUserForm)}
-                      className={cn(
-                        "px-4 py-2.5 text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5",
-                        showAddUserForm
-                          ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-750 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                          : "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/15"
-                      )}
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      {showAddUserForm ? 'Hide Form' : 'Add Register User'}
-                    </button>
-                  )}
                 </div>
               </div>
 
               {/* Body: Active Users list */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {canManageUsers && showAddUserForm && (
+                {false && canManageUsers && showAddUserForm && (
                   <motion.form
                     initial={{ opacity: 0, y: -12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -2051,6 +2052,28 @@ export default function Dashboard() {
                           value={newUserExpiryDate}
                           onChange={(e) => setNewUserExpiryDate(e.target.value)}
                           className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-slate-101 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all"
+                        />
+                      </div>
+                      {/* Webhook URL 1 */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Google Sheets Webhook (1)</label>
+                        <input
+                          type="url"
+                          placeholder="https://script.google.com/macros/s/.../exec"
+                          value={newUserWebhookUrl}
+                          onChange={(e) => setNewUserWebhookUrl(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-slate-101 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all font-mono"
+                        />
+                      </div>
+                      {/* Webhook URL 2 */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-sans">Google Sheets Webhook (2 - Optional)</label>
+                        <input
+                          type="url"
+                          placeholder="https://script.google.com/macros/s/.../exec"
+                          value={newUserWebhookUrl2}
+                          onChange={(e) => setNewUserWebhookUrl2(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-slate-101 placeholder:text-slate-400 focus:ring-2 focus:ring-purple-600/10 focus:border-purple-600 focus:outline-none transition-all font-mono"
                         />
                       </div>
                     </div>
@@ -2115,11 +2138,15 @@ export default function Dashboard() {
                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Loading system sessions list...</p>
                   </div>
                 ) : (() => {
-                  const filtered = activeUsersList.filter(u => 
-                    u.name.toLowerCase().includes((usersSearchFilter || '').toLowerCase()) ||
-                    u.email.toLowerCase().includes((usersSearchFilter || '').toLowerCase()) ||
-                    (u.subDivision || '').toLowerCase().includes((usersSearchFilter || '').toLowerCase())
-                  );
+                  const filtered = activeUsersList.filter(u => {
+                    if (u.uid.startsWith('pre-')) return false;
+                    const search = (usersSearchFilter || '').toLowerCase();
+                    return (
+                      u.name.toLowerCase().includes(search) ||
+                      u.email.toLowerCase().includes(search) ||
+                      (u.subDivision || '').toLowerCase().includes(search)
+                    );
+                  });
 
                   if (filtered.length === 0) {
                     return (
@@ -2154,7 +2181,7 @@ export default function Dashboard() {
                         ];
                         const hash = u.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                         const assignedColor = colors[hash % colors.length];
-                        const canManageUsers = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+                        const canManageUsers = false;
                         const isEditing = editingUserUid === u.uid;
 
                         return (
@@ -2244,6 +2271,202 @@ export default function Dashboard() {
                               </div>
                             </div>
 
+                            {/* User-specific Webhook Configurations (Moved to Admin Panel) */}
+
+                            {/* Dynamic Google Apps Script Generator (Moved to Admin Panel) */}
+                            {false && !isEditing && (
+                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/40 select-none">
+                                <button
+                                  onClick={() => setExpandedScriptUid(expandedScriptUid === u.uid ? null : u.uid)}
+                                  className="w-full flex items-center justify-between py-1.5 px-3 bg-purple-50/50 hover:bg-purple-100/60 dark:bg-purple-950/20 dark:hover:bg-purple-900/30 text-purple-655 dark:text-purple-400 rounded-xl text-[11px] font-bold font-sans transition-all cursor-pointer"
+                                >
+                                  <span className="flex items-center gap-1.5">
+                                    <Zap className="w-3.5 h-3.5 animate-pulse text-purple-500" />
+                                    {expandedScriptUid === u.uid ? "Hide Google Sheet Script & Setup Guide" : "Show Google Sheet Script & Setup Guide"}
+                                  </span>
+                                  <ChevronDown className={cn("w-3.5 h-3.5 transition-all", expandedScriptUid === u.uid ? "rotate-180" : "")} />
+                                </button>
+                                
+                                <AnimatePresence>
+                                  {expandedScriptUid === u.uid && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      className="overflow-hidden space-y-3 pt-3 text-[11px]"
+                                    >
+                                      <div className="bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-850 p-3 rounded-2xl select-text">
+                                        <p className="font-bold text-slate-850 dark:text-slate-200 mb-1 font-sans">
+                                          Follow these simple steps for: <span className="text-purple-600 dark:text-purple-400">{u.name} (Sub-Division: {u.subDivision || 'Default'})</span>
+                                        </p>
+                                        <ol className="list-decimal pl-4.5 space-y-1 text-slate-550 dark:text-slate-400 font-medium font-sans">
+                                          <li>Create a new Google Sheet named for subdivision <span className="font-bold text-slate-700 dark:text-slate-350">"{u.subDivision || 'Default'}"</span></li>
+                                          <li>Click on <span className="font-bold text-slate-750 dark:text-slate-350">Extensions &gt; Apps Script</span> in the Google Sheet menu.</li>
+                                          <li>Remove all placeholder code and <span className="font-bold text-purple-600 dark:text-purple-400">paste the code block below</span>!</li>
+                                          <li>Click <span className="font-bold text-slate-700 dark:text-slate-350">Deploy &gt; New Deployment</span>. Select "Web App".</li>
+                                          <li>Set "Who has access" to <span className="font-bold text-rose-500">"Anyone"</span> and click Deploy.</li>
+                                          <li>Authorize Google permissions, copy the generated Web App URL and edit this user to paste in Webhook 1 field above!</li>
+                                        </ol>
+                                      </div>
+
+                                      <div className="relative">
+                                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 select-none z-10">
+                                          <button
+                                            onClick={() => {
+                                              const code = `function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Auto subdivision preconfigured specifically for this employee's active records
+    var subDivision = "${u.subDivision || 'Default'}";
+    
+    // Check and create Dynamic Google Drive Folder named "My Assistant [subDivision]"
+    var folderName = "My Assistant " + subDivision;
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder;
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder(folderName);
+    }
+
+    // Check if this is a File Upload request
+    if (data.action === "uploadFile") {
+      var fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileData), data.fileType, data.fileName);
+      var file = folder.createFile(fileBlob);
+      return ContentService.createTextOutput(JSON.stringify({ 
+        "success": true, 
+        "message": "File saved to folder: " + folderName,
+        "fileId": file.getId(),
+        "url": file.getUrl()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Get or Create Dynamic Google Sheets Tab dynamically named like the Sub Division!
+    var sheet = ss.getSheetByName(subDivision);
+    if (!sheet) {
+      sheet = ss.insertSheet(subDivision);
+    }
+    
+    // Otherwise, it is standard Row Data
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    if (headers.length === 0 || headers[0] === "") {
+      headers = [
+        "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
+        "Present Occupier", "Present Occupier (Urdu)", "Address", "Address (Urdu)", "Customer ID", 
+        "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
+        "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
+        "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
+        "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
+        "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
+        "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
+        "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
+        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
+        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "Evidence Photo Drive Link", "Drive Folder Link"
+      ];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+    
+    // Update links inside standard data cells
+    if (!data["Drive Folder Link"]) {
+      data["Drive Folder Link"] = folder.getUrl();
+    }
+    
+    var row = [];
+    for (var i = 0; i < headers.length; i++) {
+      var key = headers[i];
+      row.push(data[key] || "");
+    }
+    
+    sheet.appendRow(row);
+    
+    return ContentService.createTextOutput(JSON.stringify({ 
+      "success": true, 
+      "message": "Data saved and folder verified/created successfully.",
+      "folderName": folderName,
+      "sheetName": subDivision
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      "success": false, 
+      "error": error.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+                                              navigator.clipboard.writeText(code).then(() => {
+                                                toast.success(`Google Apps Script code copied for ${u.name}!`);
+                                              });
+                                            }}
+                                            className="px-2.5 py-1 bg-slate-900 border border-slate-700/80 rounded-lg text-white font-bold cursor-pointer hover:bg-slate-800 flex items-center gap-1 scale-[0.85]"
+                                          >
+                                            <Copy className="w-3.5 h-3.5" /> Copy Code
+                                          </button>
+                                        </div>
+                                        <textarea
+                                          readOnly
+                                          value={`// Google Sheets Automator specifically preconfigured for Division: "${u.subDivision || 'Default'}"
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var subDivision = "${u.subDivision || 'Default'}";
+    var folderName = "My Assistant " + subDivision;
+    var folders = DriveApp.getFoldersByName(folderName);
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+
+    if (data.action === "uploadFile") {
+      var fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileData), data.fileType, data.fileName);
+      var file = folder.createFile(fileBlob);
+      return ContentService.createTextOutput(JSON.stringify({ "success": true, "url": file.getUrl() })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var sheet = ss.getSheetByName(subDivision) || ss.insertSheet(subDivision);
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    if (headers.length === 0 || headers[0] === "") {
+      headers = [
+        "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
+        "Present Occupier", "Present Occupier (Urdu)", "Address", "Address (Urdu)", "Customer ID", 
+        "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
+        "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
+        "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
+        "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
+        "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
+        "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
+        "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
+        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
+        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "Evidence Photo Drive Link", "Drive Folder Link"
+      ];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+    
+    if (!data["Drive Folder Link"]) data["Drive Folder Link"] = folder.getUrl();
+    var row = [];
+    for (var i = 0; i < headers.length; i++) {
+      row.push(data[headers[i]] || "");
+    }
+    sheet.appendRow(row);
+    return ContentService.createTextOutput(JSON.stringify({ "success": true, "folderName": folderName, "sheetName": subDivision })).setMimeType(ContentService.MimeType.JSON);
+  } catch(e) {
+    return ContentService.createTextOutput(JSON.stringify({ "success": false, "error": e.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`}
+                                          className="w-full h-32 bg-slate-900 border border-slate-800 text-slate-350 rounded-2xl p-3 font-mono text-[9px] resize-none focus:outline-none"
+                                        />
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            )}
+
                             {/* Admin Controls */}
                             {canManageUsers && (
                               <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2.5 select-none font-sans">
@@ -2272,7 +2495,9 @@ export default function Dashboard() {
                                         setEditingUserUid(u.uid);
                                         setEditDraft({
                                           subDivision: u.subDivision || '',
-                                          expiryDate: u.expiryDate ? u.expiryDate.split('T')[0] : ''
+                                          expiryDate: u.expiryDate ? u.expiryDate.split('T')[0] : '',
+                                          webhookUrl: u.webhookUrl || '',
+                                          webhookUrl2: u.webhookUrl2 || ''
                                         });
                                       }}
                                       className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-950/65 dark:hover:bg-slate-800 hover:bg-purple-50 border border-slate-100 dark:border-slate-800 hover:border-purple-100 dark:hover:border-slate-700 hover:text-purple-600 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"

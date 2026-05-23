@@ -3290,8 +3290,8 @@ export default function NewCase() {
     if (isUploadingRef.current || isUploadedToDrive) return;
     
     let googleTokens = localStorage.getItem('google_drive_token');
-    const webhookUrl = localStorage.getItem('google_sheets_webhook');
-    const webhookUrl2 = localStorage.getItem('google_sheets_webhook_2');
+    const webhookUrl = user?.webhookUrl || localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
+    const webhookUrl2 = user?.webhookUrl2 || localStorage.getItem('google_sheets_webhook_2') || '';
     
     if (!googleTokens && !webhookUrl && !webhookUrl2) {
       toast('No Google account or webhook is linked', {
@@ -4001,8 +4001,8 @@ export default function NewCase() {
       await addDoc(collection(db, 'cases'), newCase);
       
       // 3. Save to Google Sheets (Client-side Webhook Automation)
-      const webhookUrl = localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
-      const webhookUrl2 = localStorage.getItem('google_sheets_webhook_2') || '';
+      const webhookUrl = user?.webhookUrl || localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
+      const webhookUrl2 = user?.webhookUrl2 || localStorage.getItem('google_sheets_webhook_2') || '';
       
       if (webhookUrl || webhookUrl2) {
         try {
