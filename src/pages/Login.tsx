@@ -1,14 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Lock, User, AlertCircle, LogIn } from 'lucide-react';
+import { ShieldAlert, Lock, User, AlertCircle, LogIn, Github } from 'lucide-react';
 import { motion } from 'motion/react';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
 
 export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleGithubLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const provider = new GithubAuthProvider();
+      await signInWithPopup(auth, provider);
+      navigate('/');
+    } catch (err: any) {
+      console.error('GitHub auth error:', err);
+      setError(err.message || 'Failed to login with GitHub. Please check if GitHub provider is enabled in Firebase configuration.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -57,15 +72,30 @@ export default function Login() {
 
         <div className="space-y-4">
           <button
-            onClick={handleGoogleLogin}
+            onClick={handleGithubLogin}
             disabled={isLoading}
-            className="w-full bg-white hover:bg-neutral-100 disabled:bg-neutral-700 text-neutral-900 font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            className="w-full bg-[#181a1f] hover:bg-[#202329] active:bg-[#121418] disabled:bg-neutral-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-3 border border-neutral-850 cursor-pointer"
           >
             {isLoading ? (
               <div className="w-6 h-6 border-2 border-neutral-300 border-t-indigo-600 rounded-full animate-spin" />
             ) : (
               <>
-                <LogIn className="w-5 h-5" />
+                <Github className="w-5 h-5 text-white" />
+                Sign In with GitHub
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="w-full bg-white hover:bg-neutral-100 disabled:bg-neutral-700 text-neutral-900 font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer"
+          >
+            {isLoading ? (
+              <div className="w-6 h-6 border-2 border-neutral-300 border-t-indigo-600 rounded-full animate-spin" />
+            ) : (
+              <>
+                <LogIn className="w-5 h-5 text-neutral-600" />
                 Sign In with Google
               </>
             )}
@@ -85,7 +115,7 @@ export default function Login() {
           </div>
 
           <p className="text-neutral-400 text-xs text-center leading-relaxed">
-            Please use your official Google account to sign in. 
+            Please use your authorized GitHub or Google account to sign in. 
             Access is restricted to authorized field personnel.
           </p>
         </div>

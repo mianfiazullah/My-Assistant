@@ -10,8 +10,8 @@
 }
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Playfair Display", serif;
+  --font-sans: "Inter", "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --font-urdu: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
   
