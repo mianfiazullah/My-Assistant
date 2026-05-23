@@ -3290,14 +3290,12 @@ export default function NewCase() {
     if (isUploadingRef.current || isUploadedToDrive) return;
     
     let googleTokens = localStorage.getItem('google_drive_token');
+    const webhookUrl = localStorage.getItem('google_sheets_webhook');
+    const webhookUrl2 = localStorage.getItem('google_sheets_webhook_2');
     
-    if (!googleTokens) {
-      toast('Google Drive not connected', {
-        description: 'Please connect your account to backup templates.',
-        action: {
-          label: 'Connect Now',
-          onClick: () => connectDriveAndUpload()
-        }
+    if (!googleTokens && !webhookUrl && !webhookUrl2) {
+      toast('No Google account or webhook is linked', {
+        description: 'Please connect Google Drive or configure sheets in the Admin area.'
       });
       return;
     }
@@ -3305,55 +3303,41 @@ export default function NewCase() {
     try {
       isUploadingRef.current = true;
       setIsBulkUploading(true);
-      toast.loading('Creating combined PDF for Google Drive...', { id: 'bulkUpload' });
+      toast.loading('Creating combined PDF of the case...', { id: 'bulkUpload' });
       
       const templates = ['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Urdu'];
       
       // Give time for DOM to ensure refs are attached
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const { createOrGetFolder, uploadToGoogleDrive, listFilesFromGoogleDrive } = await import('../lib/googleDrive');
-      
-      let folderId;
+      let folderId = null;
       let existingFiles: any[] = [];
-      try {
-        folderId = await createOrGetFolder(googleTokens, 'My Assistant');
-        existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
-      } catch (folderErr: any) {
-        if (folderErr.message.includes('expired')) {
-          localStorage.removeItem('google_drive_token');
-          setDriveToken(null);
-          toast.error('Drive access expired', {
-            id: 'bulkUpload',
-            description: 'Please reconnect and try again.',
-            action: {
-              label: 'Reconnect',
-              onClick: () => connectDriveAndUpload()
-            }
-          });
-          return;
+      
+      if (googleTokens) {
+        try {
+          const { createOrGetFolder, listFilesFromGoogleDrive } = await import('../lib/googleDrive');
+          folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+          existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
+        } catch (folderErr: any) {
+          if (folderErr.message.includes('expired')) {
+            localStorage.removeItem('google_drive_token');
+            setDriveToken(null);
+            toast.error('Personal Drive access expired. Google Sheets Webhooks will still receive sync.', { id: 'bulkUpload' });
+            googleTokens = null;
+          } else {
+            console.error(`Personal Drive error: ${folderErr.message}`);
+            googleTokens = null;
+          }
         }
-        throw new Error(`Cloud Folder Access Failed: ${folderErr.message}`);
       }
 
       let finalFileName = `Case_${billData?.referenceNumber || 'Templates'}.pdf`;
 
-      // Check if this case PDF already exists
-      if (existingFiles.some(f => f.name === finalFileName)) {
+      // Check if this case PDF already exists in personal Drive
+      if (googleTokens && folderId && existingFiles.some(f => f.name === finalFileName)) {
         // If it exists, try to make it unique by adding checking date
         const dateStr = detectionData.dateOfChecking ? `_Checked_${detectionData.dateOfChecking.replace(/[/\\?%*:|"<>]/g, '-')}` : '';
         finalFileName = `Case_${billData?.referenceNumber || 'Templates'}${dateStr}.pdf`;
-        
-        // If even the date-stamped one exists, then we skip
-        if (existingFiles.some(f => f.name === finalFileName)) {
-          toast.success(`Templates already backed up for this date!`, { 
-            id: 'bulkUpload',
-            description: finalFileName
-          });
-          setIsUploadedToDrive(true);
-          setIsBulkUploading(false);
-          return;
-        }
       }
 
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -3391,7 +3375,7 @@ export default function NewCase() {
       }
       
       if (pageCount > 0) {
-        toast.loading('Uploading PDF to Google Drive...', { id: 'bulkUpload' });
+        toast.loading('Syncing case files with drive folders...', { id: 'bulkUpload' });
         
         const pdfBlob = pdf.output('blob');
         const reader = new FileReader();
@@ -3400,10 +3384,126 @@ export default function NewCase() {
           reader.readAsDataURL(pdfBlob);
         });
 
-        await uploadToGoogleDrive(googleTokens, folderId, dataUrl, finalFileName, 'application/pdf');
+        // 1. Upload to personal drive
+        if (googleTokens && folderId) {
+          const { uploadToGoogleDrive } = await import('../lib/googleDrive');
+          await uploadToGoogleDrive(googleTokens, folderId, dataUrl, finalFileName, 'application/pdf');
+        }
+
+        // 2. Sync PDF with both Google Sheets webhooks
+        const fileBase64 = dataUrl.split(',')[1];
+        const webhookPromises: Promise<any>[] = [];
+
+        if (webhookUrl) {
+          webhookPromises.push(
+            fetch('/api/webhook-proxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                webhookUrl,
+                payload: {
+                  action: "uploadFile",
+                  fileName: finalFileName,
+                  fileType: "application/pdf",
+                  fileData: fileBase64,
+                  subDivision: billData?.subDivisionName || ""
+                }
+              }),
+            }).then(async (res) => {
+              if (!res.ok) throw new Error("Webhook 1 error");
+              console.log('Case PDF automatically saved to Webhook 1');
+            }).catch(e => console.error('Failed to sync PDF to Webhook 1:', e))
+          );
+        }
+
+        if (webhookUrl2) {
+          webhookPromises.push(
+            fetch('/api/webhook-proxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                webhookUrl: webhookUrl2,
+                payload: {
+                  action: "uploadFile",
+                  fileName: finalFileName,
+                  fileType: "application/pdf",
+                  fileData: fileBase64,
+                  subDivision: billData?.subDivisionName || ""
+                }
+              }),
+            }).then(async (res) => {
+              if (!res.ok) throw new Error("Webhook 2 error");
+              console.log('Case PDF automatically saved to Webhook 2');
+            }).catch(e => console.error('Failed to sync PDF to Webhook 2:', e))
+          );
+        }
+
+        // 3. If an evidence photograph is captured, also sync that photo to Google Drive
+        let savedPhoto = localStorage.getItem('lesco_new_case_photo') || photo;
+        if (savedPhoto) {
+          const photoBase64 = savedPhoto.split(',')[1];
+          const photoMimeType = savedPhoto.split(';')[0].split(':')[1] || 'image/jpeg';
+          const extension = photoMimeType.split('/')[1] || 'jpeg';
+          const photoName = `Case_${billData?.referenceNumber || 'Photo'}_Evidence.${extension}`;
+
+          if (googleTokens && folderId) {
+            const { uploadToGoogleDrive } = await import('../lib/googleDrive');
+            try {
+              await uploadToGoogleDrive(googleTokens, folderId, savedPhoto, photoName, photoMimeType);
+            } catch (err) {
+              console.error('Failed to upload evidence photograph to personal drive:', err);
+            }
+          }
+
+          if (webhookUrl) {
+            webhookPromises.push(
+              fetch('/api/webhook-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  webhookUrl,
+                  payload: {
+                    action: "uploadFile",
+                    fileName: photoName,
+                    fileType: photoMimeType,
+                    fileData: photoBase64,
+                    subDivision: billData?.subDivisionName || ""
+                  }
+                }),
+              }).then(res => {
+                if (res.ok) console.log('Evidence photograph synced to Webhook 1 Drive');
+              }).catch(e => console.error('Photo sync webhook 1 failed:', e))
+            );
+          }
+
+          if (webhookUrl2) {
+            webhookPromises.push(
+              fetch('/api/webhook-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  webhookUrl: webhookUrl2,
+                  payload: {
+                    action: "uploadFile",
+                    fileName: photoName,
+                    fileType: photoMimeType,
+                    fileData: photoBase64,
+                    subDivision: billData?.subDivisionName || ""
+                  }
+                }),
+              }).then(res => {
+                if (res.ok) console.log('Evidence photograph synced to Webhook 2 Drive');
+              }).catch(e => console.error('Photo sync webhook 2 failed:', e))
+            );
+          }
+        }
+
+        if (webhookPromises.length > 0) {
+          await Promise.all(webhookPromises);
+        }
         
         setIsUploadedToDrive(true);
-        toast.success(`Successfully backed up PDF to Drive!`, { 
+        toast.success(`Successfully uploaded documents to Google Drive!`, { 
           id: 'bulkUpload',
           description: finalFileName
         });
@@ -3909,6 +4009,7 @@ export default function NewCase() {
           const payload = {
             "Date of Checking": newCase.dateOfChecking,
             "Reference Number": newCase.referenceNumber,
+            "Sub Division": billData?.subDivisionName || '',
             "Billing Month": newCase.billingMonth || '',
             "Consumer Name": newCase.name,
             "Consumer Name (Urdu)": newCase.nameUrdu || '',
@@ -3969,6 +4070,7 @@ export default function NewCase() {
             "Employee Designation": newCase.employeeDesignation,
             "Employee CNIC": newCase.employeeCnic || '',
             "Employee Mobile": newCase.employeeMobile || '',
+            "photoUrl": newCase.photoUrl || '',
           };
 
           const promises: Promise<any>[] = [];
