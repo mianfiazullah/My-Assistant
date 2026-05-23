@@ -93,7 +93,7 @@ export default function Admin() {
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
         "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
-        "Evidence Photo Drive Link", "Drive Folder Link"
+        "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
@@ -157,10 +157,18 @@ export default function Admin() {
     toast.success('Google Sheets links saved successfully!');
   };
 
-  const getTestPayload = () => ({ 
-    "Date of Checking": '16-05-2026',
-    "Reference Number": '12345678901234',
-    "Sub Division": '11751',
+  const getTestPayload = (options?: { customSubDivision?: string }) => {
+    const rawSubDiv = (options?.customSubDivision || '11751').trim();
+    const cleanNumbers = rawSubDiv.replace(/[^0-9]/g, '');
+    let referenceNumberCode = '11751012345678';
+    if (cleanNumbers) {
+      referenceNumberCode = (cleanNumbers + '01234567890123').substring(0, 14);
+    }
+
+    return { 
+      "Date of Checking": '16-05-2026',
+      "Reference Number": referenceNumberCode,
+      "Sub Division": rawSubDiv,
     "Billing Month": 'MAY 26',
     "Consumer Name": 'TEST CONSUMER',
     "Consumer Name (Urdu)": 'ٹیسٹ صارف',
@@ -222,7 +230,8 @@ export default function Admin() {
     "Employee CNIC": '35202-1234567-1',
     "Employee Mobile": '+923112233445',
     "photoUrl": 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
-  });
+  };
+};
 
   const headers = [
     "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
@@ -238,7 +247,7 @@ export default function Admin() {
     "Seizure Cable Color", "Seizure Cable Length", "Checked By", "Witnesses", 
     "Present Reading at Site", "E-Mail Address", "Mobile Number", "Load Factor", 
     "Connected Load Details", "Remarks", "Employee Name", "Employee Name (Urdu)", 
-    "Employee Designation", "Employee CNIC", "Employee Mobile", "Evidence Photo Drive Link", "Drive Folder Link"
+    "Employee Designation", "Employee CNIC", "Employee Mobile", "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
   ];
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -488,7 +497,7 @@ export default function Admin() {
                       await fetch('/api/webhook-proxy', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ webhookUrl, payload: getTestPayload() })
+                        body: JSON.stringify({ webhookUrl, payload: getTestPayload({ customSubDivision: user?.subDivision }) })
                       });
                       toast.success('Test data sent to Sheet 1 successfully!');
                     } catch (e) {
@@ -509,7 +518,7 @@ export default function Admin() {
                         await fetch('/api/webhook-proxy', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ webhookUrl: webhookUrl2, payload: getTestPayload() })
+                          body: JSON.stringify({ webhookUrl: webhookUrl2, payload: getTestPayload({ customSubDivision: user?.subDivision }) })
                         });
                         toast.success('Test data sent to Sheet 2 successfully!');
                       } catch (e) {
@@ -955,9 +964,35 @@ export default function Admin() {
                               placeholder="Deployment webhook URL..."
                             />
                           ) : (
-                            <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-md block truncate border border-slate-100 dark:border-slate-800/80" title={u.webhookUrl || 'Not Configured'}>
-                              {u.webhookUrl || 'Not Configured (Using Default Webhook)'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-md block truncate border border-slate-100 dark:border-slate-800/80 flex-1" title={u.webhookUrl || 'Not Configured'}>
+                                {u.webhookUrl || 'Not Configured (Using Default Webhook)'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const targetWebhook = u.webhookUrl || webhookUrl;
+                                  if (!targetWebhook) {
+                                    toast.error("Webhook 1 is required to run a test.");
+                                    return;
+                                  }
+                                  try {
+                                    toast.info(`Sending test data to ${u.name}'s Sheet 1...`);
+                                    await fetch('/api/webhook-proxy', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ webhookUrl: targetWebhook, payload: getTestPayload({ customSubDivision: u.subDivision }) })
+                                    });
+                                    toast.success(`Success! Test data sent to ${u.name}'s Webhook 1`);
+                                  } catch (e) {
+                                    toast.error('Failed to send test data.');
+                                  }
+                                }}
+                                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 rounded-lg font-bold text-[10px] cursor-pointer shrink-0 transition-all select-none"
+                              >
+                                Test Sheet
+                              </button>
+                            </div>
                           )}
                         </div>
                         <div>
@@ -971,9 +1006,33 @@ export default function Admin() {
                               placeholder="Optional secondary webhook URL..."
                             />
                           ) : (
-                            <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-md block truncate border border-slate-100 dark:border-slate-800/80" title={u.webhookUrl2 || 'None (Optional)'}>
-                              {u.webhookUrl2 || 'None (Optional)'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-md block truncate border border-slate-100 dark:border-slate-800/80 flex-1" title={u.webhookUrl2 || 'None (Optional)'}>
+                                {u.webhookUrl2 || 'None (Optional)'}
+                              </span>
+                              {(u.webhookUrl2 || webhookUrl2) && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const targetWebhook = u.webhookUrl2 || webhookUrl2;
+                                    try {
+                                      toast.info(`Sending test data to ${u.name}'s Sheet 2...`);
+                                      await fetch('/api/webhook-proxy', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ webhookUrl: targetWebhook, payload: getTestPayload({ customSubDivision: u.subDivision }) })
+                                      });
+                                      toast.success(`Success! Test data sent to ${u.name}'s Webhook 2`);
+                                    } catch (e) {
+                                      toast.error('Failed to send test data to Sheet 2.');
+                                    }
+                                  }}
+                                  className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 rounded-lg font-bold text-[10px] cursor-pointer shrink-0 transition-all select-none"
+                                >
+                                  Test Sheet 2
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1050,7 +1109,7 @@ export default function Admin() {
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
         "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
-        "Evidence Photo Drive Link", "Drive Folder Link"
+        "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
@@ -1110,7 +1169,7 @@ function doPost(e) {
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
         "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
-        "Evidence Photo Drive Link", "Drive Folder Link"
+        "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }

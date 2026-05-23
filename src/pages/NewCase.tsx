@@ -2948,23 +2948,19 @@ export default function NewCase() {
             const data = await extractBillData(dataUrl);
             if (data) {
               const scannedRef = data.referenceNumber || "";
-              const userEmail = user?.email?.toLowerCase() || "";
-              const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+              const subDiv = user?.subDivision || "";
               
-              if (!isAdmin) {
-                const subDiv = user?.subDivision || "";
-                if (subDiv) {
-                  const cleanRef = scannedRef.replace(/[^0-9]/g, '');
-                  const cleanSub = subDiv.replace(/[^0-9]/g, '');
-                  const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
-                  
-                  if (!isMatch) {
-                    const errMsg = `Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`;
-                    toast.error(errMsg);
-                    setError(errMsg);
-                    setIsScanning(false);
-                    return;
-                  }
+              if (subDiv) {
+                const cleanRef = scannedRef.replace(/[^0-9]/g, '');
+                const cleanSub = subDiv.replace(/[^0-9]/g, '');
+                const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
+                
+                if (!isMatch) {
+                  const errMsg = `Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`;
+                  toast.error(errMsg);
+                  setError(errMsg);
+                  setIsScanning(false);
+                  return;
                 }
               }
 
@@ -3653,24 +3649,20 @@ export default function NewCase() {
         const data = await extractBillData(resizedBase64);
         
         const scannedRef = data.referenceNumber || "";
-        const userEmail = user?.email?.toLowerCase() || "";
-        const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+        const subDiv = user?.subDivision || "";
         
-        if (!isAdmin) {
-          const subDiv = user?.subDivision || "";
-          if (subDiv) {
-            const cleanRef = scannedRef.replace(/[^0-9]/g, '');
-            const cleanSub = subDiv.replace(/[^0-9]/g, '');
-            const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
-            
-            if (!isMatch) {
-              const errMsg = `Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`;
-              toast.error(errMsg);
-              setError(errMsg);
-              setIsScanning(false);
-              e.target.value = '';
-              return;
-            }
+        if (subDiv) {
+          const cleanRef = scannedRef.replace(/[^0-9]/g, '');
+          const cleanSub = subDiv.replace(/[^0-9]/g, '');
+          const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
+          
+          if (!isMatch) {
+            const errMsg = `Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`;
+            toast.error(errMsg);
+            setError(errMsg);
+            setIsScanning(false);
+            e.target.value = '';
+            return;
           }
         }
 
@@ -3761,19 +3753,15 @@ export default function NewCase() {
       return;
     }
     
-    const userEmail = user?.email?.toLowerCase() || "";
-    const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
-    if (!isAdmin) {
-      const subDiv = user?.subDivision || "";
-      if (subDiv) {
-        const cleanSub = subDiv.replace(/[^0-9]/g, '');
-        const isMatch = cleanSub ? cleanRef.includes(cleanSub) : referenceNumber.toLowerCase().includes(subDiv.toLowerCase());
-        
-        if (!isMatch) {
-          setError(`Fetching restricted! This reference number does not belong to your subdivision (${subDiv}).`);
-          toast.error(`Fetching restricted! This reference number does not belong to your subdivision (${subDiv}).`);
-          return;
-        }
+    const subDiv = user?.subDivision || "";
+    if (subDiv) {
+      const cleanSub = subDiv.replace(/[^0-9]/g, '');
+      const isMatch = cleanSub ? cleanRef.includes(cleanSub) : referenceNumber.toLowerCase().includes(subDiv.toLowerCase());
+      
+      if (!isMatch) {
+        setError(`Fetching restricted! This reference number does not belong to your subdivision (${subDiv}).`);
+        toast.error(`Fetching restricted! This reference number does not belong to your subdivision (${subDiv}).`);
+        return;
       }
     }
     

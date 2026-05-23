@@ -431,23 +431,19 @@ export default function QuickEdit() {
           const extractedData = await extractBillData(resizedBase64);
           
           const scannedRef = extractedData.referenceNumber || "";
-          const userEmail = user?.email?.toLowerCase() || "";
-          const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+          const subDiv = user?.subDivision || "";
           
-          if (!isAdmin) {
-            const subDiv = user?.subDivision || "";
-            if (subDiv) {
-              const cleanRef = scannedRef.replace(/[^0-9]/g, '');
-              const cleanSub = subDiv.replace(/[^0-9]/g, '');
-              const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
-              
-              if (!isMatch) {
-                toast.dismiss(loadingToast);
-                toast.error(`Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`);
-                setIsExtracting(false);
-                if (fileInputRef.current) fileInputRef.current.value = '';
-                return;
-              }
+          if (subDiv) {
+            const cleanRef = scannedRef.replace(/[^0-9]/g, '');
+            const cleanSub = subDiv.replace(/[^0-9]/g, '');
+            const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
+            
+            if (!isMatch) {
+              toast.dismiss(loadingToast);
+              toast.error(`Scanning restricted! This bill (Reference: ${scannedRef || 'None'}) does not belong to your subdivision (${subDiv}).`);
+              setIsExtracting(false);
+              if (fileInputRef.current) fileInputRef.current.value = '';
+              return;
             }
           }
           
