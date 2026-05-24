@@ -71,6 +71,15 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   return <Layout>{children}</Layout>;
 };
 
+// Feeder Monitoring Guard
+const FeederMonitoringGuard = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  if (!user || user.email.toLowerCase() !== 'mianfiazullah@gmail.com') {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
 // Path Persistence
 const PathPersistence = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
@@ -228,7 +237,9 @@ export default function App() {
 
             <Route path="/feeder-monitoring" element={
               <ProtectedRoute>
-                <FeederMonitoring />
+                <FeederMonitoringGuard>
+                  <FeederMonitoring />
+                </FeederMonitoringGuard>
               </ProtectedRoute>
             } />
 

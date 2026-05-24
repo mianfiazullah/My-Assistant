@@ -49,13 +49,15 @@ export default function Layout({ children }: { children: ReactNode }) {
     navigate('/login');
   };
 
+  const isMianFiazullah = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com';
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     ...(activeStep ? [{ icon: Activity, label: `Active Case (S${activeStep})`, path: '/new-case', pulse: true }] : []),
     { icon: FileText, label: 'Past Cases', path: '/cases' },
     { icon: ExternalLink, label: 'My Assistant Drive', path: '/drive' },
     { icon: MessageSquare, label: 'AI Chat', path: '/chat' },
-    { icon: Zap, label: 'Feeder Monitoring', path: '/feeder-monitoring' },
+    ...(isMianFiazullah ? [{ icon: Zap, label: 'Feeder Monitoring', path: '/feeder-monitoring' }] : []),
     { icon: Trash2, label: 'Trash', path: '/trash' },
     { icon: Settings, label: 'Admin Panel', path: '/admin' },
   ];
