@@ -161,6 +161,10 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    match /settings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Default deny
     match /{path=**} {
       allow read, write: if false;

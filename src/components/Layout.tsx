@@ -113,7 +113,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       <div className="p-4 border-t border-slate-100 dark:border-slate-800">
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl mb-4 border border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1 dark:text-slate-500">Employee</p>
+          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1 dark:text-slate-500">Officer</p>
           <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{user?.name || 'Loading...'}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-medium">Sub-Division: {user?.subDivision || 'N/A'}</p>
         </div>

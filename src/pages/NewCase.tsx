@@ -2376,7 +2376,7 @@ export default function NewCase() {
             key="employeeName" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee Name</label>}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO NAME</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <div className="relative group/field">
@@ -2393,7 +2393,7 @@ export default function NewCase() {
                       });
                     }
                   }}
-                  placeholder="Enter Employee Name"
+                  placeholder="Enter SDO NAME"
                   disabled={isDisabled}
                   className="w-full bg-white border border-neutral-200 rounded-xl py-2 pl-3 pr-10 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
                 />
@@ -2434,7 +2434,7 @@ export default function NewCase() {
             key="employeeNameUrdu" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">Employee Name (Urdu)</label>}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">SDO NAME (Urdu)</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -2456,14 +2456,14 @@ export default function NewCase() {
             key="employeeDesignation" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee Designation</label>}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Designation</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
                 type="text"
                 value={detectionData.employeeDesignation || ''}
                 onChange={(e) => setDetectionData({...detectionData, employeeDesignation: e.target.value})}
-                placeholder="Enter Employee Designation"
+                placeholder="Enter Designation"
                 disabled={isDisabled}
                 className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
               />
@@ -2477,14 +2477,14 @@ export default function NewCase() {
             key="employeeCnic" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee CNIC</label>}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO CNIC</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
                 type="text"
                 value={detectionData.employeeCnic || ''}
                 onChange={(e) => setDetectionData({...detectionData, employeeCnic: e.target.value})}
-                placeholder="Enter Employee CNIC (e.g. 35404-1234567-1)"
+                placeholder="Enter SDO CNIC (e.g. 35404-1234567-1)"
                 disabled={isDisabled}
                 className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
               />
@@ -2498,14 +2498,14 @@ export default function NewCase() {
             key="employeeMobile" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Employee Mobile</label>}
+            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO Mobile</label>}
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
                 type="text"
                 value={detectionData.employeeMobile || ''}
                 onChange={(e) => setDetectionData({...detectionData, employeeMobile: e.target.value})}
-                placeholder="Enter Employee Mobile (e.g. 0321-1234567)"
+                placeholder="Enter SDO Mobile (e.g. 0321-1234567)"
                 disabled={isDisabled}
                 className="w-full bg-white border border-neutral-200 rounded-xl py-2 px-3 text-neutral-900 font-medium focus:outline-none focus:border-indigo-500"
               />
@@ -2949,8 +2949,12 @@ export default function NewCase() {
             if (data) {
               const scannedRef = data.referenceNumber || "";
               const subDiv = user?.subDivision || "";
+              const userEmail = user?.email?.toLowerCase() || "";
+              const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+              const isMasterFile = subDiv?.toLowerCase() === 'master file';
+              const hasBypass = isAdmin || isMasterFile;
               
-              if (subDiv) {
+              if (subDiv && !hasBypass) {
                 const cleanRef = scannedRef.replace(/[^0-9]/g, '');
                 const cleanSub = subDiv.replace(/[^0-9]/g, '');
                 const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
@@ -3650,8 +3654,12 @@ export default function NewCase() {
         
         const scannedRef = data.referenceNumber || "";
         const subDiv = user?.subDivision || "";
+        const userEmail = user?.email?.toLowerCase() || "";
+        const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+        const isMasterFile = subDiv?.toLowerCase() === 'master file';
+        const hasBypass = isAdmin || isMasterFile;
         
-        if (subDiv) {
+        if (subDiv && !hasBypass) {
           const cleanRef = scannedRef.replace(/[^0-9]/g, '');
           const cleanSub = subDiv.replace(/[^0-9]/g, '');
           const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());
@@ -3754,7 +3762,12 @@ export default function NewCase() {
     }
     
     const subDiv = user?.subDivision || "";
-    if (subDiv) {
+    const userEmail = user?.email?.toLowerCase() || "";
+    const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+    const isMasterFile = subDiv?.toLowerCase() === 'master file';
+    const hasBypass = isAdmin || isMasterFile;
+    
+    if (subDiv && !hasBypass) {
       const cleanSub = subDiv.replace(/[^0-9]/g, '');
       const isMatch = cleanSub ? cleanRef.includes(cleanSub) : referenceNumber.toLowerCase().includes(subDiv.toLowerCase());
       
@@ -3855,7 +3868,9 @@ export default function NewCase() {
 
     const userEmail = user?.email?.toLowerCase() || "";
     const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
-    if (!isAdmin) {
+    const isMasterFile = user?.subDivision?.toLowerCase() === 'master file';
+    const hasBypass = isAdmin || isMasterFile;
+    if (!hasBypass) {
       const subDiv = user?.subDivision || "";
       if (subDiv) {
         const refNo = detectionData.referenceNumber || billData.referenceNumber || "";
@@ -4053,11 +4068,11 @@ export default function NewCase() {
             "Load Factor": newCase.loadFactor,
             "Connected Load Details": (newCase.loadItems || []).map(i => `${i.name}(${i.qty}x${i.watts}=${i.total}W)`).join('; '),
             "Remarks": newCase.remarks,
-            "Employee Name": newCase.employeeName,
-            "Employee Name (Urdu)": newCase.employeeNameUrdu || '',
-            "Employee Designation": newCase.employeeDesignation,
-            "Employee CNIC": newCase.employeeCnic || '',
-            "Employee Mobile": newCase.employeeMobile || '',
+            "SDO NAME": newCase.employeeName,
+            "SDO NAME (Urdu)": newCase.employeeNameUrdu || '',
+            "Designation": newCase.employeeDesignation,
+            "SDO CNIC": newCase.employeeCnic || '',
+            "SDO Mobile": newCase.employeeMobile || '',
             "photoUrl": newCase.photoUrl || '',
           };
 

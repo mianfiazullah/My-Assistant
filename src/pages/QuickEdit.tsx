@@ -254,7 +254,9 @@ export default function QuickEdit() {
     
     const userEmail = user?.email?.toLowerCase() || "";
     const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
-    if (!isAdmin) {
+    const isMasterFile = user?.subDivision?.toLowerCase() === 'master file';
+    const hasBypass = isAdmin || isMasterFile;
+    if (!hasBypass) {
       const subDiv = user?.subDivision || "";
       if (subDiv) {
         const refNo = data.referenceNumber || "";
@@ -432,8 +434,12 @@ export default function QuickEdit() {
           
           const scannedRef = extractedData.referenceNumber || "";
           const subDiv = user?.subDivision || "";
+          const userEmail = user?.email?.toLowerCase() || "";
+          const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+          const isMasterFile = subDiv?.toLowerCase() === 'master file';
+          const hasBypass = isAdmin || isMasterFile;
           
-          if (subDiv) {
+          if (subDiv && !hasBypass) {
             const cleanRef = scannedRef.replace(/[^0-9]/g, '');
             const cleanSub = subDiv.replace(/[^0-9]/g, '');
             const isMatch = cleanSub ? cleanRef.includes(cleanSub) : scannedRef.toLowerCase().includes(subDiv.toLowerCase());

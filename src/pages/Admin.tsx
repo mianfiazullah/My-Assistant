@@ -99,7 +99,7 @@ export default function Admin() {
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -231,11 +231,11 @@ export default function Admin() {
     "Load Factor": '20%',
     "Connected Load Details": 'Light(10x20=200W); Fan(5x80=400W)',
     "Remarks": 'Test Case for Full Data Logging',
-    "Employee Name": 'ADMIN TESTER',
-    "Employee Name (Urdu)": 'ایڈمن ٹیسٹر',
-    "Employee Designation": 'Assistant Manager',
-    "Employee CNIC": '35202-1234567-1',
-    "Employee Mobile": '+923112233445',
+    "SDO NAME": 'ADMIN TESTER',
+    "SDO NAME (Urdu)": 'ایڈمن ٹیسٹر',
+    "Designation": 'Assistant Manager',
+    "SDO CNIC": '35202-1234567-1',
+    "SDO Mobile": '+923112233445',
     "photoUrl": 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
   };
 };
@@ -253,8 +253,8 @@ export default function Admin() {
     "D.BILL MEMO NO.", "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", 
     "Seizure Cable Color", "Seizure Cable Length", "Checked By", "Witnesses", 
     "Present Reading at Site", "E-Mail Address", "Mobile Number", "Load Factor", 
-    "Connected Load Details", "Remarks", "Employee Name", "Employee Name (Urdu)", 
-    "Employee Designation", "Employee CNIC", "Employee Mobile", "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
+    "Connected Load Details", "Remarks", "SDO NAME", "SDO NAME (Urdu)", 
+    "Designation", "SDO CNIC", "SDO Mobile", "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
   ];
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -1551,7 +1551,7 @@ export default function Admin() {
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -1610,8 +1610,8 @@ function doPost(e) {
         "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
-        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "E-Mail Address", "Mobile Number", "Loss Factor", "Connected Load Details", "Remarks", 
+        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

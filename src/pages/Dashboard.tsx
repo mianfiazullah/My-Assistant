@@ -1418,9 +1418,9 @@ export default function Dashboard() {
 
                         {/* Employee Info */}
                         <div className="space-y-3 pt-4 border-t border-neutral-100 dark:border-slate-800">
-                          <p className="text-[10px] font-bold text-neutral-500 dark:text-slate-400 uppercase border-b border-neutral-50 dark:border-slate-800/50 pb-1">Employee Info</p>
+                          <p className="text-[10px] font-bold text-neutral-500 dark:text-slate-400 uppercase border-b border-neutral-50 dark:border-slate-800/50 pb-1">SDO Info</p>
                           {[
-                            { key: 'employeeName', label: 'Employee Name' },
+                            { key: 'employeeName', label: 'SDO NAME' },
                             { key: 'employeeDesignation', label: 'Designation' },
                           ].map((field) => (
                             <div key={field.key}>
@@ -2365,7 +2365,7 @@ export default function Dashboard() {
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -2441,7 +2441,7 @@ function doPost(e) {
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "Employee Name", "Employee Name (Urdu)", "Employee Designation", "Employee CNIC", "Employee Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
