@@ -1,11 +1,11 @@
-import { Shield, Copy, Check, Zap, ArrowRight, Activity, FolderPlus, Terminal, ChevronDown, ChevronUp, PlusCircle, Save, Trash2, Edit2, CheckCircle2, X, Users, Loader2, Search } from 'lucide-react';
+import { Shield, Copy, Check, Zap, ArrowRight, Activity, FolderPlus, Terminal, ChevronDown, ChevronUp, PlusCircle, Save, Trash2, Edit2, CheckCircle2, X, Users, Loader2, Search, FileSpreadsheet, RefreshCw, UserCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, doc, setDoc, where, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, where, getDocs } from 'firebase/firestore';
 import { User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -21,6 +21,13 @@ export default function Admin() {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec');
   const [webhookUrl2, setWebhookUrl2] = useState(localStorage.getItem('google_sheets_webhook_2') || '');
+
+  // Google Sheets Registration Sync states
+  const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('google_sheet_sync_url') || '');
+  const [sheetTabName, setSheetTabName] = useState(localStorage.getItem('google_sheet_sync_tab') || 'Form Responses 1');
+  const [isLoadingSheet, setIsLoadingSheet] = useState(false);
+  const [sheetRows, setSheetRows] = useState<any[]>([]);
+  const [isSyncingUsers, setIsSyncingUsers] = useState(false);
 
   // Active Users states (originally from Dashboard)
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
@@ -272,6 +279,240 @@ export default function Admin() {
       console.error('Failed to copy: ', err);
       toast.error('Failed to copy headers');
     });
+  };
+
+
+  // Load saved sheet sync configurations from Firestore or localStorage
+  useEffect(() => {
+    if (!canManageUsers) return;
+    const fetchSyncSettings = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'sheets_registration');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.sheetUrl) {
+            setSheetUrl(data.sheetUrl);
+            localStorage.setItem('google_sheet_sync_url', data.sheetUrl);
+          }
+          if (data.sheetTabName) {
+            setSheetTabName(data.sheetTabName);
+            localStorage.setItem('google_sheet_sync_tab', data.sheetTabName);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load Google Sheet sync configurations from Firebase, falling back to local cookies:', err);
+      }
+    };
+    fetchSyncSettings();
+  }, [canManageUsers]);
+
+  const handleSaveSyncSettings = async () => {
+    const toastId = toast.loading('Saving Google Sheet configuration...');
+    try {
+      localStorage.setItem('google_sheet_sync_url', sheetUrl.trim());
+      localStorage.setItem('google_sheet_sync_tab', sheetTabName.trim());
+      
+      const docRef = doc(db, 'settings', 'sheets_registration');
+      await setDoc(docRef, {
+        sheetUrl: sheetUrl.trim(),
+        sheetTabName: sheetTabName.trim(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      
+      toast.success('Google Sheet connection settings saved!', { id: toastId });
+    } catch (err: any) {
+      console.error('Failed to save settings to Firebase:', err);
+      toast.error(`Saved locally, but failed to sync online: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const extractSheetId = (url: string) => {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  };
+
+  const fetchSheetData = async (sheetUrl: string, tabName: string) => {
+    const sheetId = extractSheetId(sheetUrl);
+    if (!sheetId) {
+      throw new Error("Invalid Google Sheet URL. Please make sure it is a valid spreadsheet link.");
+    }
+    
+    const encodedTab = encodeURIComponent(tabName || "");
+    const fetchUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json${encodedTab ? `&sheet=${encodedTab}` : ""}`;
+    
+    const response = await fetch(fetchUrl);
+    if (!response.ok) {
+      throw new Error("Could not fetch sheet data. Please check if the Google Sheet is shared with 'Anyone with the link can view' permission.");
+    }
+    
+    const text = await response.text();
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error("Invalid response format received from Google Sheet visualization layer.");
+    }
+    
+    const jsonText = text.substring(jsonStart, jsonEnd + 1);
+    const data = JSON.parse(jsonText);
+    
+    if (!data?.table?.cols || !data?.table?.rows) {
+      throw new Error("Empty list or invalid columns loaded from your sheet.");
+    }
+    
+    return data;
+  };
+
+  const handleFetchSheetUsers = async () => {
+    if (!sheetUrl.trim()) {
+      toast.error('Please enter a valid Google Sheet URL first.');
+      return;
+    }
+    
+    setIsLoadingSheet(true);
+    const toastId = toast.loading('Connecting and scanning Google Sheet...');
+    
+    try {
+      const data = await fetchSheetData(sheetUrl.trim(), sheetTabName.trim());
+      const cols = data.table.cols.map((col: any) => (col.label || '').trim().toLowerCase());
+      
+      // Look for dynamic header columns
+      let emailIdx = cols.findIndex((lbl: string) => lbl.includes('email') || lbl.includes('mail') || lbl.includes('ای میل') || lbl.includes('shoba') || lbl.includes('gmail'));
+      let nameIdx = cols.findIndex((lbl: string) => lbl.includes('name') || lbl.includes('نام') || lbl.includes('صارف') || lbl.includes('member'));
+      let subDivIdx = cols.findIndex((lbl: string) => lbl.includes('sub') || lbl.includes('division') || lbl.includes('شعبہ') || lbl.includes('subdivision') || lbl.includes('کوڈ'));
+      let statusIdx = cols.findIndex((lbl: string) => lbl.includes('status') || lbl.includes('allow') || lbl.includes('approved') || lbl.includes('منظور') || lbl.includes('اجازت'));
+      
+      // Interactive Fallbacks
+      if (emailIdx === -1) emailIdx = cols.findIndex((lbl: string) => lbl.includes('address') || lbl.includes('پتہ'));
+      if (emailIdx === -1) emailIdx = 1; // commonly B column for Google Forms
+      if (nameIdx === -1) nameIdx = cols.findIndex((lbl: string) => lbl.includes('user') || lbl.includes('employee'));
+      if (nameIdx === -1) nameIdx = 2; // commonly C column for Google Forms
+      if (subDivIdx === -1) subDivIdx = 3; // commonly D column
+      
+      const rows = data.table.rows;
+      const mapped = rows.map((row: any, index: number) => {
+        const getVal = (idx: number) => {
+          if (idx === -1 || !row.c || !row.c[idx]) return '';
+          const cell = row.c[idx];
+          if (cell.v === null || cell.v === undefined) return '';
+          return String(cell.v).trim();
+        };
+        
+        const email = getVal(emailIdx);
+        const name = getVal(nameIdx);
+        const subDivision = getVal(subDivIdx);
+        const rawStatus = statusIdx !== -1 ? getVal(statusIdx) : '';
+        
+        const cleanStatus = rawStatus.toLowerCase();
+        // Allowed if cell starts with y, yes, allow, approve, ok, check, or matches typical allow values
+        const isAllowed = cleanStatus === 'allow' || cleanStatus === 'yes' || cleanStatus === 'approved' || cleanStatus === 'true' || cleanStatus === 'y' || cleanStatus === 'ok' || cleanStatus === 'allowed' || cleanStatus === 'منظور';
+        
+        return {
+          rowNum: index + 2,
+          email: email.trim(),
+          name: name.trim() || 'Form Submitter',
+          subDivision: subDivision.trim() || 'Gulberg',
+          rawStatus: rawStatus.trim(),
+          isAllowed
+        };
+      }).filter((r: any) => r.email && r.email.includes('@'));
+      
+      if (mapped.length === 0) {
+        toast.warning('No Google Form registrations with valid email addresses found in this sheet.', { id: toastId });
+      } else {
+        toast.success(`Connected! Loaded ${mapped.length} users from Google Sheet.`, { id: toastId });
+      }
+      
+      setSheetRows(mapped);
+    } catch (err: any) {
+      console.error('Fetch Google Sheet error:', err);
+      toast.error(`Error: ${err.message}. Please check Sheet URL and make sure anyone with link can view!`, { id: toastId });
+    } finally {
+      setIsLoadingSheet(false);
+    }
+  };
+
+  const handleImportSingleUser = async (sheetRow: any) => {
+    const toastId = toast.loading(`Registering ${sheetRow.name}...`);
+    try {
+      const cleanEmail = sheetRow.email.toLowerCase().trim();
+      const placeholderUid = `pre-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      
+      const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
+      const querySnap = await getDocs(emailQuery);
+      if (!querySnap.empty) {
+        toast.warning(`${sheetRow.name} (${cleanEmail}) exists already!`, { id: toastId });
+        return;
+      }
+      
+      const isoDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 Days expiry
+      
+      const newUserDoc: User = {
+        uid: placeholderUid,
+        name: sheetRow.name,
+        email: cleanEmail,
+        role: 'user',
+        expiryDate: isoDate,
+        subDivision: sheetRow.subDivision || 'Gulberg',
+        disabled: false,
+        webhookUrl: '',
+        webhookUrl2: ''
+      };
+      
+      await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
+      toast.success(`${sheetRow.name} successfully registered as active agent!`, { id: toastId });
+    } catch (err: any) {
+      console.error('Single import error:', err);
+      toast.error(`Failure: ${err.message}`, { id: toastId });
+    }
+  };
+
+  const handleBulkImportApprovedUsers = async () => {
+    const approvedRows = sheetRows.filter(r => r.isAllowed);
+    if (approvedRows.length === 0) {
+      toast.error('No rows found where "Status" is "Allow" or "Yes"!');
+      return;
+    }
+    
+    setIsSyncingUsers(true);
+    const toastId = toast.loading(`Registering ${approvedRows.length} allowed users into active roster...`);
+    let addedCount = 0;
+    let skippedCount = 0;
+    
+    try {
+      for (const row of approvedRows) {
+        const cleanEmail = row.email.toLowerCase().trim();
+        const placeholderUid = `pre-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
+        const querySnap = await getDocs(emailQuery);
+        
+        if (querySnap.empty) {
+          const isoDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          const newUserDoc: User = {
+            uid: placeholderUid,
+            name: row.name,
+            email: cleanEmail,
+            role: 'user',
+            expiryDate: isoDate,
+            subDivision: row.subDivision || 'Gulberg',
+            disabled: false,
+            webhookUrl: '',
+            webhookUrl2: ''
+          };
+          await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
+          addedCount++;
+        } else {
+          skippedCount++;
+        }
+      }
+      toast.success(`Success! Added ${addedCount} users successfully. Checked ${skippedCount} entries already active.`, { id: toastId });
+    } catch (err: any) {
+      console.error('Bulk sync error:', err);
+      toast.error(`Import failed: ${err.message}`, { id: toastId });
+    } finally {
+      setIsSyncingUsers(false);
+    }
   };
 
   // Real-time user subscriber (Moved from Dashboard)
@@ -629,6 +870,208 @@ export default function Admin() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+
+
+        {/* Google Form & Sheets Registration Sync Panel */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-neutral-900 dark:text-slate-100 mb-1">
+                📝 Google Form & Sheet User Sync / Auto Registration
+              </h2>
+              <p className="text-xs text-neutral-500 dark:text-slate-400 mb-4">
+                Connect your registration Google Form and Sheet! View submissions, check allowed statuses, and register employees as active agents automatically.
+              </p>
+              
+              {/* Detailed step-by-step guidance in Nastaleeq for a 6th class student */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-150/50 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2 mb-6 leading-relaxed">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">💡 Easy Connect Guide (بہت آسان طریقہ):</span>
+                
+                <div className="space-y-3 font-sans">
+                  <div className="flex items-start gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-110 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-bold shrink-0 mt-0.5">1</span>
+                    <p>
+                      اپنا **Google Form** بنائیں جس میں یوزر کا "Name", "Email Address" اور "Sub Division" ہو۔ فارم خود بخود **Google Sheet** میں ریکارڈ سیو کرے گا۔
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-110 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-bold shrink-0 mt-0.5">2</span>
+                    <p>
+                      اپنے Google Sheet میں کالمز کے آخر میں ایک نیا کالم بنائیں جس کا نام **Status**، **Allowed** یا **منظور** رکھیں۔ جس یوزر کو الاؤ کرنا ہو، اس کے آگے **Allow** یا **Yes** لکھیں۔
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-110 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-bold shrink-0 mt-0.5">3</span>
+                    <p>
+                      Google Sheet کے اوپر دائیں کونے میں **Share** بٹن پر کلک کریں اور اسے **"Anyone with the link can view"** (کوئی بھی لنک سے دیکھ سکے) پر سیٹ کریں، تاکہ ایپ ڈیٹا پڑھ سکے۔
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-110 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-bold shrink-0 mt-0.5">4</span>
+                    <p>
+                      شیٹ کا لنک اور ٹیب کا نام (مثلاً **Form Responses 1**) نیچے ڈال کر **Fetch** کریں۔ آپ یہاں سے ڈائریکٹ ایک کلک پر انہیں رجسٹر کر سکتے ہیں!
+                    </p>
+                  </div>
+                </div>
+
+                {/* Aesthetic Urdu calligraphy text */}
+                <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800 select-none">
+                  <p className="font-urdu text-[14px] text-right text-indigo-600 dark:text-indigo-400 leading-normal">
+                    تمام نئے ملازمین کے فارمز کو گوگل پلے شیٹ سے سنک کر کے براہِ راست یہاں لاگو کریں۔
+                  </p>
+                </div>
+              </div>
+
+              {/* Input section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Google Spreadsheet URL / Link *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                    value={sheetUrl}
+                    onChange={(e) => setSheetUrl(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-500 focus:outline-none transition-all font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Google Sheet Tab Name *
+                  </label>
+                  <div className="flex gap-2.5">
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Form Responses 1"
+                      value={sheetTabName}
+                      onChange={(e) => setSheetTabName(e.target.value)}
+                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-500 focus:outline-none transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveSyncSettings}
+                      className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer border border-slate-200/40 dark:border-slate-700"
+                    >
+                      Save Key URL
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sync controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-4 border-t border-slate-50 dark:border-slate-850">
+                <button
+                  type="button"
+                  onClick={handleFetchSheetUsers}
+                  disabled={isLoadingSheet}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-100 dark:disabled:bg-slate-800 text-white font-bold rounded-2xl text-xs transition-all tracking-wider cursor-pointer shadow-lg shadow-emerald-600/15"
+                >
+                  <RefreshCw className={cn("w-4 h-4", isLoadingSheet && "animate-spin")} />
+                  {isLoadingSheet ? 'CONNECTING & SCANNING SPREADSHEET...' : 'FETCH FORM REGISTRATIONS'}
+                </button>
+
+                {sheetRows.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleBulkImportApprovedUsers}
+                    disabled={isSyncingUsers}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800 text-white font-bold rounded-2xl text-xs transition-all tracking-wider cursor-pointer shadow-lg shadow-indigo-600/15"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    REGISTER {sheetRows.filter(r => r.isAllowed).length} ALLOWED USERS (BULK SYNC)
+                  </button>
+                )}
+              </div>
+
+              {/* Results display formatted cleanly for Mobile screens */}
+              {sheetRows.length > 0 && (
+                <div className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                      Form Submissions Loaded ({sheetRows.length})
+                    </h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                      Row indicators include column offsets
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {sheetRows.map((row, idx) => (
+                      <div 
+                        key={idx}
+                        className={cn(
+                          "p-4 rounded-2xl border transition-all space-y-3 flex flex-col justify-between",
+                          row.isAllowed 
+                            ? "border-emerald-100 dark:border-emerald-950 bg-emerald-50/5 hover:bg-emerald-50/10 dark:bg-emerald-950/5" 
+                            : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/5 hover:bg-slate-50/50"
+                        )}
+                      >
+                        <div>
+                          {/* Row Indicator + Allowed status sticker */}
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-md font-mono">
+                              Row #{row.rowNum}
+                            </span>
+                            
+                            {row.isAllowed ? (
+                              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full border border-emerald-100/30">
+                                Approved (Allow)
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-full border border-amber-100/30">
+                                Pending Approval
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Account details */}
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 block">
+                              {row.name}
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono break-all">
+                              {row.email}
+                            </p>
+                            
+                            <div className="pt-2 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                              <span className="font-bold">Sub Division:</span>
+                              <span className="bg-slate-100/50 dark:bg-slate-800/50 px-1.5 py-0.5 rounded text-[10px]">
+                                {row.subDivision}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Register Action button */}
+                        <div className="pt-3 border-t border-slate-150/50 dark:border-slate-800/55 flex items-center justify-between gap-2">
+                          <span className="text-[9px] text-slate-400 italic font-mono block">
+                            Excel Cell: "{row.rawStatus || 'Empty'}"
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleImportSingleUser(row)}
+                            className="px-3.5 py-2 bg-neutral-900 dark:bg-emerald-600 hover:bg-neutral-800 dark:hover:bg-emerald-700 text-white rounded-xl text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" /> Approve & Pre-Register
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
