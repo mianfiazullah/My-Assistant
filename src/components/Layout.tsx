@@ -59,7 +59,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     { icon: MessageSquare, label: 'AI Chat', path: '/chat' },
     ...(isMianFiazullah ? [{ icon: Zap, label: 'Feeder Monitoring', path: '/feeder-monitoring' }] : []),
     { icon: Trash2, label: 'Trash', path: '/trash' },
-    { icon: Settings, label: 'Admin Panel', path: '/admin' },
+    ...(isMianFiazullah ? [{ icon: Settings, label: 'Admin Panel', path: '/admin' }] : []),
   ];
 
   const SidebarContent = () => (

@@ -80,6 +80,15 @@ const FeederMonitoringGuard = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
+// Admin Guard
+const AdminGuard = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  if (!user || user.email.toLowerCase() !== 'mianfiazullah@gmail.com') {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
 // Path Persistence
 const PathPersistence = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
@@ -213,7 +222,9 @@ export default function App() {
             
             <Route path="/admin" element={
               <ProtectedRoute>
-                <Admin />
+                <AdminGuard>
+                  <Admin />
+                </AdminGuard>
               </ProtectedRoute>
             } />
 
