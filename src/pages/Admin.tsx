@@ -63,6 +63,7 @@ export default function Admin() {
 
   // Active Users states (originally from Dashboard)
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
+  const [syncingUids, setSyncingUids] = useState<string[]>([]);
   const [usersSearchFilter, setUsersSearchFilter] = useState('');
   const [editingUserUid, setEditingUserUid] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{ 
@@ -555,6 +556,236 @@ export default function Admin() {
       }
     } catch (e) {
       console.warn('Silently failed to auto-sync Google Sheet in background:', e);
+    }
+  };
+
+  const handleSyncSingleUser = async (targetUid: string, userEmail: string) => {
+    if (!sheetUrl || !sheetUrl.trim()) {
+      toast.error('Please configure the Active Employee Google Sheet under the Google Sheets Synchronizer section first!');
+      return;
+    }
+
+    setSyncingUids(prev => [...prev, targetUid]);
+    const toastId = toast.loading(`Searching & synchronizing latest details for ${userEmail}...`);
+    try {
+      const data = await fetchSheetData(sheetUrl.trim(), sheetTabName.trim());
+      const rows = data.table.rows;
+      if (!rows || rows.length === 0) {
+        toast.error('Google Sheet contains no data. Please verify your columns & rows.', { id: toastId });
+        setSyncingUids(prev => prev.filter(id => id !== targetUid));
+        return;
+      }
+
+      const cols = data.table.cols.map((col: any) => (col.label || '').trim().toLowerCase());
+      
+      let firstRowHeaders: string[] = [];
+      if (rows && rows.length > 0 && rows[0].c) {
+        firstRowHeaders = rows[0].c.map((cell: any) => {
+          if (!cell) return '';
+          const val = cell.v !== null && cell.v !== undefined ? String(cell.v) : (cell.f !== null && cell.f !== undefined ? String(cell.f) : '');
+          return val.trim().toLowerCase();
+        });
+      }
+
+      const findBestIndex = (keywords: string[]) => {
+        let idx = cols.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        if (idx !== -1) return { index: idx, isFirstRowHeader: false };
+        idx = firstRowHeaders.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        if (idx !== -1) return { index: idx, isFirstRowHeader: true };
+        return { index: -1, isFirstRowHeader: false };
+      };
+
+      const emailMatch = findBestIndex(['email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name']);
+      const nameMatch = findBestIndex(['sdo name', 'employee name', 'sdo_name', 'name', 'نام', 'صارف', 'member', 'user', 'employee']);
+      const subDivMatch = findBestIndex(['sub', 'division', 'شعبہ', 'subdivision', 'کوڈ']);
+      
+      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english']);
+      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)']);
+      const designationMatch = findBestIndex(['designation', 'post', 'scale']);
+      const sdoCnicMatch = findBestIndex(['sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+      const sdoMobileMatch = findBestIndex(['sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر']);
+      const policeStationMatch = findBestIndex(['police', 'station', 'thana', 'تھانہ', 'پلیس اسٹیشن', 'police_stations', 'police stations']);
+      const policeStationUrduMatch = findBestIndex(['police station (urdu)', 'police station(urdu)', 'police station urdu', 'police_station_urdu', 'police_stations_urdu', 'police stations (urdu)', 'thana urdu', 'تھانہ اردو']);
+
+      let emailIdx = emailMatch.index;
+      let nameIdx = nameMatch.index;
+      let subDivIdx = subDivMatch.index;
+      
+      let sdoNameIdx = sdoNameMatch.index;
+      let sdoNameUrduIdx = sdoNameUrduMatch.index;
+      let designationIdx = designationMatch.index;
+      let sdoCnicIdx = sdoCnicMatch.index;
+      let sdoMobileIdx = sdoMobileMatch.index;
+      let policeStationIdx = policeStationMatch.index;
+      let policeStationUrduIdx = policeStationUrduMatch.index;
+
+      const policeStationIndices: number[] = [];
+      const matchPSColumn = (lbl: string, idx: number) => {
+        const cleanLbl = lbl.toLowerCase();
+        if ((cleanLbl.includes('police') && cleanLbl.includes('station')) || cleanLbl.includes('thana')) {
+          if (!cleanLbl.includes('urdu') && !policeStationIndices.includes(idx)) {
+            policeStationIndices.push(idx);
+          }
+        }
+      };
+      cols.forEach(matchPSColumn);
+      firstRowHeaders.forEach(matchPSColumn);
+
+      let bestEmailColIdx = -1;
+      let highestEmailScore = 0;
+      let colEmailScores: { [idx: number]: number } = {};
+      for (let rIdx = 0; rIdx < Math.min(rows.length, 100); rIdx++) {
+        const row = rows[rIdx];
+        if (row && row.c) {
+          for (let cIdx = 0; cIdx < row.c.length; cIdx++) {
+            const cell = row.c[cIdx];
+            if (cell) {
+              const val = (cell.v !== null && cell.v !== undefined ? String(cell.v) : (cell.f !== null && cell.f !== undefined ? String(cell.f) : '')).trim();
+              if (val.includes('@') && val.includes('.') && val.length > 5 && !val.includes(' ') && !val.includes('(')) {
+                colEmailScores[cIdx] = (colEmailScores[cIdx] || 0) + 1;
+              }
+            }
+          }
+        }
+      }
+      Object.keys(colEmailScores).forEach((key) => {
+        const idx = Number(key);
+        if (colEmailScores[idx] > highestEmailScore) {
+          highestEmailScore = colEmailScores[idx];
+          bestEmailColIdx = idx;
+        }
+      });
+      if (bestEmailColIdx !== -1 && (emailIdx === -1 || colEmailScores[emailIdx] === undefined || colEmailScores[bestEmailColIdx] > (colEmailScores[emailIdx] || 0))) {
+        emailIdx = bestEmailColIdx;
+      }
+
+      const isFirstRowActuallyHeader = 
+        (emailMatch.index !== -1 && emailMatch.isFirstRowHeader) || 
+        (nameMatch.index !== -1 && nameMatch.isFirstRowHeader) || 
+        (subDivMatch.index !== -1 && subDivMatch.isFirstRowHeader) ||
+        (sdoNameMatch.index !== -1 && sdoNameMatch.isFirstRowHeader);
+
+      if (emailIdx === -1) emailIdx = 1;
+      if (nameIdx === -1 || nameIdx === emailIdx) nameIdx = (emailIdx === 1) ? 2 : 1;
+      if (subDivIdx === -1 || subDivIdx === emailIdx || subDivIdx === nameIdx) {
+        let foundIdx = -1;
+        for (let i = 0; i < Math.max(4, firstRowHeaders.length); i++) {
+          if (i !== emailIdx && i !== nameIdx) {
+            foundIdx = i;
+            break;
+          }
+        }
+        subDivIdx = foundIdx !== -1 ? foundIdx : 3;
+      }
+      
+      const startIndex = isFirstRowActuallyHeader ? 1 : 0;
+      const targetEmailClean = userEmail.toLowerCase().trim();
+      let matchedRowObj: any = null;
+      
+      for (let rIdx = startIndex; rIdx < rows.length; rIdx++) {
+        const row = rows[rIdx];
+        if (!row || !row.c) continue;
+        
+        const getVal = (idx: number) => {
+          if (idx === -1 || !row.c || !row.c[idx]) return '';
+          const cell = row.c[idx];
+          const val = cell.v !== null && cell.v !== undefined ? cell.v : (cell.f !== null && cell.f !== undefined ? cell.f : '');
+          return String(val).trim();
+        };
+
+        const email = getVal(emailIdx).toLowerCase().trim();
+        if (email === targetEmailClean) {
+          const name = getVal(nameIdx);
+          const subDivision = getVal(subDivIdx);
+          const sdoName = getVal(sdoNameIdx);
+          const sdoNameUrdu = getVal(sdoNameUrduIdx);
+          const designation = getVal(designationIdx);
+          const sdoCnic = getVal(sdoCnicIdx);
+          const sdoMobile = getVal(sdoMobileIdx);
+          
+          const policeStations: string[] = [];
+          policeStationIndices.forEach(idx => {
+            const val = getVal(idx).trim();
+            if (val && !policeStations.includes(val)) {
+              policeStations.push(val);
+            }
+          });
+          if (policeStations.length === 0 && policeStationIdx !== -1) {
+            const val = getVal(policeStationIdx).trim();
+            if (val) policeStations.push(val);
+          }
+          const policeStationsUrdu = policeStations.map(ps => translateToUrdu(ps)).filter(val => val !== '');
+          if (policeStationsUrdu.length === 0 && policeStationUrduIdx !== -1) {
+            const val = getVal(policeStationUrduIdx).trim();
+            if (val) policeStationsUrdu.push(val);
+          }
+          const policeStation = policeStations[0] || '';
+          const policeStationUrdu = policeStationsUrdu[0] || '';
+
+          matchedRowObj = {
+            name: name.trim() || 'Form Submitter',
+            subDivision: subDivision.trim() || 'Gulberg',
+            sdoName: sdoName.trim() || name.trim() || '',
+            sdoNameUrdu: sdoNameUrdu.trim(),
+            designation: designation.trim() || 'SDO (Operation)',
+            sdoCnic: sdoCnic.trim(),
+            sdoMobile: sdoMobile.trim(),
+            policeStation,
+            policeStationUrdu,
+            policeStations,
+            policeStationsUrdu
+          };
+          break;
+        }
+      }
+
+      if (!matchedRowObj) {
+        toast.error(`Email "${userEmail}" was not found in active rows of Google Sheet.`, { id: toastId, duration: 4500 });
+        setSyncingUids(prev => prev.filter(id => id !== targetUid));
+        return;
+      }
+
+      const userDocRef = doc(db, 'users', targetUid);
+      await setDoc(userDocRef, {
+        name: matchedRowObj.name,
+        subDivision: matchedRowObj.subDivision,
+        sdoName: matchedRowObj.sdoName,
+        sdoNameUrdu: matchedRowObj.sdoNameUrdu,
+        designation: matchedRowObj.designation,
+        sdoCnic: matchedRowObj.sdoCnic,
+        sdoMobile: matchedRowObj.sdoMobile,
+        policeStation: matchedRowObj.policeStation,
+        policeStationUrdu: matchedRowObj.policeStationUrdu,
+        policeStations: matchedRowObj.policeStations,
+        policeStationsUrdu: matchedRowObj.policeStationsUrdu
+      }, { merge: true });
+
+      setActiveUsersList(prevList => prevList.map(item => {
+        if (item.uid === targetUid) {
+          return {
+            ...item,
+            name: matchedRowObj.name,
+            subDivision: matchedRowObj.subDivision,
+            sdoName: matchedRowObj.sdoName,
+            sdoNameUrdu: matchedRowObj.sdoNameUrdu,
+            designation: matchedRowObj.designation,
+            sdoCnic: matchedRowObj.sdoCnic,
+            sdoMobile: matchedRowObj.sdoMobile,
+            policeStation: matchedRowObj.policeStation,
+            policeStationUrdu: matchedRowObj.policeStationUrdu,
+            policeStations: matchedRowObj.policeStations,
+            policeStationsUrdu: matchedRowObj.policeStationsUrdu
+          };
+        }
+        return item;
+      }));
+
+      toast.success(`Successfully synced & updated settings for ${userEmail}!`, { id: toastId, duration: 4000 });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(`Search error: ${e.message || 'Failed to sync with Google Sheets'}`, { id: toastId });
+    } finally {
+      setSyncingUids(prev => prev.filter(id => id !== targetUid));
     }
   };
 
@@ -2521,7 +2752,16 @@ function doPost(e) {
                               }}
                               className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-950/65 dark:hover:bg-slate-800 hover:bg-purple-50 border border-slate-100 dark:border-slate-800 hover:border-purple-100 dark:hover:border-slate-700 hover:text-purple-600 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
                             >
-                              <Edit2 className="w-3.5 h-3.5" /> Edit Settings
+                              <Edit2 className="w-3.5 h-3.5" /> Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSyncSingleUser(u.uid, u.email)}
+                              disabled={syncingUids.includes(u.uid)}
+                              className="flex-1 py-1.5 bg-indigo-50 dark:bg-indigo-950/45 hover:bg-indigo-100/80 hover:text-indigo-600 border border-indigo-100/50 dark:border-indigo-900/30 text-indigo-550 dark:text-indigo-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <RefreshCw className={cn("w-3.5 h-3.5", syncingUids.includes(u.uid) && "animate-spin")} />
+                              {syncingUids.includes(u.uid) ? 'Syncing...' : 'Sync Sheet'}
                             </button>
                             <button
                               type="button"
@@ -2535,11 +2775,11 @@ function doPost(e) {
                             >
                               {u.disabled ? (
                                 <>
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> Enable Account
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Enable
                                 </>
                               ) : (
                                 <>
-                                  <X className="w-3.5 h-3.5" /> Disable Account
+                                  <X className="w-3.5 h-3.5" /> Disable
                                 </>
                               )}
                             </button>
