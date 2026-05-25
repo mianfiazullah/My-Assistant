@@ -17,6 +17,11 @@ export interface User {
   disabled?: boolean;
   webhookUrl?: string;
   webhookUrl2?: string;
+  sdoName?: string;
+  sdoNameUrdu?: string;
+  designation?: string;
+  sdoCnic?: string;
+  sdoMobile?: string;
 }
 
 export interface MonthWiseUnit {

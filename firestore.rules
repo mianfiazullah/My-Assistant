@@ -127,12 +127,12 @@ service cloud.firestore {
       // Users can create their own profile as 'user' role. Admins can create any profile dynamically.
       allow create: if isAuthenticated() && 
                     (isAdmin() || 
-                     (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'user'));
+                     (isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == 'user')));
       
       // Users can update their own profile but cannot change their role. Admins can update anything.
       allow update: if isAuthenticated() && 
                     (isAdmin() || 
-                     (isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role));
+                     (isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)));
       
       // Only admins can delete users, or if it is a pre-registered profile belonging to this user's email.
       allow delete: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);

@@ -32,7 +32,17 @@ export default function Dashboard() {
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
   const [usersSearchFilter, setUsersSearchFilter] = useState('');
   const [editingUserUid, setEditingUserUid] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ subDivision: string; expiryDate: string; webhookUrl: string; webhookUrl2: string } | null>(null);
+  const [editDraft, setEditDraft] = useState<{ 
+    subDivision: string; 
+    expiryDate: string; 
+    webhookUrl: string; 
+    webhookUrl2: string;
+    sdoName?: string;
+    sdoNameUrdu?: string;
+    designation?: string;
+    sdoCnic?: string;
+    sdoMobile?: string;
+  } | null>(null);
   const [expandedScriptUid, setExpandedScriptUid] = useState<string | null>(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [newUserName, setNewUserName] = useState('');
@@ -95,6 +105,11 @@ export default function Dashboard() {
           expiryDate: data.expiryDate || '',
           subDivision: data.subDivision || '',
           disabled: isDisabled,
+          sdoName: data.sdoName || '',
+          sdoNameUrdu: data.sdoNameUrdu || '',
+          designation: data.designation || '',
+          sdoCnic: data.sdoCnic || '',
+          sdoMobile: data.sdoMobile || '',
         });
       });
       setActiveUsersCount(activeCount);
@@ -516,7 +531,12 @@ export default function Dashboard() {
         subDivision: editDraft.subDivision,
         expiryDate: isoDate,
         webhookUrl: editDraft.webhookUrl,
-        webhookUrl2: editDraft.webhookUrl2
+        webhookUrl2: editDraft.webhookUrl2,
+        sdoName: editDraft.sdoName || '',
+        sdoNameUrdu: editDraft.sdoNameUrdu || '',
+        designation: editDraft.designation || '',
+        sdoCnic: editDraft.sdoCnic || '',
+        sdoMobile: editDraft.sdoMobile || ''
       }, { merge: true });
       
       toast.success('User account updated successfully!', { id: toastId });
@@ -2261,13 +2281,90 @@ export default function Dashboard() {
                                     type="date"
                                     value={editDraft?.expiryDate || ''}
                                     onChange={(e) => setEditDraft(prev => prev ? { ...prev, expiryDate: e.target.value } : null)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-900 dark:text-slate-100 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-900 dark:text-slate-101 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none"
                                   />
                                 ) : (
                                   <span className="font-bold text-slate-700 dark:text-slate-300 font-mono text-[10px] block truncate">
                                     {u.expiryDate ? format(new Date(u.expiryDate), 'MMM d, yyyy') : 'Never'}
                                   </span>
                                 )}
+                              </div>
+                            </div>
+
+                            {/* SDO / Officer Details */}
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs space-y-2">
+                              <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block font-sans select-none">SDO / Officer Details</span>
+                              <div className="grid grid-cols-2 gap-2 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                                <div>
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Name</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editDraft?.sdoName || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoName: e.target.value } : null)}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                      placeholder="SDO Name..."
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block truncate">{u.sdoName || 'Not Loaded'}</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Name (Urdu)</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editDraft?.sdoNameUrdu || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoNameUrdu: e.target.value } : null)}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 urdu-font focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                      placeholder="ایس ڈی او کا نام..."
+                                    />
+                                  ) : (
+                                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 urdu-font block truncate">{u.sdoNameUrdu || 'درج نہیں'}</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Designation</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editDraft?.designation || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, designation: e.target.value } : null)}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                      placeholder="Designation..."
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-semibold text-slate-655 dark:text-slate-400 block truncate">{u.designation || 'Not Loaded'}</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO CNIC</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editDraft?.sdoCnic || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoCnic: e.target.value } : null)}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                      placeholder="SDO CNIC..."
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoCnic || 'Not Loaded'}</span>
+                                  )}
+                                </div>
+                                <div className="col-span-2">
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Mobile</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editDraft?.sdoMobile || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoMobile: e.target.value } : null)}
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                      placeholder="SDO Mobile..."
+                                    />
+                                  ) : (
+                                    <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoMobile || 'Not Loaded'}</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
@@ -2497,7 +2594,12 @@ function doPost(e) {
                                           subDivision: u.subDivision || '',
                                           expiryDate: u.expiryDate ? u.expiryDate.split('T')[0] : '',
                                           webhookUrl: u.webhookUrl || '',
-                                          webhookUrl2: u.webhookUrl2 || ''
+                                          webhookUrl2: u.webhookUrl2 || '',
+                                          sdoName: u.sdoName || '',
+                                          sdoNameUrdu: u.sdoNameUrdu || '',
+                                          designation: u.designation || '',
+                                          sdoCnic: u.sdoCnic || '',
+                                          sdoMobile: u.sdoMobile || ''
                                         });
                                       }}
                                       className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-950/65 dark:hover:bg-slate-800 hover:bg-purple-50 border border-slate-100 dark:border-slate-800 hover:border-purple-100 dark:hover:border-slate-700 hover:text-purple-600 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"

@@ -20,7 +20,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
+    let unsubProfile: (() => void) | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+
       if (firebaseUser) {
         try {
           // Fetch user profile from Firestore with retry logic
@@ -59,6 +66,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 expiryDate: matchedData.expiryDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
                 subDivision: matchedData.subDivision || 'Gulberg',
                 disabled: !!matchedData.disabled,
+                webhookUrl: matchedData.webhookUrl || '',
+                webhookUrl2: matchedData.webhookUrl2 || '',
+                sdoName: matchedData.sdoName || '',
+                sdoNameUrdu: matchedData.sdoNameUrdu || '',
+                designation: matchedData.designation || '',
+                sdoCnic: matchedData.sdoCnic || '',
+                sdoMobile: matchedData.sdoMobile || '',
               };
               await setDoc(doc(db, 'users', firebaseUser.uid), linkedUser);
               
@@ -85,6 +99,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser(newUser);
             }
           }
+
+          // Attach a real-time listener for profile synchronization so Admin/Sheet imports hit the current user's UI instantly
+          const { onSnapshot: onSnap } = await import('firebase/firestore');
+          unsubProfile = onSnap(doc(db, 'users', firebaseUser.uid), (snapshot) => {
+            if (snapshot.exists()) {
+              setUser(snapshot.data() as User);
+            }
+          });
+
         } catch (error: any) {
           console.error('AuthContext Error:', error.message);
           if (error.message.includes('offline')) {
@@ -109,7 +132,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAuthReady(true);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   return (

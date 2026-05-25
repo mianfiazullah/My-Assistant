@@ -33,7 +33,17 @@ export default function Admin() {
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
   const [usersSearchFilter, setUsersSearchFilter] = useState('');
   const [editingUserUid, setEditingUserUid] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ subDivision: string; expiryDate: string; webhookUrl: string; webhookUrl2: string } | null>(null);
+  const [editDraft, setEditDraft] = useState<{ 
+    subDivision: string; 
+    expiryDate: string; 
+    webhookUrl: string; 
+    webhookUrl2: string;
+    sdoName?: string;
+    sdoNameUrdu?: string;
+    designation?: string;
+    sdoCnic?: string;
+    sdoMobile?: string;
+  } | null>(null);
   const [expandedScriptUid, setExpandedScriptUid] = useState<string | null>(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [newUserName, setNewUserName] = useState('');
@@ -382,6 +392,13 @@ export default function Admin() {
       let subDivIdx = cols.findIndex((lbl: string) => lbl.includes('sub') || lbl.includes('division') || lbl.includes('شعبہ') || lbl.includes('subdivision') || lbl.includes('کوڈ'));
       let statusIdx = cols.findIndex((lbl: string) => lbl.includes('status') || lbl.includes('allow') || lbl.includes('approved') || lbl.includes('منظور') || lbl.includes('اجازت'));
       
+      // New SDO/Employee Registration Info indices
+      let sdoNameIdx = cols.findIndex((lbl: string) => lbl.includes('sdo name') || lbl.includes('sdo_name') || lbl === 'sdo name' || (lbl.includes('name') && lbl.includes('sdo')));
+      let sdoNameUrduIdx = cols.findIndex((lbl: string) => lbl.includes('sdo name (urdu)') || lbl.includes('sdo name(urdu)') || lbl.includes('sdo name urdu') || lbl.includes('sdo_name_urdu') || (lbl.includes('urdu') && lbl.includes('sdo')));
+      let designationIdx = cols.findIndex((lbl: string) => lbl.includes('designation') || lbl === 'designation');
+      let sdoCnicIdx = cols.findIndex((lbl: string) => lbl.includes('sdo cnic') || lbl.includes('sdo_cnic') || lbl === 'sdo cnic' || (lbl.includes('cnic') && lbl.includes('sdo')));
+      let sdoMobileIdx = cols.findIndex((lbl: string) => lbl.includes('sdo mobile') || lbl.includes('sdo_mobile') || lbl === 'sdo mobile' || (lbl.includes('mobile') && lbl.includes('sdo')) || (lbl.includes('phone') && lbl.includes('sdo')));
+
       // Interactive Fallbacks
       if (emailIdx === -1) emailIdx = cols.findIndex((lbl: string) => lbl.includes('address') || lbl.includes('پتہ'));
       if (emailIdx === -1) emailIdx = 1; // commonly B column for Google Forms
@@ -402,6 +419,11 @@ export default function Admin() {
         const name = getVal(nameIdx);
         const subDivision = getVal(subDivIdx);
         const rawStatus = statusIdx !== -1 ? getVal(statusIdx) : '';
+        const sdoName = getVal(sdoNameIdx);
+        const sdoNameUrdu = getVal(sdoNameUrduIdx);
+        const designation = getVal(designationIdx);
+        const sdoCnic = getVal(sdoCnicIdx);
+        const sdoMobile = getVal(sdoMobileIdx);
         
         const cleanStatus = rawStatus.toLowerCase();
         // Allowed if cell starts with y, yes, allow, approve, ok, check, or matches typical allow values
@@ -412,6 +434,11 @@ export default function Admin() {
           email: email.trim(),
           name: name.trim() || 'Form Submitter',
           subDivision: subDivision.trim() || 'Gulberg',
+          sdoName: sdoName.trim(),
+          sdoNameUrdu: sdoNameUrdu.trim(),
+          designation: designation.trim(),
+          sdoCnic: sdoCnic.trim(),
+          sdoMobile: sdoMobile.trim(),
           rawStatus: rawStatus.trim(),
           isAllowed
         };
@@ -441,7 +468,18 @@ export default function Admin() {
       const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
       const querySnap = await getDocs(emailQuery);
       if (!querySnap.empty) {
-        toast.warning(`${sheetRow.name} (${cleanEmail}) exists already!`, { id: toastId });
+        // Real user exists, update/merge their details instantly!
+        const existingDoc = querySnap.docs[0];
+        const updateFields = {
+          sdoName: sheetRow.sdoName || '',
+          sdoNameUrdu: sheetRow.sdoNameUrdu || '',
+          designation: sheetRow.designation || '',
+          sdoCnic: sheetRow.sdoCnic || '',
+          sdoMobile: sheetRow.sdoMobile || '',
+          subDivision: sheetRow.subDivision || existingDoc.data().subDivision || 'Gulberg',
+        };
+        await setDoc(doc(db, 'users', existingDoc.id), updateFields, { merge: true });
+        toast.success(`SDO/Officer details updated instantly for existing account: ${sheetRow.name}!`, { id: toastId });
         return;
       }
       
@@ -456,7 +494,12 @@ export default function Admin() {
         subDivision: sheetRow.subDivision || 'Gulberg',
         disabled: false,
         webhookUrl: '',
-        webhookUrl2: ''
+        webhookUrl2: '',
+        sdoName: sheetRow.sdoName || '',
+        sdoNameUrdu: sheetRow.sdoNameUrdu || '',
+        designation: sheetRow.designation || '',
+        sdoCnic: sheetRow.sdoCnic || '',
+        sdoMobile: sheetRow.sdoMobile || ''
       };
       
       await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
@@ -477,7 +520,7 @@ export default function Admin() {
     setIsSyncingUsers(true);
     const toastId = toast.loading(`Registering ${approvedRows.length} allowed users into active roster...`);
     let addedCount = 0;
-    let skippedCount = 0;
+    let updatedCount = 0;
     
     try {
       for (const row of approvedRows) {
@@ -498,15 +541,31 @@ export default function Admin() {
             subDivision: row.subDivision || 'Gulberg',
             disabled: false,
             webhookUrl: '',
-            webhookUrl2: ''
+            webhookUrl2: '',
+            sdoName: row.sdoName || '',
+            sdoNameUrdu: row.sdoNameUrdu || '',
+            designation: row.designation || '',
+            sdoCnic: row.sdoCnic || '',
+            sdoMobile: row.sdoMobile || ''
           };
           await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
           addedCount++;
         } else {
-          skippedCount++;
+          // Update/merge details of existing user so they apply instantly
+          const existingDoc = querySnap.docs[0];
+          const updateFields = {
+            sdoName: row.sdoName || '',
+            sdoNameUrdu: row.sdoNameUrdu || '',
+            designation: row.designation || '',
+            sdoCnic: row.sdoCnic || '',
+            sdoMobile: row.sdoMobile || '',
+            subDivision: row.subDivision || existingDoc.data().subDivision || 'Gulberg',
+          };
+          await setDoc(doc(db, 'users', existingDoc.id), updateFields, { merge: true });
+          updatedCount++;
         }
       }
-      toast.success(`Success! Added ${addedCount} users successfully. Checked ${skippedCount} entries already active.`, { id: toastId });
+      toast.success(`Success! Added ${addedCount} new accounts, updated SDO details for ${updatedCount} existing roster entries.`, { id: toastId });
     } catch (err: any) {
       console.error('Bulk sync error:', err);
       toast.error(`Import failed: ${err.message}`, { id: toastId });
@@ -533,6 +592,11 @@ export default function Admin() {
           disabled: !!data.disabled,
           webhookUrl: data.webhookUrl || '',
           webhookUrl2: data.webhookUrl2 || '',
+          sdoName: data.sdoName || '',
+          sdoNameUrdu: data.sdoNameUrdu || '',
+          designation: data.designation || '',
+          sdoCnic: data.sdoCnic || '',
+          sdoMobile: data.sdoMobile || '',
         });
       });
       setActiveUsersList(list);
@@ -570,7 +634,12 @@ export default function Admin() {
         subDivision: editDraft.subDivision,
         expiryDate: isoDate,
         webhookUrl: editDraft.webhookUrl,
-        webhookUrl2: editDraft.webhookUrl2
+        webhookUrl2: editDraft.webhookUrl2,
+        sdoName: editDraft.sdoName || '',
+        sdoNameUrdu: editDraft.sdoNameUrdu || '',
+        designation: editDraft.designation || '',
+        sdoCnic: editDraft.sdoCnic || '',
+        sdoMobile: editDraft.sdoMobile || ''
       }, { merge: true });
       
       toast.success('User account updated successfully!', { id: toastId });
@@ -1480,6 +1549,83 @@ export default function Admin() {
                         </div>
                       </div>
 
+                      {/* SDO / Officer Details */}
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs space-y-2">
+                        <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block font-sans select-none">SDO / Officer Details</span>
+                        <div className="grid grid-cols-2 gap-2 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Name</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.sdoName || ''}
+                                onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoName: e.target.value } : null)}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                placeholder="SDO Name..."
+                              />
+                            ) : (
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block truncate">{u.sdoName || 'Not Loaded'}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Name (Urdu)</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.sdoNameUrdu || ''}
+                                onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoNameUrdu: e.target.value } : null)}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 urdu-font focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                placeholder="ایس ڈی او کا نام..."
+                              />
+                            ) : (
+                              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 urdu-font block truncate">{u.sdoNameUrdu || 'درج نہیں'}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Designation</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.designation || ''}
+                                onChange={(e) => setEditDraft(prev => prev ? { ...prev, designation: e.target.value } : null)}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                placeholder="Designation..."
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold text-slate-650 dark:text-slate-400 block truncate">{u.designation || 'Not Loaded'}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO CNIC</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.sdoCnic || ''}
+                                onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoCnic: e.target.value } : null)}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                placeholder="SDO CNIC..."
+                              />
+                            ) : (
+                              <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoCnic || 'Not Loaded'}</span>
+                            )}
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Mobile</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.sdoMobile || ''}
+                                onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoMobile: e.target.value } : null)}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                placeholder="SDO Mobile..."
+                              />
+                            ) : (
+                              <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoMobile || 'Not Loaded'}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Google Sheet custom pre-configured script */}
                       {!isEditing && (
                         <div className="pt-2 border-t border-slate-150/40 dark:border-slate-800/40">
@@ -1669,7 +1815,12 @@ function doPost(e) {
                                   subDivision: u.subDivision || '',
                                   expiryDate: u.expiryDate ? u.expiryDate.split('T')[0] : '',
                                   webhookUrl: u.webhookUrl || '',
-                                  webhookUrl2: u.webhookUrl2 || ''
+                                  webhookUrl2: u.webhookUrl2 || '',
+                                  sdoName: u.sdoName || '',
+                                  sdoNameUrdu: u.sdoNameUrdu || '',
+                                  designation: u.designation || '',
+                                  sdoCnic: u.sdoCnic || '',
+                                  sdoMobile: u.sdoMobile || ''
                                 });
                               }}
                               className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-950/65 dark:hover:bg-slate-800 hover:bg-purple-50 border border-slate-100 dark:border-slate-800 hover:border-purple-100 dark:hover:border-slate-700 hover:text-purple-600 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"

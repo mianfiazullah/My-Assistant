@@ -216,10 +216,10 @@ export default function NewCase() {
   const [error, setError] = useState('');
   const defaultDetectionData = {
     dateOfChecking: '',
-    employeeName: user?.name || '',
-    employeeDesignation: 'Assistant Manager (Operation)',
-    employeeCnic: '35102-0565965-3',
-    employeeMobile: '0370-4991751',
+    employeeName: user?.sdoName || user?.name || '',
+    employeeDesignation: user?.designation || 'Assistant Manager (Operation)',
+    employeeCnic: user?.sdoCnic || '35102-0565965-3',
+    employeeMobile: user?.sdoMobile || '0370-4991751',
     discrepancy: [] as string[],
     othersDiscrepancy: '',
     checkedBy: [] as string[],
@@ -275,7 +275,7 @@ export default function NewCase() {
     seizureCableLength: '',
     nameUrdu: '',
     addressUrdu: '',
-    employeeNameUrdu: '',
+    employeeNameUrdu: user?.sdoNameUrdu || '',
     presentOccupier: '',
     presentOccupierUrdu: '',
     loadItems: [
@@ -322,6 +322,40 @@ export default function NewCase() {
   const [isReadingVerified, setIsReadingVerified] = useState(() => getInitialState('lesco_new_case_is_reading_verified', false));
   const [showAcMismatch, setShowAcMismatch] = useState(() => getInitialState('lesco_new_case_show_ac_mismatch', false));
   const [isAcVerified, setIsAcVerified] = useState(() => getInitialState('lesco_new_case_is_ac_verified', true));
+
+  useEffect(() => {
+    if (user) {
+      setDetectionData(prev => {
+        const nextEmployeeName = user.sdoName || user.name || '';
+        const nextEmployeeDesignation = user.designation || 'Assistant Manager (Operation)';
+        const nextEmployeeCnic = user.sdoCnic || '35102-0565965-3';
+        const nextEmployeeMobile = user.sdoMobile || '0370-4991751';
+        const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
+
+        // Force fill instantly and automatically when step 3 is entered, or if any details differ
+        if (
+          step === 3 ||
+          prev.employeeName !== nextEmployeeName ||
+          prev.employeeDesignation !== nextEmployeeDesignation ||
+          prev.employeeCnic !== nextEmployeeCnic ||
+          prev.employeeMobile !== nextEmployeeMobile ||
+          prev.employeeNameUrdu !== nextEmployeeNameUrdu ||
+          prev.userId !== user.uid
+        ) {
+          return {
+            ...prev,
+            employeeName: nextEmployeeName,
+            employeeDesignation: nextEmployeeDesignation,
+            employeeCnic: nextEmployeeCnic,
+            employeeMobile: nextEmployeeMobile,
+            employeeNameUrdu: nextEmployeeNameUrdu,
+            userId: user.uid
+          };
+        }
+        return prev;
+      });
+    }
+  }, [user, step]);
 
   useEffect(() => {
     if (photo) localStorage.setItem('lesco_new_case_photo', photo);
@@ -2376,7 +2410,12 @@ export default function NewCase() {
             key="employeeName" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO NAME</label>}
+            label={
+              <div className="flex items-center gap-1.5 justify-between w-full">
+                <label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO NAME</label>
+                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+              </div>
+            }
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <div className="relative group/field">
@@ -2434,7 +2473,12 @@ export default function NewCase() {
             key="employeeNameUrdu" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">SDO NAME (Urdu)</label>}
+            label={
+              <div className="flex items-center gap-1.5 justify-between w-full">
+                <label className="text-xs text-neutral-500 uppercase font-bold tracking-widest text-indigo-600">SDO NAME (Urdu)</label>
+                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+              </div>
+            }
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -2456,7 +2500,12 @@ export default function NewCase() {
             key="employeeDesignation" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Designation</label>}
+            label={
+              <div className="flex items-center gap-1.5 justify-between w-full">
+                <label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Designation</label>
+                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+              </div>
+            }
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -2477,7 +2526,12 @@ export default function NewCase() {
             key="employeeCnic" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO CNIC</label>}
+            label={
+              <div className="flex items-center gap-1.5 justify-between w-full">
+                <label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO CNIC</label>
+                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+              </div>
+            }
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -2498,7 +2552,12 @@ export default function NewCase() {
             key="employeeMobile" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO Mobile</label>}
+            label={
+              <div className="flex items-center gap-1.5 justify-between w-full">
+                <label className="text-xs text-neutral-500 uppercase font-bold tracking-widest">SDO Mobile</label>
+                <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+              </div>
+            }
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <input
@@ -5086,20 +5145,48 @@ export default function NewCase() {
                     </div>
                   </div>
 
-              {/* Detection Details Section */}
+               {/* Detection Details Section */}
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-slate-100 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Detection Details
                   </h3>
-                  <a 
-                    href="https://docs.google.com/forms/d/e/1FAIpQLSfRahSaD9D-DeGCldxwYg_f2IPIheuxXpheTDXx5iBtPkTFGg/viewform?usp=header" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:underline flex items-center gap-1 font-bold bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    <ExternalLink className="w-3 h-3" /> Reference Form
-                  </a>
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextEmployeeName = user.sdoName || user.name || '';
+                          const nextEmployeeDesignation = user.designation || 'Assistant Manager (Operation)';
+                          const nextEmployeeCnic = user.sdoCnic || '35102-0565965-3';
+                          const nextEmployeeMobile = user.sdoMobile || '0370-4991751';
+                          const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
+                          
+                          setDetectionData(prev => ({
+                            ...prev,
+                            employeeName: nextEmployeeName,
+                            employeeDesignation: nextEmployeeDesignation,
+                            employeeCnic: nextEmployeeCnic,
+                            employeeMobile: nextEmployeeMobile,
+                            employeeNameUrdu: nextEmployeeNameUrdu,
+                          }));
+                          toast.success('SDO/Officer Details filled instantly from active Roster!');
+                        }}
+                        className="text-xs text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold transition-colors shadow-sm outline-none dark:bg-green-950/20 dark:border-green-800 dark:text-green-400"
+                        title="Force reload SDO details from active roster"
+                      >
+                        <RefreshCw className="w-3 h-3 animate-spin duration-1000" style={{ animationIterationCount: 1 }} /> Sync Active Roster SDO Details
+                      </button>
+                    )}
+                    <a 
+                      href="https://docs.google.com/forms/d/e/1FAIpQLSeQms4CeY4mlGCMdTAvCkmx6weVp-QyHfUm2BQ632A_3phcSQ/viewform?usp=header" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-indigo-600 hover:underline flex items-center gap-1 font-bold bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Reference Form
+                    </a>
+                  </div>
                 </div>
                 
                 <div className="bg-neutral-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-neutral-100 dark:border-slate-800">
