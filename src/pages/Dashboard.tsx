@@ -2455,14 +2455,14 @@ export default function Dashboard() {
         "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
         "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
         "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
         "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
         "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
         "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -2531,14 +2531,14 @@ function doPost(e) {
         "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
         "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
         "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
         "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
         "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
         "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

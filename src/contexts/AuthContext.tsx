@@ -73,6 +73,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 designation: matchedData.designation || '',
                 sdoCnic: matchedData.sdoCnic || '',
                 sdoMobile: matchedData.sdoMobile || '',
+                policeStation: matchedData.policeStation || '',
+                policeStationUrdu: matchedData.policeStationUrdu || '',
+                policeStations: matchedData.policeStations || [],
+                policeStationsUrdu: matchedData.policeStationsUrdu || [],
               };
               await setDoc(doc(db, 'users', firebaseUser.uid), linkedUser);
               

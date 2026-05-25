@@ -10,6 +10,28 @@ import { User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 
+export function translateToUrdu(en: string): string {
+  const low = en.toLowerCase().trim();
+  if (low === 'kot radha kishan' || low.includes('radha kishan')) return 'کوٹ رادھا کشن';
+  if (low === 'raiwind' || low.includes('raiwind')) return 'رائے ونڈ';
+  if (low === 'changa manga' || low.includes('changa manga')) return 'چھانگا مانگا';
+  if (low === 'manga mandi' || low.includes('manga mandi')) return 'مانگا منڈی';
+  if (low === 'raiwind city') return 'رائے ونڈ سٹی';
+  if (low === 'kasur') return 'قصور';
+  if (low === 'lahore') return 'لاہور';
+  if (low === 'pattoki') return 'پتونکی';
+  if (low === 'chunian') return 'چونیاں';
+  if (low === 'phool nagar') return 'پھول نگر';
+  if (low === 'habibabad') return 'حبیب آباد';
+  if (low === 'mustafabad') return 'مصطفی آباد';
+  if (low === 'ellahabad') return 'الہٰ آباد';
+  if (low === 'kanganpur') return 'کنگن پور';
+  if (low === 'khudian') return 'کھڈیاں';
+  if (low === 'bhai pheru') return 'بھائی پھیرو';
+  if (low === 'lalyani') return 'للیانی';
+  return '';
+}
+
 export default function Admin() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -28,6 +50,16 @@ export default function Admin() {
   const [isLoadingSheet, setIsLoadingSheet] = useState(false);
   const [sheetRows, setSheetRows] = useState<any[]>([]);
   const [isSyncingUsers, setIsSyncingUsers] = useState(false);
+  const [sheetDiagnostics, setSheetDiagnostics] = useState<{
+    totalRowsFetched: number;
+    firstRowHeaderLabels: string[];
+    emailIdx: number;
+    emailMatchSource: string;
+    isFirstRowActuallyHeader: boolean;
+    startIndex: number;
+    mappedCounts: number;
+    validEmailsCount: number;
+  } | null>(null);
 
   // Active Users states (originally from Dashboard)
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
@@ -43,6 +75,10 @@ export default function Admin() {
     designation?: string;
     sdoCnic?: string;
     sdoMobile?: string;
+    policeStation?: string;
+    policeStationUrdu?: string;
+    policeStations?: string[];
+    policeStationsUrdu?: string[];
   } | null>(null);
   const [expandedScriptUid, setExpandedScriptUid] = useState<string | null>(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
@@ -102,14 +138,14 @@ export default function Admin() {
         "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
         "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
         "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
         "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
         "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
         "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -291,6 +327,237 @@ export default function Admin() {
     });
   };
 
+  const syncApprovedUsersSilently = async (targetUrl: string, targetTab: string) => {
+    if (!targetUrl || !targetUrl.trim()) return;
+    try {
+      const data = await fetchSheetData(targetUrl.trim(), targetTab.trim());
+      const rows = data.table.rows;
+      if (!rows || rows.length === 0) return;
+      const cols = data.table.cols.map((col: any) => (col.label || '').trim().toLowerCase());
+      
+      let firstRowHeaders: string[] = [];
+      if (rows && rows.length > 0 && rows[0].c) {
+        firstRowHeaders = rows[0].c.map((cell: any) => {
+          if (!cell) return '';
+          const val = cell.v !== null && cell.v !== undefined ? String(cell.v) : (cell.f !== null && cell.f !== undefined ? String(cell.f) : '');
+          return val.trim().toLowerCase();
+        });
+      }
+
+      const findBestIndex = (keywords: string[]) => {
+        let idx = cols.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        if (idx !== -1) return { index: idx, isFirstRowHeader: false };
+        idx = firstRowHeaders.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        if (idx !== -1) return { index: idx, isFirstRowHeader: true };
+        return { index: -1, isFirstRowHeader: false };
+      };
+
+      const emailMatch = findBestIndex(['email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name']);
+      const nameMatch = findBestIndex(['sdo name', 'employee name', 'sdo_name', 'name', 'نام', 'صارف', 'member', 'user', 'employee']);
+      const subDivMatch = findBestIndex(['sub', 'division', 'شعبہ', 'subdivision', 'کوڈ']);
+      const statusMatch = findBestIndex(['status', 'allow', 'approved', 'منظور', 'اجازت']);
+      
+      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english']);
+      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)']);
+      const designationMatch = findBestIndex(['designation', 'post', 'scale']);
+      const sdoCnicMatch = findBestIndex(['sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+      const sdoMobileMatch = findBestIndex(['sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر']);
+      const policeStationMatch = findBestIndex(['police', 'station', 'thana', 'تھانہ', 'پلیس اسٹیشن', 'police_stations', 'police stations']);
+      const policeStationUrduMatch = findBestIndex(['police station (urdu)', 'police station(urdu)', 'police station urdu', 'police_station_urdu', 'police_stations_urdu', 'police stations (urdu)', 'thana urdu', 'تھانہ اردو']);
+
+      let emailIdx = emailMatch.index;
+      let nameIdx = nameMatch.index;
+      let subDivIdx = subDivMatch.index;
+      let statusIdx = statusMatch.index;
+      
+      let sdoNameIdx = sdoNameMatch.index;
+      let sdoNameUrduIdx = sdoNameUrduMatch.index;
+      let designationIdx = designationMatch.index;
+      let sdoCnicIdx = sdoCnicMatch.index;
+      let sdoMobileIdx = sdoMobileMatch.index;
+      let policeStationIdx = policeStationMatch.index;
+      let policeStationUrduIdx = policeStationUrduMatch.index;
+
+      const policeStationIndices: number[] = [];
+      const matchPSColumn = (lbl: string, idx: number) => {
+        const cleanLbl = lbl.toLowerCase();
+        if ((cleanLbl.includes('police') && cleanLbl.includes('station')) || cleanLbl.includes('thana')) {
+          if (!cleanLbl.includes('urdu') && !policeStationIndices.includes(idx)) {
+            policeStationIndices.push(idx);
+          }
+        }
+      };
+      cols.forEach(matchPSColumn);
+      firstRowHeaders.forEach(matchPSColumn);
+
+      let bestEmailColIdx = -1;
+      let highestEmailScore = 0;
+      let colEmailScores: { [idx: number]: number } = {};
+      for (let rIdx = 0; rIdx < Math.min(rows.length, 100); rIdx++) {
+        const row = rows[rIdx];
+        if (row && row.c) {
+          for (let cIdx = 0; cIdx < row.c.length; cIdx++) {
+            const cell = row.c[cIdx];
+            if (cell) {
+              const val = (cell.v !== null && cell.v !== undefined ? String(cell.v) : (cell.f !== null && cell.f !== undefined ? String(cell.f) : '')).trim();
+              if (val.includes('@') && val.includes('.') && val.length > 5 && !val.includes(' ') && !val.includes('(')) {
+                colEmailScores[cIdx] = (colEmailScores[cIdx] || 0) + 1;
+              }
+            }
+          }
+        }
+      }
+      Object.keys(colEmailScores).forEach((key) => {
+        const idx = Number(key);
+        if (colEmailScores[idx] > highestEmailScore) {
+          highestEmailScore = colEmailScores[idx];
+          bestEmailColIdx = idx;
+        }
+      });
+      if (bestEmailColIdx !== -1 && (emailIdx === -1 || colEmailScores[emailIdx] === undefined || colEmailScores[bestEmailColIdx] > (colEmailScores[emailIdx] || 0))) {
+        emailIdx = bestEmailColIdx;
+      }
+
+      const isFirstRowActuallyHeader = 
+        (emailMatch.index !== -1 && emailMatch.isFirstRowHeader) || 
+        (nameMatch.index !== -1 && nameMatch.isFirstRowHeader) || 
+        (subDivMatch.index !== -1 && subDivMatch.isFirstRowHeader) ||
+        (sdoNameMatch.index !== -1 && sdoNameMatch.isFirstRowHeader);
+
+      if (emailIdx === -1) emailIdx = 1;
+      if (nameIdx === -1 || nameIdx === emailIdx) nameIdx = (emailIdx === 1) ? 2 : 1;
+      if (subDivIdx === -1 || subDivIdx === emailIdx || subDivIdx === nameIdx) {
+        let foundIdx = -1;
+        for (let i = 0; i < Math.max(4, firstRowHeaders.length); i++) {
+          if (i !== emailIdx && i !== nameIdx) {
+            foundIdx = i;
+            break;
+          }
+        }
+        subDivIdx = foundIdx !== -1 ? foundIdx : 3;
+      }
+      
+      const startIndex = isFirstRowActuallyHeader ? 1 : 0;
+      const approvedRows = rows.slice(startIndex).map((row: any, index: number) => {
+        const getVal = (idx: number) => {
+          if (idx === -1 || !row.c || !row.c[idx]) return '';
+          const cell = row.c[idx];
+          const val = cell.v !== null && cell.v !== undefined ? cell.v : (cell.f !== null && cell.f !== undefined ? cell.f : '');
+          return String(val).trim();
+        };
+        
+        const email = getVal(emailIdx);
+        const name = getVal(nameIdx);
+        const subDivision = getVal(subDivIdx);
+        const rawStatus = statusIdx !== -1 ? getVal(statusIdx) : '';
+        const sdoName = getVal(sdoNameIdx);
+        const sdoNameUrdu = getVal(sdoNameUrduIdx);
+        const designation = getVal(designationIdx);
+        const sdoCnic = getVal(sdoCnicIdx);
+        const sdoMobile = getVal(sdoMobileIdx);
+        
+        const policeStations: string[] = [];
+        policeStationIndices.forEach(idx => {
+          const val = getVal(idx).trim();
+          if (val && !policeStations.includes(val)) {
+            policeStations.push(val);
+          }
+        });
+        if (policeStations.length === 0 && policeStationIdx !== -1) {
+          const val = getVal(policeStationIdx).trim();
+          if (val) policeStations.push(val);
+        }
+        const policeStationsUrdu = policeStations.map(ps => translateToUrdu(ps)).filter(val => val !== '');
+        if (policeStationsUrdu.length === 0 && policeStationUrduIdx !== -1) {
+          const val = getVal(policeStationUrduIdx).trim();
+          if (val) policeStationsUrdu.push(val);
+        }
+        const policeStation = policeStations[0] || '';
+        const policeStationUrdu = policeStationsUrdu[0] || '';
+        
+        const cleanStatus = rawStatus.toLowerCase();
+        const isAllowed = statusIdx === -1 || cleanStatus === 'allow' || cleanStatus === 'yes' || cleanStatus === 'approved' || cleanStatus === 'true' || cleanStatus === 'y' || cleanStatus === 'ok' || cleanStatus === 'allowed' || cleanStatus === 'منظور';
+        
+        return {
+          email: email.trim(),
+          name: name.trim() || 'Form Submitter',
+          subDivision: subDivision.trim() || 'Gulberg',
+          sdoName: sdoName.trim() || name.trim() || '',
+          sdoNameUrdu: sdoNameUrdu.trim(),
+          designation: designation.trim() || 'SDO (Operation)',
+          sdoCnic: sdoCnic.trim(),
+          sdoMobile: sdoMobile.trim(),
+          policeStation,
+          policeStationUrdu,
+          policeStations,
+          policeStationsUrdu,
+          isAllowed
+        };
+      }).filter((r: any) => r.email && r.email.includes('@') && r.isAllowed);
+
+      if (approvedRows.length === 0) return;
+
+      let addedCount = 0;
+      let updatedCount = 0;
+      
+      for (const row of approvedRows) {
+        const cleanEmail = row.email.toLowerCase().trim();
+        const placeholderUid = `pre-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        const emailQuery = query(collection(db, 'users'), where('email', '==', cleanEmail));
+        const querySnap = await getDocs(emailQuery);
+        
+        if (querySnap.empty) {
+          const isoDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          const newUserDoc: User = {
+            uid: placeholderUid,
+            name: row.name,
+            email: cleanEmail,
+            role: 'user',
+            expiryDate: isoDate,
+            subDivision: row.subDivision || 'Gulberg',
+            disabled: false,
+            webhookUrl: '',
+            webhookUrl2: '',
+            sdoName: row.sdoName || '',
+            sdoNameUrdu: row.sdoNameUrdu || '',
+            designation: row.designation || '',
+            sdoCnic: row.sdoCnic || '',
+            sdoMobile: row.sdoMobile || '',
+            policeStation: row.policeStation || '',
+            policeStationUrdu: row.policeStationUrdu || '',
+            policeStations: row.policeStations || [],
+            policeStationsUrdu: row.policeStationsUrdu || []
+          };
+          await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
+          addedCount++;
+        } else {
+          const existingDoc = querySnap.docs[0];
+          const updateFields = {
+            sdoName: row.sdoName || '',
+            sdoNameUrdu: row.sdoNameUrdu || '',
+            designation: row.designation || '',
+            sdoCnic: row.sdoCnic || '',
+            sdoMobile: row.sdoMobile || '',
+            policeStation: row.policeStation || '',
+            policeStationUrdu: row.policeStationUrdu || '',
+            policeStations: row.policeStations || [],
+            policeStationsUrdu: row.policeStationsUrdu || [],
+            subDivision: row.subDivision || existingDoc.data().subDivision || 'Gulberg',
+          };
+          await setDoc(doc(db, 'users', existingDoc.id), updateFields, { merge: true });
+          updatedCount++;
+        }
+      }
+      
+      if (addedCount > 0 || updatedCount > 0) {
+        toast.success(`Google Sheet Auto-Sync: Synchronized ${addedCount} new active agents & updated SDO details for ${updatedCount} profiles in the background!`, { duration: 5000 });
+      }
+    } catch (e) {
+      console.warn('Silently failed to auto-sync Google Sheet in background:', e);
+    }
+  };
+
 
   // Load saved sheet sync configurations from Firestore or localStorage
   useEffect(() => {
@@ -304,6 +571,8 @@ export default function Admin() {
           if (data.sheetUrl) {
             setSheetUrl(data.sheetUrl);
             localStorage.setItem('google_sheet_sync_url', data.sheetUrl);
+            // Trigger automatic sync
+            syncApprovedUsersSilently(data.sheetUrl, data.sheetTabName || 'Form Responses 1');
           }
           if (data.sheetTabName) {
             setSheetTabName(data.sheetTabName);
@@ -384,35 +653,131 @@ export default function Admin() {
     
     try {
       const data = await fetchSheetData(sheetUrl.trim(), sheetTabName.trim());
+      const rows = data.table.rows;
       const cols = data.table.cols.map((col: any) => (col.label || '').trim().toLowerCase());
       
-      // Look for dynamic header columns
-      let emailIdx = cols.findIndex((lbl: string) => lbl.includes('email') || lbl.includes('mail') || lbl.includes('ای میل') || lbl.includes('shoba') || lbl.includes('gmail'));
-      let nameIdx = cols.findIndex((lbl: string) => lbl.includes('name') || lbl.includes('نام') || lbl.includes('صارف') || lbl.includes('member'));
-      let subDivIdx = cols.findIndex((lbl: string) => lbl.includes('sub') || lbl.includes('division') || lbl.includes('شعبہ') || lbl.includes('subdivision') || lbl.includes('کوڈ'));
-      let statusIdx = cols.findIndex((lbl: string) => lbl.includes('status') || lbl.includes('allow') || lbl.includes('approved') || lbl.includes('منظور') || lbl.includes('اجازت'));
+      // Extract cell values from the very first row to check if they acts as headers
+      let firstRowHeaders: string[] = [];
+      if (rows && rows.length > 0 && rows[0].c) {
+        firstRowHeaders = rows[0].c.map((cell: any) => {
+          if (!cell) return '';
+          const val = cell.v !== null && cell.v !== undefined ? String(cell.v) : (cell.f !== null && cell.f !== undefined ? String(cell.f) : '');
+          return val.trim().toLowerCase();
+        });
+      }
+
+      // Look up column indexes from either system labels or first row of values
+      const findBestIndex = (keywords: string[]) => {
+        let idx = cols.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        if (idx !== -1) return { index: idx, isFirstRowHeader: false };
+
+        idx = firstRowHeaders.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        if (idx !== -1) return { index: idx, isFirstRowHeader: true };
+
+        return { index: -1, isFirstRowHeader: false };
+      };
+
+      const emailMatch = findBestIndex(['email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name']);
+      const nameMatch = findBestIndex(['sdo name', 'employee name', 'sdo_name', 'name', 'نام', 'صارف', 'member', 'user', 'employee']);
+      const subDivMatch = findBestIndex(['sub', 'division', 'شعبہ', 'subdivision', 'کوڈ']);
+      const statusMatch = findBestIndex(['status', 'allow', 'approved', 'منظور', 'اجازت']);
       
-      // New SDO/Employee Registration Info indices
-      let sdoNameIdx = cols.findIndex((lbl: string) => lbl.includes('sdo name') || lbl.includes('sdo_name') || lbl === 'sdo name' || (lbl.includes('name') && lbl.includes('sdo')));
-      let sdoNameUrduIdx = cols.findIndex((lbl: string) => lbl.includes('sdo name (urdu)') || lbl.includes('sdo name(urdu)') || lbl.includes('sdo name urdu') || lbl.includes('sdo_name_urdu') || (lbl.includes('urdu') && lbl.includes('sdo')));
-      let designationIdx = cols.findIndex((lbl: string) => lbl.includes('designation') || lbl === 'designation');
-      let sdoCnicIdx = cols.findIndex((lbl: string) => lbl.includes('sdo cnic') || lbl.includes('sdo_cnic') || lbl === 'sdo cnic' || (lbl.includes('cnic') && lbl.includes('sdo')));
-      let sdoMobileIdx = cols.findIndex((lbl: string) => lbl.includes('sdo mobile') || lbl.includes('sdo_mobile') || lbl === 'sdo mobile' || (lbl.includes('mobile') && lbl.includes('sdo')) || (lbl.includes('phone') && lbl.includes('sdo')));
+      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english']);
+      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)']);
+      const designationMatch = findBestIndex(['designation', 'post', 'scale']);
+      const sdoCnicMatch = findBestIndex(['sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+      const sdoMobileMatch = findBestIndex(['sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر']);
+      const policeStationMatch = findBestIndex(['police', 'station', 'thana', 'تھانہ', 'پلیس اسٹیشن', 'police_stations', 'police stations']);
+      const policeStationUrduMatch = findBestIndex(['police station (urdu)', 'police station(urdu)', 'police station urdu', 'police_station_urdu', 'police_stations_urdu', 'police stations (urdu)', 'thana urdu', 'تھانہ اردو']);
+
+      let emailIdx = emailMatch.index;
+      let nameIdx = nameMatch.index;
+      let subDivIdx = subDivMatch.index;
+      let statusIdx = statusMatch.index;
+      
+      let sdoNameIdx = sdoNameMatch.index;
+      let sdoNameUrduIdx = sdoNameUrduMatch.index;
+      let designationIdx = designationMatch.index;
+      let sdoCnicIdx = sdoCnicMatch.index;
+      let sdoMobileIdx = sdoMobileMatch.index;
+      let policeStationIdx = policeStationMatch.index;
+      let policeStationUrduIdx = policeStationUrduMatch.index;
+
+      // Scan all potential columns for police stations (multiple columns support like NAME OF POLICE STATIONS 1 to 6)
+      const policeStationIndices: number[] = [];
+      const matchPSColumn = (lbl: string, idx: number) => {
+        const cleanLbl = lbl.toLowerCase();
+        if ((cleanLbl.includes('police') && cleanLbl.includes('station')) || cleanLbl.includes('thana')) {
+          if (!cleanLbl.includes('urdu') && !policeStationIndices.includes(idx)) {
+            policeStationIndices.push(idx);
+          }
+        }
+      };
+      cols.forEach(matchPSColumn);
+      firstRowHeaders.forEach(matchPSColumn);
+
+      // 1. Fully auto-detect email if not found by keywords or if keyword match was weak
+      let bestEmailColIdx = -1;
+      let highestEmailScore = 0;
+      let colEmailScores: { [idx: number]: number } = {};
+
+      for (let rIdx = 0; rIdx < Math.min(rows.length, 100); rIdx++) {
+        const row = rows[rIdx];
+        if (row && row.c) {
+          for (let cIdx = 0; cIdx < row.c.length; cIdx++) {
+            const cell = row.c[cIdx];
+            if (cell) {
+              const val = (cell.v !== null && cell.v !== undefined ? String(cell.v) : (cell.f !== null && cell.f !== undefined ? String(cell.f) : '')).trim();
+              if (val.includes('@') && val.includes('.') && val.length > 5 && !val.includes(' ') && !val.includes('(')) {
+                colEmailScores[cIdx] = (colEmailScores[cIdx] || 0) + 1;
+              }
+            }
+          }
+        }
+      }
+
+      Object.keys(colEmailScores).forEach((key) => {
+        const idx = Number(key);
+        if (colEmailScores[idx] > highestEmailScore) {
+          highestEmailScore = colEmailScores[idx];
+          bestEmailColIdx = idx;
+        }
+      });
+
+      if (bestEmailColIdx !== -1 && (emailIdx === -1 || colEmailScores[emailIdx] === undefined || colEmailScores[bestEmailColIdx] > (colEmailScores[emailIdx] || 0))) {
+        emailIdx = bestEmailColIdx;
+      }
+
+      // Determine if the first row of data is actually the spreadsheet header row
+      const isFirstRowActuallyHeader = 
+        (emailMatch.index !== -1 && emailMatch.isFirstRowHeader) || 
+        (nameMatch.index !== -1 && nameMatch.isFirstRowHeader) || 
+        (subDivMatch.index !== -1 && subDivMatch.isFirstRowHeader) ||
+        (sdoNameMatch.index !== -1 && sdoNameMatch.isFirstRowHeader);
 
       // Interactive Fallbacks
-      if (emailIdx === -1) emailIdx = cols.findIndex((lbl: string) => lbl.includes('address') || lbl.includes('پتہ'));
       if (emailIdx === -1) emailIdx = 1; // commonly B column for Google Forms
-      if (nameIdx === -1) nameIdx = cols.findIndex((lbl: string) => lbl.includes('user') || lbl.includes('employee'));
-      if (nameIdx === -1) nameIdx = 2; // commonly C column for Google Forms
-      if (subDivIdx === -1) subDivIdx = 3; // commonly D column
+      if (nameIdx === -1 || nameIdx === emailIdx) {
+        nameIdx = (emailIdx === 1) ? 2 : 1; 
+      }
+      if (subDivIdx === -1 || subDivIdx === emailIdx || subDivIdx === nameIdx) {
+        let foundIdx = -1;
+        for (let i = 0; i < Math.max(4, firstRowHeaders.length); i++) {
+          if (i !== emailIdx && i !== nameIdx) {
+            foundIdx = i;
+            break;
+          }
+        }
+        subDivIdx = foundIdx !== -1 ? foundIdx : 3;
+      }
       
-      const rows = data.table.rows;
-      const mapped = rows.map((row: any, index: number) => {
+      const startIndex = isFirstRowActuallyHeader ? 1 : 0;
+      const mapped = rows.slice(startIndex).map((row: any, index: number) => {
         const getVal = (idx: number) => {
           if (idx === -1 || !row.c || !row.c[idx]) return '';
           const cell = row.c[idx];
-          if (cell.v === null || cell.v === undefined) return '';
-          return String(cell.v).trim();
+          const val = cell.v !== null && cell.v !== undefined ? cell.v : (cell.f !== null && cell.f !== undefined ? cell.f : '');
+          return String(val).trim();
         };
         
         const email = getVal(emailIdx);
@@ -425,25 +790,74 @@ export default function Admin() {
         const sdoCnic = getVal(sdoCnicIdx);
         const sdoMobile = getVal(sdoMobileIdx);
         
+        // Multi-police stations retrieval and auto Urdu translation
+        const policeStations: string[] = [];
+        policeStationIndices.forEach(idx => {
+          const val = getVal(idx).trim();
+          if (val && !policeStations.includes(val)) {
+            policeStations.push(val);
+          }
+        });
+
+        if (policeStations.length === 0 && policeStationIdx !== -1) {
+          const val = getVal(policeStationIdx).trim();
+          if (val) policeStations.push(val);
+        }
+
+        const policeStationsUrdu = policeStations.map(ps => translateToUrdu(ps)).filter(val => val !== '');
+        if (policeStationsUrdu.length === 0 && policeStationUrduIdx !== -1) {
+          const val = getVal(policeStationUrduIdx).trim();
+          if (val) policeStationsUrdu.push(val);
+        }
+
+        const policeStation = policeStations[0] || '';
+        const policeStationUrdu = policeStationsUrdu[0] || '';
+        
         const cleanStatus = rawStatus.toLowerCase();
         // Allowed if cell starts with y, yes, allow, approve, ok, check, or matches typical allow values
-        const isAllowed = cleanStatus === 'allow' || cleanStatus === 'yes' || cleanStatus === 'approved' || cleanStatus === 'true' || cleanStatus === 'y' || cleanStatus === 'ok' || cleanStatus === 'allowed' || cleanStatus === 'منظور';
+        // If status column is not present (statusIdx === -1), default all rows to allowed (isAllowed = true) so they can use it
+        const isAllowed = statusIdx === -1 || cleanStatus === 'allow' || cleanStatus === 'yes' || cleanStatus === 'approved' || cleanStatus === 'true' || cleanStatus === 'y' || cleanStatus === 'ok' || cleanStatus === 'allowed' || cleanStatus === 'منظور';
         
         return {
-          rowNum: index + 2,
+          rowNum: index + startIndex + 1,
           email: email.trim(),
           name: name.trim() || 'Form Submitter',
           subDivision: subDivision.trim() || 'Gulberg',
-          sdoName: sdoName.trim(),
+          sdoName: sdoName.trim() || name.trim() || '',
           sdoNameUrdu: sdoNameUrdu.trim(),
-          designation: designation.trim(),
+          designation: designation.trim() || 'SDO (Operation)',
           sdoCnic: sdoCnic.trim(),
           sdoMobile: sdoMobile.trim(),
+          policeStation,
+          policeStationUrdu,
+          policeStations,
+          policeStationsUrdu,
           rawStatus: rawStatus.trim(),
           isAllowed
         };
       }).filter((r: any) => r.email && r.email.includes('@'));
       
+      // Determine match source
+      let emailMatchSource = 'none';
+      if (emailMatch.index !== -1) {
+        emailMatchSource = emailMatch.isFirstRowHeader ? `Header Match ("${firstRowHeaders[emailMatch.index]}")` : `Schema Match ("${cols[emailMatch.index]}")`;
+      } else if (bestEmailColIdx !== -1) {
+        emailMatchSource = `Smart scan of row contents (Col #${bestEmailColIdx + 1})`;
+      } else {
+        emailMatchSource = 'Fallback (Column B)';
+      }
+
+      setSheetDiagnostics({
+        totalRowsFetched: rows.length,
+        firstRowHeaderLabels: firstRowHeaders.length > 0 ? firstRowHeaders : (cols.length > 0 ? cols : []),
+        emailIdx: emailIdx,
+        emailMatchSource: emailMatchSource,
+        isFirstRowActuallyHeader: isFirstRowActuallyHeader,
+        startIndex: startIndex,
+        mappedCounts: rows.slice(startIndex).length,
+        validEmailsCount: mapped.length
+      });
+
       if (mapped.length === 0) {
         toast.warning('No Google Form registrations with valid email addresses found in this sheet.', { id: toastId });
       } else {
@@ -476,6 +890,10 @@ export default function Admin() {
           designation: sheetRow.designation || '',
           sdoCnic: sheetRow.sdoCnic || '',
           sdoMobile: sheetRow.sdoMobile || '',
+          policeStation: sheetRow.policeStation || '',
+          policeStationUrdu: sheetRow.policeStationUrdu || '',
+          policeStations: sheetRow.policeStations || [],
+          policeStationsUrdu: sheetRow.policeStationsUrdu || [],
           subDivision: sheetRow.subDivision || existingDoc.data().subDivision || 'Gulberg',
         };
         await setDoc(doc(db, 'users', existingDoc.id), updateFields, { merge: true });
@@ -499,7 +917,11 @@ export default function Admin() {
         sdoNameUrdu: sheetRow.sdoNameUrdu || '',
         designation: sheetRow.designation || '',
         sdoCnic: sheetRow.sdoCnic || '',
-        sdoMobile: sheetRow.sdoMobile || ''
+        sdoMobile: sheetRow.sdoMobile || '',
+        policeStation: sheetRow.policeStation || '',
+        policeStationUrdu: sheetRow.policeStationUrdu || '',
+        policeStations: sheetRow.policeStations || [],
+        policeStationsUrdu: sheetRow.policeStationsUrdu || []
       };
       
       await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
@@ -546,7 +968,11 @@ export default function Admin() {
             sdoNameUrdu: row.sdoNameUrdu || '',
             designation: row.designation || '',
             sdoCnic: row.sdoCnic || '',
-            sdoMobile: row.sdoMobile || ''
+            sdoMobile: row.sdoMobile || '',
+            policeStation: row.policeStation || '',
+            policeStationUrdu: row.policeStationUrdu || '',
+            policeStations: row.policeStations || [],
+            policeStationsUrdu: row.policeStationsUrdu || []
           };
           await setDoc(doc(db, 'users', placeholderUid), newUserDoc);
           addedCount++;
@@ -559,6 +985,10 @@ export default function Admin() {
             designation: row.designation || '',
             sdoCnic: row.sdoCnic || '',
             sdoMobile: row.sdoMobile || '',
+            policeStation: row.policeStation || '',
+            policeStationUrdu: row.policeStationUrdu || '',
+            policeStations: row.policeStations || [],
+            policeStationsUrdu: row.policeStationsUrdu || [],
             subDivision: row.subDivision || existingDoc.data().subDivision || 'Gulberg',
           };
           await setDoc(doc(db, 'users', existingDoc.id), updateFields, { merge: true });
@@ -597,6 +1027,10 @@ export default function Admin() {
           designation: data.designation || '',
           sdoCnic: data.sdoCnic || '',
           sdoMobile: data.sdoMobile || '',
+          policeStation: data.policeStation || '',
+          policeStationUrdu: data.policeStationUrdu || '',
+          policeStations: data.policeStations || [],
+          policeStationsUrdu: data.policeStationsUrdu || [],
         });
       });
       setActiveUsersList(list);
@@ -639,7 +1073,11 @@ export default function Admin() {
         sdoNameUrdu: editDraft.sdoNameUrdu || '',
         designation: editDraft.designation || '',
         sdoCnic: editDraft.sdoCnic || '',
-        sdoMobile: editDraft.sdoMobile || ''
+        sdoMobile: editDraft.sdoMobile || '',
+        policeStation: editDraft.policeStation || '',
+        policeStationUrdu: editDraft.policeStationUrdu || '',
+        policeStations: editDraft.policeStations || [],
+        policeStationsUrdu: editDraft.policeStationsUrdu || []
       }, { merge: true });
       
       toast.success('User account updated successfully!', { id: toastId });
@@ -1063,6 +1501,68 @@ export default function Admin() {
                   </button>
                 )}
               </div>
+
+              {/* Diagnostics helper panel */}
+              {sheetDiagnostics && (
+                <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                    <Terminal className="w-4 h-4" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider">Sheet Scanning Diagnostics Log</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] font-mono text-slate-600 dark:text-slate-400">
+                    <div>
+                      <span className="text-slate-400 block">Total Rows Fetched:</span>
+                      <span className="font-bold text-slate-850 dark:text-slate-200">{sheetDiagnostics.totalRowsFetched}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Is Header Row Ignored?</span>
+                      <span className="font-bold text-slate-850 dark:text-slate-200">{sheetDiagnostics.isFirstRowActuallyHeader ? 'Yes (Row #1)' : 'No'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Email Col Index:</span>
+                      <span className="font-bold text-slate-850 dark:text-slate-200">Col #{sheetDiagnostics.emailIdx + 1}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Email Match Source:</span>
+                      <span className="font-bold text-slate-850 dark:text-slate-200 break-all text-xs text-indigo-500">{sheetDiagnostics.emailMatchSource}</span>
+                    </div>
+                  </div>
+
+                  {sheetDiagnostics.firstRowHeaderLabels.length > 0 && (
+                    <div className="text-[11px] font-sans text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-950 p-2 text-xs rounded border border-slate-100 dark:border-slate-850 max-h-32 overflow-y-auto">
+                      <span className="font-semibold block mb-1 text-slate-400 text-[10px] uppercase font-mono tracking-wider">Detected Columns:</span>
+                      <div className="flex flex-wrap gap-1.5 font-mono">
+                        {sheetDiagnostics.firstRowHeaderLabels.map((lbl, idx) => (
+                          <span 
+                            key={idx} 
+                            className={cn(
+                              "px-1.5 py-0.5 rounded text-[10px] border flex items-center gap-1",
+                              idx === sheetDiagnostics.emailIdx 
+                                ? "bg-emerald-50 dark:bg-emerald-950/45 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 font-bold" 
+                                : "bg-slate-50 dark:bg-slate-900 text-slate-500 border-slate-200/50 dark:border-slate-800"
+                            )}
+                          >
+                            C{idx + 1}: "{lbl || '(Empty Name)'}"
+                            {idx === sheetDiagnostics.emailIdx && " (Active Email)"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {sheetDiagnostics.validEmailsCount === 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3 text-xs text-amber-700 dark:text-amber-400 leading-relaxed font-sans">
+                      <strong>💡 Troubleshooting Guide:</strong> If no registrations were processed, confirm that:
+                      <ul className="list-disc pl-5 mt-1 space-y-1">
+                        <li>Your Selected Tab Name (<strong>"{sheetTabName}"</strong>) matches your sheet name/tab perfectly.</li>
+                        <li>The Google Form sheet contains at least one completed submission with a valid email.</li>
+                        <li>For privacy settings, ensure the sheet has been published/shared as <strong>"Anyone with the link can view"</strong>!</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Results display formatted cleanly for Mobile screens */}
               {sheetRows.length > 0 && (
@@ -1623,6 +2123,198 @@ export default function Admin() {
                               <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoMobile || 'Not Loaded'}</span>
                             )}
                           </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Police Station English</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.policeStation || ''}
+                                onChange={(e) => {
+                                  const newVal = e.target.value;
+                                  setEditDraft(prev => {
+                                    if (!prev) return null;
+                                    const currentList = [...(prev.policeStations || [])];
+                                    if (currentList.length > 0) {
+                                      currentList[0] = newVal;
+                                    } else {
+                                      currentList.push(newVal);
+                                    }
+                                    return {
+                                      ...prev,
+                                      policeStation: newVal,
+                                      policeStations: currentList
+                                    };
+                                  });
+                                }}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                placeholder="Police Station (English)..."
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold text-slate-650 dark:text-slate-400 block truncate" title={u.policeStations?.join(', ') || u.policeStation}>
+                                {u.policeStations && u.policeStations.length > 1 ? u.policeStations.join(', ') : (u.policeStation || 'Not Loaded')}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5 urdu-font">نام تھانہ (اردو)</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editDraft?.policeStationUrdu || ''}
+                                onChange={(e) => {
+                                  const newVal = e.target.value;
+                                  setEditDraft(prev => {
+                                    if (!prev) return null;
+                                    const currentList = [...(prev.policeStationsUrdu || [])];
+                                    if (currentList.length > 0) {
+                                      currentList[0] = newVal;
+                                    } else {
+                                      currentList.push(newVal);
+                                    }
+                                    return {
+                                      ...prev,
+                                      policeStationUrdu: newVal,
+                                      policeStationsUrdu: currentList
+                                    };
+                                  });
+                                }}
+                                className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none urdu-font"
+                                placeholder="تھانہ..."
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block truncate urdu-font" title={u.policeStationsUrdu?.join('، ') || u.policeStationUrdu}>
+                                {u.policeStationsUrdu && u.policeStationsUrdu.length > 1 ? u.policeStationsUrdu.join('، ') : (u.policeStationUrdu || 'درج نہیں')}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Multiple Police Stations management widget (URDU: ایک سے زیادہ تھانہ جات شامل کریں) */}
+                          {isEditing && (
+                            <div className="col-span-2 pt-3 border-t border-slate-100 dark:border-slate-800 mt-2 space-y-2">
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block select-none">
+                                Manage Multiple Police Stations / ایک سے زیادہ تھانے شامل کریں
+                              </span>
+                              
+                              {/* Display List of Police Stations */}
+                              <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                                {((editDraft?.policeStations || []).length > 0) ? (
+                                  (editDraft?.policeStations || []).map((ps, idx) => {
+                                    const ur = editDraft?.policeStationsUrdu?.[idx] || '';
+                                    return (
+                                      <div key={idx} className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                                        <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
+                                          <span className="text-[11px] text-slate-700 dark:text-slate-300 font-bold truncate">
+                                            {idx + 1}. {ps}
+                                          </span>
+                                          <span className="text-[11px] text-slate-900 dark:text-white urdu-font font-semibold truncate text-right">
+                                            {ur || 'ترجمہ موجود نہیں'}
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newPS = [...(editDraft?.policeStations || [])];
+                                            const newPSUrdu = [...(editDraft?.policeStationsUrdu || [])];
+                                            newPS.splice(idx, 1);
+                                            newPSUrdu.splice(idx, 1);
+                                            setEditDraft(prev => prev ? {
+                                              ...prev,
+                                              policeStations: newPS,
+                                              policeStationsUrdu: newPSUrdu,
+                                              policeStation: newPS[0] || '',
+                                              policeStationUrdu: newPSUrdu[0] || ''
+                                            } : null);
+                                          }}
+                                          className="p-1 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded cursor-pointer transition-all flex items-center justify-center border border-transparent hover:border-red-100"
+                                          title="Delete"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 italic block px-1">None registered (uses the fallback / primary station above).</span>
+                                )}
+                              </div>
+
+                              {/* Form to Add New Police Station */}
+                              <div className="grid grid-cols-2 gap-2 bg-slate-50/50 dark:bg-slate-950/20 p-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                <div>
+                                  <input
+                                    id="new-ps-en"
+                                    type="text"
+                                    placeholder="Enter Station Name (English)..."
+                                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const btn = document.getElementById('add-ps-btn');
+                                        if (btn) btn.click();
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <input
+                                    id="new-ps-ur"
+                                    type="text"
+                                    placeholder="تھانہ تحریر کریں (Urdu)..."
+                                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold urdu-font focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const btn = document.getElementById('add-ps-btn');
+                                        if (btn) btn.click();
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    id="add-ps-btn"
+                                    type="button"
+                                    onClick={() => {
+                                      const enInput = document.getElementById('new-ps-en') as HTMLInputElement;
+                                      const urInput = document.getElementById('new-ps-ur') as HTMLInputElement;
+                                      const enVal = enInput?.value.trim() || '';
+                                      const urVal = urInput?.value.trim() || '';
+                                      
+                                      if (!enVal) {
+                                        toast.error('Police station name (English) is required!');
+                                        return;
+                                      }
+                                      
+                                      const currentPS = editDraft?.policeStations || [];
+                                      const currentPSUrdu = editDraft?.policeStationsUrdu || [];
+                                      
+                                      if (currentPS.includes(enVal)) {
+                                        toast.error('This police station is already added!');
+                                        return;
+                                      }
+
+                                      const autoUrdu = urVal || translateToUrdu(enVal) || '';
+                                      const newPS = [...currentPS, enVal];
+                                      const newPSUrdu = [...currentPSUrdu, autoUrdu];
+
+                                      setEditDraft(prev => prev ? {
+                                        ...prev,
+                                        policeStations: newPS,
+                                        policeStationsUrdu: newPSUrdu,
+                                        policeStation: prev.policeStation || enVal,
+                                        policeStationUrdu: prev.policeStationUrdu || autoUrdu
+                                      } : null);
+
+                                      if (enInput) enInput.value = '';
+                                      if (urInput) urInput.value = '';
+                                      toast.success('Added police station to user settings.');
+                                    }}
+                                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-[10px] transition-colors cursor-pointer select-none"
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1690,14 +2382,14 @@ export default function Admin() {
         "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
         "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
         "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
         "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
         "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
         "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
         "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
+        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -1750,14 +2442,14 @@ function doPost(e) {
         "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
         "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
         "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "No. of AC", "Split AC Count", 
+        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
         "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
         "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
         "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
         "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
         "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
-        "E-Mail Address", "Mobile Number", "Loss Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
+        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
+        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
         "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
       ];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -1820,7 +2512,11 @@ function doPost(e) {
                                   sdoNameUrdu: u.sdoNameUrdu || '',
                                   designation: u.designation || '',
                                   sdoCnic: u.sdoCnic || '',
-                                  sdoMobile: u.sdoMobile || ''
+                                  sdoMobile: u.sdoMobile || '',
+                                  policeStation: u.policeStation || '',
+                                  policeStationUrdu: u.policeStationUrdu || '',
+                                  policeStations: u.policeStations || [],
+                                  policeStationsUrdu: u.policeStationsUrdu || [],
                                 });
                               }}
                               className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-950/65 dark:hover:bg-slate-800 hover:bg-purple-50 border border-slate-100 dark:border-slate-800 hover:border-purple-100 dark:hover:border-slate-700 hover:text-purple-600 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"

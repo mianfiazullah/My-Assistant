@@ -252,6 +252,7 @@ export default function NewCase() {
     registeredFirNo: '',
     registeredFirDated: '',
     policeStation: '',
+    policeStationUrdu: '',
     noOfAC: '',
     photoUrl: '',
     splitAcCount: '',
@@ -331,6 +332,8 @@ export default function NewCase() {
         const nextEmployeeCnic = user.sdoCnic || '35102-0565965-3';
         const nextEmployeeMobile = user.sdoMobile || '0370-4991751';
         const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
+        const nextPoliceStation = user.policeStation || '';
+        const nextPoliceStationUrdu = user.policeStationUrdu || '';
 
         // Force fill instantly and automatically when step 3 is entered, or if any details differ
         if (
@@ -340,6 +343,8 @@ export default function NewCase() {
           prev.employeeCnic !== nextEmployeeCnic ||
           prev.employeeMobile !== nextEmployeeMobile ||
           prev.employeeNameUrdu !== nextEmployeeNameUrdu ||
+          prev.policeStation !== nextPoliceStation ||
+          prev.policeStationUrdu !== nextPoliceStationUrdu ||
           prev.userId !== user.uid
         ) {
           return {
@@ -349,6 +354,8 @@ export default function NewCase() {
             employeeCnic: nextEmployeeCnic,
             employeeMobile: nextEmployeeMobile,
             employeeNameUrdu: nextEmployeeNameUrdu,
+            policeStation: prev.policeStation || nextPoliceStation,
+            policeStationUrdu: prev.policeStationUrdu || nextPoliceStationUrdu,
             userId: user.uid
           };
         }
@@ -945,16 +952,77 @@ export default function NewCase() {
             key="policeStation" 
             serialNo={serialNo} 
             onSerialNoChange={onSerialNoChange}
-            label={<label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Name Of Police Station</label>}
+            label={
+              <div className="flex items-center gap-1.5 justify-between w-full">
+                <label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Name Of Police Station</label>
+                {(user?.policeStation || (user?.policeStations && user.policeStations.length > 0)) && (
+                  <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+                )}
+              </div>
+            }
           >
             <div className={cn(isDisabled && "opacity-50 pointer-events-none")}>
               <select 
                 value={detectionData.policeStation || ''} 
-                onChange={(e) => setDetectionData({...detectionData, policeStation: e.target.value})} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  let urduVal = '';
+                  if (val === 'Kot Radha Kishan') urduVal = 'کوٹ رادھا کشن';
+                  else if (val === 'Raiwind') urduVal = 'رائے ونڈ';
+                  else if (val === 'Changa Manga') urduVal = 'چھانگا مانگا';
+                  else if (val === 'Manga Mandi') urduVal = 'مانگا منڈی';
+                  else if (user?.policeStations && user.policeStations.includes(val)) {
+                    const idx = user.policeStations.indexOf(val);
+                    urduVal = user.policeStationsUrdu?.[idx] || '';
+                  } else if (val === user?.policeStation) {
+                    urduVal = user?.policeStationUrdu || '';
+                  }
+
+                  if (!urduVal && val) {
+                    const low = val.toLowerCase().trim();
+                    if (low === 'kot radha kishan' || low.includes('radha kishan')) urduVal = 'کوٹ رادھا کشن';
+                    else if (low === 'raiwind' || low.includes('raiwind')) urduVal = 'رائے ونڈ';
+                    else if (low === 'changa manga' || low.includes('changa manga')) urduVal = 'چھانگا مانگا';
+                    else if (low === 'manga mandi' || low.includes('manga mandi')) urduVal = 'مانگا منڈی';
+                    else if (low === 'raiwind city') urduVal = 'رائے ونڈ سٹی';
+                    else if (low === 'kasur') urduVal = 'قصور';
+                    else if (low === 'lahore') urduVal = 'لاہور';
+                    else if (low === 'pattoki') urduVal = 'پتونکی';
+                    else if (low === 'chunian') urduVal = 'چونیاں';
+                    else if (low === 'phool nagar') urduVal = 'پھول نگر';
+                    else if (low === 'habibabad') urduVal = 'حبیب آباد';
+                    else if (low === 'mustafabad') urduVal = 'مصطفی آباد';
+                    else if (low === 'ellahabad') urduVal = 'الہٰ آباد';
+                    else if (low === 'kanganpur') urduVal = 'کنگن پور';
+                    else if (low === 'khudian') urduVal = 'کھڈیاں';
+                    else if (low === 'bhai pheru') urduVal = 'بھائی پھیرو';
+                    else if (low === 'lalyani') urduVal = 'للیانی';
+                  }
+
+                  setDetectionData({
+                    ...detectionData, 
+                    policeStation: val, 
+                    policeStationUrdu: urduVal
+                  });
+                }} 
                 disabled={isDisabled}
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100"
               >
                 <option value="">Select Police Station...</option>
+                {user?.policeStations && user.policeStations.length > 0 ? (
+                  user.policeStations.map((ps, idx) => {
+                    const urdu = user.policeStationsUrdu?.[idx] || '';
+                    return (
+                      <option key={idx} value={ps}>
+                        {ps} {urdu ? `(${urdu})` : ''}
+                      </option>
+                    );
+                  })
+                ) : (
+                  user?.policeStation && !["Kot Radha Kishan", "Raiwind", "Changa Manga", "Manga Mandi"].includes(user.policeStation) && (
+                    <option value={user.policeStation}>{user.policeStation}</option>
+                  )
+                )}
                 <option value="Kot Radha Kishan">Kot Radha Kishan</option>
                 <option value="Raiwind">Raiwind</option>
                 <option value="Changa Manga">Changa Manga</option>
@@ -4028,6 +4096,7 @@ export default function NewCase() {
         registeredFirNo: detectionData.registeredFirNo,
         registeredFirDated: detectionData.registeredFirDated,
         policeStation: detectionData.policeStation,
+        policeStationUrdu: detectionData.policeStationUrdu || '',
         noOfAC: detectionData.noOfAC,
         splitAcCount: detectionData.splitAcCount,
         windowAcCount: detectionData.windowAcCount,
@@ -4099,6 +4168,8 @@ export default function NewCase() {
             "Registered FIR No.": newCase.registeredFirNo || '',
             "Registered FIR Dated": newCase.registeredFirDated || '',
             "Police Station": newCase.policeStation || '',
+            "NAME OF POLICE STATIONS": newCase.policeStation || '',
+            "NAME OF POLICE STATIONS (URDU)": newCase.policeStationUrdu || '',
             "No. of AC": newCase.noOfAC || '',
             "Split AC Count": newCase.splitAcCount || '',
             "Window AC Count": newCase.windowAcCount || '',
@@ -4129,6 +4200,7 @@ export default function NewCase() {
             "Remarks": newCase.remarks,
             "SDO NAME": newCase.employeeName,
             "SDO NAME (Urdu)": newCase.employeeNameUrdu || '',
+            "SDO NAME(Urdu)": newCase.employeeNameUrdu || '',
             "Designation": newCase.employeeDesignation,
             "SDO CNIC": newCase.employeeCnic || '',
             "SDO Mobile": newCase.employeeMobile || '',

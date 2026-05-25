@@ -1358,7 +1358,7 @@ export const ProformaTemplates = forwardRef<HTMLDivElement, ProformaProps>(({ ty
                 
                 <div className="space-y-1">
                     <p>از طرف: <span className="font-bold">اِسسٹنٹ مینیجر (آپریشن) لیسکو کوٹ رادھاکشن سب ڈویژن نمبر۔۱</span></p>
-                    <p>بطرف: <span className="font-bold">جناب ایس۔ایچ۔او صاحب تھانہ {localTranslateToUrdu(data.policeStation)} {data.policeStation?.toLowerCase().includes('raiwind') ? 'ضلع لاہور' : 'ضلع قصور'}</span></p>
+                    <p>بطرف: <span className="font-bold">جناب ایس۔ایچ۔او صاحب تھانہ {data.policeStationUrdu || localTranslateToUrdu(data.policeStation)} {data.policeStation?.toLowerCase().includes('raiwind') ? 'ضلع لاہور' : 'ضلع قصور'}</span></p>
                 </div>
 
                 <div className="text-center py-2">

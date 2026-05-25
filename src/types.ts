@@ -22,6 +22,10 @@ export interface User {
   designation?: string;
   sdoCnic?: string;
   sdoMobile?: string;
+  policeStation?: string;
+  policeStationUrdu?: string;
+  policeStations?: string[];
+  policeStationsUrdu?: string[];
 }
 
 export interface MonthWiseUnit {
@@ -139,6 +143,7 @@ export interface DetectionCase {
   employeeNameUrdu?: string;
   presentOccupier?: string;
   presentOccupierUrdu?: string;
+  policeStationUrdu?: string;
   dBillingMemoNo?: string;
   dBillingMemoDated?: string;
 }

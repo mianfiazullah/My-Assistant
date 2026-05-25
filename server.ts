@@ -536,6 +536,94 @@ Return ONLY JSON.` }
     }
   });
 
+  // Webhook for Google Sheets Auto-Sync of Approved Users (URDU: منظور شدہ صارفین کو خودکار منتقل کرنا)
+  app.post("/api/approve-user", express.json(), async (req, res) => {
+    try {
+      const { 
+        email, 
+        name, 
+        subDivision, 
+        designation, 
+        sdoName, 
+        sdoNameUrdu, 
+        sdoCnic, 
+        sdoMobile, 
+        policeStations, 
+        policeStationsUrdu, 
+        isAllowed 
+      } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ success: false, error: "email is required" });
+      }
+
+      // Check isAllowed, or if the payload contains an approved status trigger
+      const statusCheck = String(isAllowed || '').toLowerCase();
+      const approved = isAllowed === true || isAllowed === 1 || statusCheck === 'true' || statusCheck === 'allow' || statusCheck === 'yes' || statusCheck === 'approved' || statusCheck === 'y' || statusCheck === 'ok';
+
+      if (!approved) {
+        return res.json({ success: true, message: "User status is not approved, skipped auto-entry." });
+      }
+
+      if (admin.apps.length === 0) {
+        try {
+          admin.initializeApp({
+            credential: admin.credential.applicationDefault()
+          });
+        } catch (e: any) {
+          console.error("Firebase Admin credentials fallback initialization failed in webhook endpoint:", e.message);
+        }
+      }
+
+      const cleanEmail = email.toLowerCase().trim();
+      const placeholderUid = `pre-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      
+      const db = admin.firestore();
+      const usersColl = db.collection('users');
+      const userSnap = await usersColl.where('email', '==', cleanEmail).get();
+
+      const finalPSList = Array.isArray(policeStations) ? policeStations.map((val: any) => String(val || '').trim()) : [];
+      const finalPSUrduList = Array.isArray(policeStationsUrdu) ? policeStationsUrdu.map((val: any) => String(val || '').trim()) : [];
+
+      const updateFields: any = {
+        email: cleanEmail,
+        name: name || 'Form Submitter',
+        subDivision: subDivision || 'Gulberg',
+        role: 'user',
+        disabled: false,
+        sdoName: sdoName || name || '',
+        sdoNameUrdu: sdoNameUrdu || '',
+        designation: designation || 'SDO (Operation)',
+        sdoCnic: sdoCnic || '',
+        sdoMobile: sdoMobile || '',
+        policeStation: finalPSList[0] || '',
+        policeStationUrdu: finalPSUrduList[0] || '',
+        policeStations: finalPSList,
+        policeStationsUrdu: finalPSUrduList,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (userSnap.empty) {
+        updateFields.uid = placeholderUid;
+        updateFields.expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        await usersColl.doc(placeholderUid).set(updateFields, { merge: true });
+        console.log(`Auto-registered new approved user via webhook: ${cleanEmail}`);
+        return res.json({ success: true, message: `Successfully registered new pre-auth agent: ${cleanEmail}` });
+      } else {
+        const userDoc = userSnap.docs[0];
+        await usersColl.doc(userDoc.id).set({
+          ...updateFields,
+          subDivision: subDivision || userDoc.data().subDivision || 'Gulberg'
+        }, { merge: true });
+        console.log(`Auto-updated profile entries for active user via webhook: ${cleanEmail}`);
+        return res.json({ success: true, message: `Successfully synchronized existing agent: ${cleanEmail}` });
+      }
+    } catch (error: any) {
+      console.error("Auto approval sync error:", error);
+      res.status(500).json({ success: false, error: error.message || "Failed to sync approved agent" });
+    }
+  });
+
   // Real LESCO Bill Scraping Endpoint
   app.post("/api/fetch-bill", async (req, res) => {
     const { referenceNumber } = req.body;
