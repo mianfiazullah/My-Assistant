@@ -219,8 +219,17 @@ export default function Admin() {
       referenceNumberCode = (cleanNumbers + '01234567890123').substring(0, 14);
     }
 
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const currentDateTime = `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+
     return { 
-      "Date of Checking": '16-05-2026',
+      "Date of Checking": currentDateTime,
       "Reference Number": referenceNumberCode,
       "Sub Division": rawSubDiv,
     "Billing Month": 'MAY 26',
@@ -2362,6 +2371,7 @@ export default function Admin() {
                                 value={editDraft?.policeStation || ''}
                                 onChange={(e) => {
                                   const newVal = e.target.value;
+                                  const autoUr = translateToUrdu(newVal);
                                   setEditDraft(prev => {
                                     if (!prev) return null;
                                     const currentList = [...(prev.policeStations || [])];
@@ -2370,10 +2380,18 @@ export default function Admin() {
                                     } else {
                                       currentList.push(newVal);
                                     }
+                                    const currentUrduList = [...(prev.policeStationsUrdu || [])];
+                                    if (currentUrduList.length > 0) {
+                                      currentUrduList[0] = autoUr;
+                                    } else {
+                                      currentUrduList.push(autoUr);
+                                    }
                                     return {
                                       ...prev,
                                       policeStation: newVal,
-                                      policeStations: currentList
+                                      policeStationUrdu: autoUr,
+                                      policeStations: currentList,
+                                      policeStationsUrdu: currentUrduList
                                     };
                                   });
                                 }}
@@ -2476,6 +2494,14 @@ export default function Admin() {
                                     id="new-ps-en"
                                     type="text"
                                     placeholder="Enter Station Name (English)..."
+                                    onChange={(e) => {
+                                      const newVal = e.target.value;
+                                      const translated = translateToUrdu(newVal);
+                                      const urInput = document.getElementById('new-ps-ur') as HTMLInputElement;
+                                      if (urInput) {
+                                        urInput.value = translated;
+                                      }
+                                    }}
                                     className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
