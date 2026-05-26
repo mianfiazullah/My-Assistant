@@ -9,8 +9,10 @@ import { DetectionCase } from '../types';
 import { format } from 'date-fns';
 import { ProformaTemplates } from '../components/ProformaTemplates';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Cases() {
+  const { user } = useAuth();
   const [cases, setCases] = useState<DetectionCase[]>([]);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -154,7 +156,17 @@ export default function Cases() {
     const q = query(collection(db, 'cases'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const casesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DetectionCase));
+      let casesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DetectionCase));
+      
+      const isUserAdmin = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+      if (!isUserAdmin) {
+        const userSub = (user?.subDivision || '').trim().toLowerCase();
+        casesData = casesData.filter(c => {
+          const caseSub = (c.billData?.subDivisionName || '').trim().toLowerCase();
+          return userSub ? (caseSub === userSub) : (c.userId === user?.uid);
+        });
+      }
+      
       setCases(casesData);
       setLoading(false);
     }, (error) => {
@@ -162,7 +174,7 @@ export default function Cases() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const filteredCases = cases.filter(c => {
     const consumerName = c.name || c.billData?.consumerName || "";

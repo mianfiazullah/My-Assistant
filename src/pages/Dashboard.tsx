@@ -256,8 +256,18 @@ export default function Dashboard() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allCases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DetectionCase));
       
+      const isUserAdmin = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+      let userFilteredCases = allCases;
+      if (!isUserAdmin) {
+        const userSub = (user?.subDivision || '').trim().toLowerCase();
+        userFilteredCases = allCases.filter(c => {
+          const caseSub = (c.billData?.subDivisionName || '').trim().toLowerCase();
+          return userSub ? (caseSub === userSub) : (c.userId === user?.uid);
+        });
+      }
+
       // Filter by date range if specified
-      const filteredCases = allCases.filter(c => {
+      const filteredCases = userFilteredCases.filter(c => {
         if (!c.createdAt) return false;
         const caseDate = new Date(c.createdAt).toISOString().split('T')[0];
         const isAfterStart = !dateRange.start || caseDate >= dateRange.start;
@@ -273,7 +283,7 @@ export default function Dashboard() {
     });
 
     return () => unsubscribe();
-  }, [dateRange]);
+  }, [dateRange, user]);
 
   const handleSeedDemoData = async () => {
     setSeeding(true);

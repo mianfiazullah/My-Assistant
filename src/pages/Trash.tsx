@@ -18,8 +18,10 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Trash() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [deletedCases, setDeletedCases] = useState<DetectionCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,17 @@ export default function Trash() {
     const q = query(collection(db, 'trash'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const cases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DetectionCase));
+      let cases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DetectionCase));
+      
+      const isUserAdmin = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+      if (!isUserAdmin) {
+        const userSub = (user?.subDivision || '').trim().toLowerCase();
+        cases = cases.filter(c => {
+          const caseSub = (c.billData?.subDivisionName || '').trim().toLowerCase();
+          return userSub ? (caseSub === userSub) : (c.userId === user?.uid);
+        });
+      }
+
       setDeletedCases(cases);
       setLoading(false);
     }, (error) => {
@@ -44,7 +56,7 @@ export default function Trash() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   const restoreCase = async (id: string) => {
     setIsRestoring(id);
