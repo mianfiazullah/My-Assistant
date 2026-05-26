@@ -1082,7 +1082,7 @@ export default function NewCase() {
                 {!isAdmin ? (
                   user?.policeStations && user.policeStations.length > 0 ? (
                     user.policeStations.map((ps, idx) => {
-                      const urdu = user.policeStationsUrdu?.[idx] || '';
+                      const urdu = user.policeStationsUrdu?.[idx] || translateToUrdu(ps);
                       return (
                         <option key={idx} value={ps}>
                           {ps} {urdu ? `(${urdu})` : ''}
@@ -1091,9 +1091,14 @@ export default function NewCase() {
                     })
                   ) : (
                     user?.policeStation ? (
-                      <option value={user.policeStation}>
-                        {user.policeStation} {user?.policeStationUrdu ? `(${user.policeStationUrdu})` : ''}
-                      </option>
+                      (() => {
+                        const urdu = user?.policeStationUrdu || translateToUrdu(user.policeStation);
+                        return (
+                          <option value={user.policeStation}>
+                            {user.policeStation} {urdu ? `(${urdu})` : ''}
+                          </option>
+                        );
+                      })()
                     ) : (
                       <option disabled value="">No Police Station connected. Sync with Google Sheets first</option>
                     )
