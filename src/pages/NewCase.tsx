@@ -62,7 +62,7 @@ import { cn } from '../lib/utils';
 import { BillData, DetectionCase, LoadItem } from '../types';
 import { jsPDF } from 'jspdf';
 import { ProformaTemplates } from '../components/ProformaTemplates';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, auth } from '../firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -143,6 +143,14 @@ function SortableItem(props: {
 
 export default function NewCase() {
   const { user } = useAuth();
+  const userEmail = user?.email?.toLowerCase() || "";
+  const isAdmin = userEmail === 'mianfiazullah@gmail.com' || user?.role === 'admin';
+  const [allPoliceStations, setAllPoliceStations] = useState<{ en: string; ur: string }[]>(() => [
+    { en: "Kot Radha Kishan", ur: "کوٹ رادھا کشن" },
+    { en: "Raiwind", ur: "رائے ونڈ" },
+    { en: "Changa Manga", ur: "چھانگا مانگا" },
+    { en: "Manga Mandi", ur: "مانگا منڈی" }
+  ]);
   const isUploadingRef = useRef(false);
   
   const resetCase = () => {
@@ -363,6 +371,59 @@ export default function NewCase() {
       });
     }
   }, [user, step]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const fetchAllPS = async () => {
+      try {
+        const q = query(collection(db, 'users'));
+        const qs = await getDocs(q);
+        const unique = new Map<string, string>();
+        
+        // Add defaults first so they are present
+        const defaults = [
+          { en: "Kot Radha Kishan", ur: "کوٹ رادھا کشن" },
+          { en: "Raiwind", ur: "رائے ونڈ" },
+          { en: "Changa Manga", ur: "چھانگا مانگا" },
+          { en: "Manga Mandi", ur: "مانگا منڈی" }
+        ];
+        defaults.forEach(item => {
+          unique.set(item.en, item.ur);
+        });
+
+        qs.forEach(docSnap => {
+          const uData = docSnap.data();
+          if (uData.policeStation) {
+            const en = String(uData.policeStation).trim();
+            const ur = String(uData.policeStationUrdu || translateToUrdu(en)).trim();
+            if (en) {
+              unique.set(en, ur);
+            }
+          }
+          if (Array.isArray(uData.policeStations)) {
+            uData.policeStations.forEach((psEn: any, idx: number) => {
+              const en = String(psEn || '').trim();
+              if (en) {
+                const psUr = uData.policeStationsUrdu?.[idx];
+                const ur = String(psUr || translateToUrdu(en)).trim();
+                unique.set(en, ur);
+              }
+            });
+          }
+        });
+
+        const list: { en: string; ur: string }[] = [];
+        unique.forEach((ur, en) => {
+          list.push({ en, ur });
+        });
+        list.sort((a, b) => a.en.localeCompare(b.en));
+        setAllPoliceStations(list);
+      } catch (err) {
+        console.error("Error fetching admin police stations:", err);
+      }
+    };
+    fetchAllPS();
+  }, [isAdmin]);
 
   useEffect(() => {
     if (photo) localStorage.setItem('lesco_new_case_photo', photo);
@@ -976,6 +1037,11 @@ export default function NewCase() {
                     urduVal = user.policeStationsUrdu?.[idx] || '';
                   } else if (val === user?.policeStation) {
                     urduVal = user?.policeStationUrdu || '';
+                  } else {
+                    const matchedStation = allPoliceStations.find(item => item.en === val);
+                    if (matchedStation) {
+                      urduVal = matchedStation.ur;
+                    }
                   }
 
                   if (!urduVal && val) {
@@ -999,6 +1065,10 @@ export default function NewCase() {
                     else if (low === 'lalyani') urduVal = 'للیانی';
                   }
 
+                  if (!urduVal && val) {
+                    urduVal = translateToUrdu(val);
+                  }
+
                   setDetectionData({
                     ...detectionData, 
                     policeStation: val, 
@@ -1009,24 +1079,32 @@ export default function NewCase() {
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100"
               >
                 <option value="">Select Police Station...</option>
-                {user?.policeStations && user.policeStations.length > 0 ? (
-                  user.policeStations.map((ps, idx) => {
-                    const urdu = user.policeStationsUrdu?.[idx] || '';
-                    return (
-                      <option key={idx} value={ps}>
-                        {ps} {urdu ? `(${urdu})` : ''}
+                {!isAdmin ? (
+                  user?.policeStations && user.policeStations.length > 0 ? (
+                    user.policeStations.map((ps, idx) => {
+                      const urdu = user.policeStationsUrdu?.[idx] || '';
+                      return (
+                        <option key={idx} value={ps}>
+                          {ps} {urdu ? `(${urdu})` : ''}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    user?.policeStation ? (
+                      <option value={user.policeStation}>
+                        {user.policeStation} {user?.policeStationUrdu ? `(${user.policeStationUrdu})` : ''}
                       </option>
-                    );
-                  })
-                ) : (
-                  user?.policeStation && !["Kot Radha Kishan", "Raiwind", "Changa Manga", "Manga Mandi"].includes(user.policeStation) && (
-                    <option value={user.policeStation}>{user.policeStation}</option>
+                    ) : (
+                      <option disabled value="">No Police Station connected. Sync with Google Sheets first</option>
+                    )
                   )
+                ) : (
+                  allPoliceStations.map((item, idx) => (
+                    <option key={idx} value={item.en}>
+                      {item.en} {item.ur ? `(${item.ur})` : ''}
+                    </option>
+                  ))
                 )}
-                <option value="Kot Radha Kishan">Kot Radha Kishan</option>
-                <option value="Raiwind">Raiwind</option>
-                <option value="Changa Manga">Changa Manga</option>
-                <option value="Manga Mandi">Manga Mandi</option>
               </select>
             </div>
           </SortableItem>
