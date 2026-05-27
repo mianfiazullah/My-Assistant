@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, doc, getDoc, setDoc, where, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, setDoc, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -82,6 +82,7 @@ export default function Admin() {
     policeStationsUrdu?: string[];
   } | null>(null);
   const [expandedScriptUid, setExpandedScriptUid] = useState<string | null>(null);
+  const [deleteConfirmUid, setDeleteConfirmUid] = useState<string | null>(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -354,24 +355,30 @@ export default function Admin() {
         });
       }
 
-      const findBestIndex = (keywords: string[]) => {
-        let idx = cols.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+      const findBestIndex = (keywords: string[], excludeKeywords: string[] = []) => {
+        const matchesLabel = (lbl: string) => {
+          const hasKeyword = keywords.some(k => lbl.includes(k));
+          const hasExclude = excludeKeywords.some(e => lbl.includes(e));
+          return hasKeyword && !hasExclude;
+        };
+        let idx = cols.findIndex(matchesLabel);
         if (idx !== -1) return { index: idx, isFirstRowHeader: false };
-        idx = firstRowHeaders.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        idx = firstRowHeaders.findIndex(matchesLabel);
         if (idx !== -1) return { index: idx, isFirstRowHeader: true };
         return { index: -1, isFirstRowHeader: false };
       };
 
-      const emailMatch = findBestIndex(['email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name']);
-      const nameMatch = findBestIndex(['sdo name', 'employee name', 'sdo_name', 'name', 'نام', 'صارف', 'member', 'user', 'employee']);
-      const subDivMatch = findBestIndex(['sub', 'division', 'شعبہ', 'subdivision', 'کوڈ']);
+      const emailMatch = findBestIndex(['e-mail address', 'email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name'], ['sdo', 'officer']);
+      const nameMatch = findBestIndex(['user name', 'username', 'user_name', 'employee name', 'name', 'نام', 'صارف', 'member', 'user', 'employee'], ['sdo', 'officer']);
+      const subDivMatch = findBestIndex(['sub divisional code', 'sub_divisional_code', 'sub division', 'subdivision', 'sub', 'division', 'شعبہ', 'کوڈ'], ['sdo', 'officer']);
       const statusMatch = findBestIndex(['status', 'allow', 'approved', 'منظور', 'اجازت']);
       
-      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english']);
-      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)']);
-      const designationMatch = findBestIndex(['designation', 'post', 'scale']);
-      const sdoCnicMatch = findBestIndex(['sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
-      const sdoMobileMatch = findBestIndex(['sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر']);
+      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english'], ['user', 'member', 'employee']);
+      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)'], ['user', 'member', 'employee']);
+      const designationMatch = findBestIndex(['designation', 'post', 'scale'], ['user', 'member', 'employee']);
+      const sdoCnicMatch = findBestIndex(['sdo cnic no', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ'], ['user', 'member', 'employee']);
+      const sdoMobileMatch = findBestIndex(['sdo mobile no', 'sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر'], ['user', 'member', 'employee']);
+      const userMobileMatch = findBestIndex(['user mobile', 'user phone', 'user contact', 'user_mobile'], ['sdo', 'officer']);
       const policeStationMatch = findBestIndex(['police', 'station', 'thana', 'تھانہ', 'پلیس اسٹیشن', 'police_stations', 'police stations']);
       const policeStationUrduMatch = findBestIndex(['police station (urdu)', 'police station(urdu)', 'police station urdu', 'police_station_urdu', 'police_stations_urdu', 'police stations (urdu)', 'thana urdu', 'تھانہ اردو']);
 
@@ -385,6 +392,7 @@ export default function Admin() {
       let designationIdx = designationMatch.index;
       let sdoCnicIdx = sdoCnicMatch.index;
       let sdoMobileIdx = sdoMobileMatch.index;
+      let userMobileIdx = userMobileMatch.index;
       let policeStationIdx = policeStationMatch.index;
       let policeStationUrduIdx = policeStationUrduMatch.index;
 
@@ -465,6 +473,7 @@ export default function Admin() {
         const designation = getVal(designationIdx);
         const sdoCnic = getVal(sdoCnicIdx);
         const sdoMobile = getVal(sdoMobileIdx);
+        const userMobile = userMobileIdx !== -1 ? getVal(userMobileIdx) : '';
         
         const policeStations: string[] = [];
         policeStationIndices.forEach(idx => {
@@ -497,6 +506,7 @@ export default function Admin() {
           designation: designation.trim() || 'SDO (Operation)',
           sdoCnic: sdoCnic.trim(),
           sdoMobile: sdoMobile.trim(),
+          userMobile: userMobile.trim(),
           policeStation,
           policeStationUrdu,
           policeStations,
@@ -534,6 +544,7 @@ export default function Admin() {
             designation: row.designation || '',
             sdoCnic: row.sdoCnic || '',
             sdoMobile: row.sdoMobile || '',
+            userMobile: row.userMobile || '',
             policeStation: row.policeStation || '',
             policeStationUrdu: row.policeStationUrdu || '',
             policeStations: row.policeStations || [],
@@ -549,6 +560,7 @@ export default function Admin() {
             designation: row.designation || '',
             sdoCnic: row.sdoCnic || '',
             sdoMobile: row.sdoMobile || '',
+            userMobile: row.userMobile || '',
             policeStation: row.policeStation || '',
             policeStationUrdu: row.policeStationUrdu || '',
             policeStations: row.policeStations || [],
@@ -596,23 +608,29 @@ export default function Admin() {
         });
       }
 
-      const findBestIndex = (keywords: string[]) => {
-        let idx = cols.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+      const findBestIndex = (keywords: string[], excludeKeywords: string[] = []) => {
+        const matchesLabel = (lbl: string) => {
+          const hasKeyword = keywords.some(k => lbl.includes(k));
+          const hasExclude = excludeKeywords.some(e => lbl.includes(e));
+          return hasKeyword && !hasExclude;
+        };
+        let idx = cols.findIndex(matchesLabel);
         if (idx !== -1) return { index: idx, isFirstRowHeader: false };
-        idx = firstRowHeaders.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        idx = firstRowHeaders.findIndex(matchesLabel);
         if (idx !== -1) return { index: idx, isFirstRowHeader: true };
         return { index: -1, isFirstRowHeader: false };
       };
 
-      const emailMatch = findBestIndex(['email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name']);
-      const nameMatch = findBestIndex(['sdo name', 'employee name', 'sdo_name', 'name', 'نام', 'صارف', 'member', 'user', 'employee']);
-      const subDivMatch = findBestIndex(['sub', 'division', 'شعبہ', 'subdivision', 'کوڈ']);
+      const emailMatch = findBestIndex(['e-mail address', 'email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name'], ['sdo', 'officer']);
+      const nameMatch = findBestIndex(['user name', 'username', 'user_name', 'employee name', 'name', 'نام', 'صارف', 'member', 'user', 'employee'], ['sdo', 'officer']);
+      const subDivMatch = findBestIndex(['sub divisional code', 'sub_divisional_code', 'sub division', 'subdivision', 'sub', 'division', 'شعبہ', 'کوڈ'], ['sdo', 'officer']);
       
-      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english']);
-      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)']);
-      const designationMatch = findBestIndex(['designation', 'post', 'scale']);
-      const sdoCnicMatch = findBestIndex(['sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
-      const sdoMobileMatch = findBestIndex(['sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر']);
+      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english'], ['user', 'member', 'employee']);
+      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)'], ['user', 'member', 'employee']);
+      const designationMatch = findBestIndex(['designation', 'post', 'scale'], ['user', 'member', 'employee']);
+      const sdoCnicMatch = findBestIndex(['sdo cnic no', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ'], ['user', 'member', 'employee']);
+      const sdoMobileMatch = findBestIndex(['sdo mobile no', 'sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر'], ['user', 'member', 'employee']);
+      const userMobileMatch = findBestIndex(['user mobile', 'user phone', 'user contact', 'user_mobile'], ['sdo', 'officer']);
       const policeStationMatch = findBestIndex(['police', 'station', 'thana', 'تھانہ', 'پلیس اسٹیشن', 'police_stations', 'police stations']);
       const policeStationUrduMatch = findBestIndex(['police station (urdu)', 'police station(urdu)', 'police station urdu', 'police_station_urdu', 'police_stations_urdu', 'police stations (urdu)', 'thana urdu', 'تھانہ اردو']);
 
@@ -625,6 +643,7 @@ export default function Admin() {
       let designationIdx = designationMatch.index;
       let sdoCnicIdx = sdoCnicMatch.index;
       let sdoMobileIdx = sdoMobileMatch.index;
+      let userMobileIdx = userMobileMatch.index;
       let policeStationIdx = policeStationMatch.index;
       let policeStationUrduIdx = policeStationUrduMatch.index;
 
@@ -711,6 +730,7 @@ export default function Admin() {
           const designation = getVal(designationIdx);
           const sdoCnic = getVal(sdoCnicIdx);
           const sdoMobile = getVal(sdoMobileIdx);
+          const userMobile = userMobileIdx !== -1 ? getVal(userMobileIdx) : '';
           
           const policeStations: string[] = [];
           policeStationIndices.forEach(idx => {
@@ -739,6 +759,7 @@ export default function Admin() {
             designation: designation.trim() || 'SDO (Operation)',
             sdoCnic: sdoCnic.trim(),
             sdoMobile: sdoMobile.trim(),
+            userMobile: userMobile.trim(),
             policeStation,
             policeStationUrdu,
             policeStations,
@@ -763,6 +784,7 @@ export default function Admin() {
         designation: matchedRowObj.designation,
         sdoCnic: matchedRowObj.sdoCnic,
         sdoMobile: matchedRowObj.sdoMobile,
+        userMobile: matchedRowObj.userMobile,
         policeStation: matchedRowObj.policeStation,
         policeStationUrdu: matchedRowObj.policeStationUrdu,
         policeStations: matchedRowObj.policeStations,
@@ -780,6 +802,7 @@ export default function Admin() {
             designation: matchedRowObj.designation,
             sdoCnic: matchedRowObj.sdoCnic,
             sdoMobile: matchedRowObj.sdoMobile,
+            userMobile: matchedRowObj.userMobile,
             policeStation: matchedRowObj.policeStation,
             policeStationUrdu: matchedRowObj.policeStationUrdu,
             policeStations: matchedRowObj.policeStations,
@@ -907,26 +930,32 @@ export default function Admin() {
       }
 
       // Look up column indexes from either system labels or first row of values
-      const findBestIndex = (keywords: string[]) => {
-        let idx = cols.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+      const findBestIndex = (keywords: string[], excludeKeywords: string[] = []) => {
+        const matchesLabel = (lbl: string) => {
+          const hasKeyword = keywords.some(k => lbl.includes(k));
+          const hasExclude = excludeKeywords.some(e => lbl.includes(e));
+          return hasKeyword && !hasExclude;
+        };
+        let idx = cols.findIndex(matchesLabel);
         if (idx !== -1) return { index: idx, isFirstRowHeader: false };
 
-        idx = firstRowHeaders.findIndex((lbl: string) => keywords.some(k => lbl.includes(k)));
+        idx = firstRowHeaders.findIndex(matchesLabel);
         if (idx !== -1) return { index: idx, isFirstRowHeader: true };
 
         return { index: -1, isFirstRowHeader: false };
       };
 
-      const emailMatch = findBestIndex(['email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name']);
-      const nameMatch = findBestIndex(['sdo name', 'employee name', 'sdo_name', 'name', 'نام', 'صارف', 'member', 'user', 'employee']);
-      const subDivMatch = findBestIndex(['sub', 'division', 'شعبہ', 'subdivision', 'کوڈ']);
+      const emailMatch = findBestIndex(['e-mail address', 'email', 'mail', 'ای میل', 'shoba', 'gmail', 'address', 'پتہ', 'username', 'user_name'], ['sdo', 'officer']);
+      const nameMatch = findBestIndex(['user name', 'username', 'user_name', 'employee name', 'name', 'نام', 'صارف', 'member', 'user', 'employee'], ['sdo', 'officer']);
+      const subDivMatch = findBestIndex(['sub divisional code', 'sub_divisional_code', 'sub division', 'subdivision', 'sub', 'division', 'شعبہ', 'کوڈ'], ['sdo', 'officer']);
       const statusMatch = findBestIndex(['status', 'allow', 'approved', 'منظور', 'اجازت']);
       
-      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english']);
-      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)']);
-      const designationMatch = findBestIndex(['designation', 'post', 'scale']);
-      const sdoCnicMatch = findBestIndex(['sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
-      const sdoMobileMatch = findBestIndex(['sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر']);
+      const sdoNameMatch = findBestIndex(['sdo name', 'sdo_name', 'officer name', 'officer_name', 'sdo_name_english'], ['user', 'member', 'employee']);
+      const sdoNameUrduMatch = findBestIndex(['sdo name (urdu)', 'sdo name(urdu)', 'sdo name urdu', 'sdo_name_urdu', 'sdo_urdu_name', 'sdo urdu name', 'name (urdu)', 'name(urdu)'], ['user', 'member', 'employee']);
+      const designationMatch = findBestIndex(['designation', 'post', 'scale'], ['user', 'member', 'employee']);
+      const sdoCnicMatch = findBestIndex(['sdo cnic no', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ'], ['user', 'member', 'employee']);
+      const sdoMobileMatch = findBestIndex(['sdo mobile no', 'sdo mobile', 'sdo_mobile', 'mobile', 'phone', 'contact', 'فون نمبر', 'موبائل نمبر'], ['user', 'member', 'employee']);
+      const userMobileMatch = findBestIndex(['user mobile', 'user phone', 'user contact', 'user_mobile'], ['sdo', 'officer']);
       const policeStationMatch = findBestIndex(['police', 'station', 'thana', 'تھانہ', 'پلیس اسٹیشن', 'police_stations', 'police stations']);
       const policeStationUrduMatch = findBestIndex(['police station (urdu)', 'police station(urdu)', 'police station urdu', 'police_station_urdu', 'police_stations_urdu', 'police stations (urdu)', 'thana urdu', 'تھانہ اردو']);
 
@@ -940,6 +969,7 @@ export default function Admin() {
       let designationIdx = designationMatch.index;
       let sdoCnicIdx = sdoCnicMatch.index;
       let sdoMobileIdx = sdoMobileMatch.index;
+      let userMobileIdx = userMobileMatch.index;
       let policeStationIdx = policeStationMatch.index;
       let policeStationUrduIdx = policeStationUrduMatch.index;
 
@@ -1029,6 +1059,7 @@ export default function Admin() {
         const designation = getVal(designationIdx);
         const sdoCnic = getVal(sdoCnicIdx);
         const sdoMobile = getVal(sdoMobileIdx);
+        const userMobile = userMobileIdx !== -1 ? getVal(userMobileIdx) : '';
         
         // Multi-police stations retrieval and auto Urdu translation
         const policeStations: string[] = [];
@@ -1068,6 +1099,7 @@ export default function Admin() {
           designation: designation.trim() || 'SDO (Operation)',
           sdoCnic: sdoCnic.trim(),
           sdoMobile: sdoMobile.trim(),
+          userMobile: userMobile.trim(),
           policeStation,
           policeStationUrdu,
           policeStations,
@@ -1291,6 +1323,19 @@ export default function Admin() {
     } catch (error: any) {
       console.error('Error toggling user status:', error);
       toast.error(`Action failed: ${error.message}`, { id: toastId });
+    }
+  };
+
+  const handleDeleteUser = async (targetUid: string) => {
+    const toastId = toast.loading('Deleting user account...');
+    try {
+      const userDocRef = doc(db, 'users', targetUid);
+      await deleteDoc(userDocRef);
+      toast.success('User account deleted successfully.', { id: toastId });
+      setDeleteConfirmUid(null);
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(`Deletion failed: ${error.message}`, { id: toastId });
     }
   };
 
@@ -2809,6 +2854,32 @@ function doPost(e) {
                                 </>
                               )}
                             </button>
+                            {u.role !== 'admin' && u.email?.toLowerCase() !== 'mianfiazullah@gmail.com' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (deleteConfirmUid === u.uid) {
+                                    handleDeleteUser(u.uid);
+                                  } else {
+                                    setDeleteConfirmUid(u.uid);
+                                    setTimeout(() => setDeleteConfirmUid(null), 3000);
+                                  }
+                                }}
+                                className={cn("px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border", deleteConfirmUid === u.uid ? "bg-red-500 text-white border-red-600 hover:bg-red-600 focus:bg-red-600 focus:ring focus:ring-red-500/30" : "bg-red-50 dark:bg-red-950/45 hover:bg-red-100/80 hover:text-red-700 border-red-100/50 dark:border-red-900/30 text-red-500 dark:text-red-400")}
+                              >
+                                {deleteConfirmUid === u.uid ? (
+                                  <>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Sure?</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Delete</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
                           </>
                         )}
                       </div>

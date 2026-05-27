@@ -22,6 +22,7 @@ export interface User {
   designation?: string;
   sdoCnic?: string;
   sdoMobile?: string;
+  userMobile?: string;
   policeStation?: string;
   policeStationUrdu?: string;
   policeStations?: string[];
