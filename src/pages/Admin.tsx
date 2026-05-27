@@ -40,6 +40,8 @@ export default function Admin() {
   const [copied, setCopied] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
   const [showScript, setShowScript] = useState(false);
+  const [showRegScriptCode, setShowRegScriptCode] = useState(false);
+  const [copiedRegScript, setCopiedRegScript] = useState(false);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec');
   const [webhookUrl2, setWebhookUrl2] = useState(localStorage.getItem('google_sheets_webhook_2') || '');
@@ -1720,6 +1722,241 @@ export default function Admin() {
                   <p className="font-urdu text-[14px] text-right text-indigo-600 dark:text-indigo-400 leading-normal">
                     تمام نئے ملازمین کے فارمز کو گوگل پلے شیٹ سے سنک کر کے براہِ راست یہاں لاگو کریں۔
                   </p>
+                </div>
+              </div>
+
+              {/* Advanced Apps Script Automation for Google Forms / Registration Sheets */}
+              <div className="bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30 rounded-3xl p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-5 h-5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                    <div>
+                      <h3 className="text-xs font-bold text-neutral-800 dark:text-slate-200 uppercase tracking-wider font-sans">
+                        ⚡ Google Forms Real-time Auto-Registration Script
+                      </h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
+                        گوگل رجسٹریشن فارم سے خودکار اکاؤنٹ بنانا
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const regAppsScript = `// Google Form Registration Auto-Sync Script
+// Paste this code inside your Google Sheets (connected to Google Forms) Extensions > Apps Script
+// After pasting, click the clock/trigger icon on the left parent menu, and add a trigger:
+// Choose function: "onFormSubmitTrigger", Event source: "From spreadsheet", Event type: "On form submit".
+
+function onFormSubmitTrigger(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var lastRow = sheet.getLastRow();
+    
+    // Fetch headers dynamically to locate column positions
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    function findColumnIndex(keywords) {
+      for (var i = 0; i < headers.length; i++) {
+        var header = headers[i].toString().toLowerCase().trim();
+        for (var j = 0; j < keywords.length; j++) {
+          if (header.indexOf(keywords[j]) !== -1) {
+            return i + 1; // 1-based index for Range
+          }
+        }
+      }
+      return -1;
+    }
+    
+    // Scan standard columns dynamically (urdu/english flexible matching)
+    var emailCol = findColumnIndex(['email', 'mail', 'ای میل', 'address', 'gmail']);
+    var nameCol = findColumnIndex(['user name', 'username', 'user_name', 'employee name', 'name', 'نام', 'صارف', 'employee']);
+    var subDivCol = findColumnIndex(['sub divisional code', 'sub divisional', 'sub division', 'subdivision', 'shoba', 'code', 'شعبہ', 'کوڈ']);
+    var sdoNameCol = findColumnIndex(['sdo name', 'officer name', 'sdo_name']);
+    var sdoNameUrduCol = findColumnIndex(['sdo name (urdu)', 'sdo name urdu', 'sdo_name_urdu', 'name (urdu)', 'name(urdu)']);
+    var designationCol = findColumnIndex(['designation', 'post', 'scale']);
+    var sdoMobileCol = findColumnIndex(['sdo mobile', 'sdo mobile no', 'sdo_mobile', 'contact', 'mobi', 'phone']);
+    var sdoCnicCol = findColumnIndex(['sdo cnic no', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+    var statusCol = findColumnIndex(['status', 'allowed', 'approved', 'منظور', 'اجازت']);
+    
+    // Multi police station lookups (PS 1, 2, 3, 4, 5)
+    var psCols = [];
+    for (var colIdx = 1; colIdx <= sheet.getLastColumn(); colIdx++) {
+      var headerName = headers[colIdx - 1].toString().toLowerCase();
+      if ((headerName.indexOf('police') !== -1 && headerName.indexOf('station') !== -1) || headerName.indexOf('thana') !== -1) {
+        if (headerName.indexOf('urdu') === -1) {
+          psCols.push(colIdx);
+        }
+      }
+    }
+    
+    if (emailCol === -1) {
+      Logger.log("Email address column not detected.");
+      return;
+    }
+    
+    // Fetch newly submitted row values
+    var rowValues = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    function getValue(colIndex) {
+      if (colIndex === -1 || colIndex > rowValues.length) return "";
+      return rowValues[colIndex - 1].toString().trim();
+    }
+    
+    var email = getValue(emailCol);
+    var name = getValue(nameCol);
+    var subDivision = getValue(subDivCol);
+    var sdoName = sdoNameCol !== -1 ? getValue(sdoNameCol) : name;
+    var sdoNameUrdu = sdoNameUrduCol !== -1 ? getValue(sdoNameUrduCol) : "";
+    var designation = designationCol !== -1 ? getValue(designationCol) : "SDO (Operation)";
+    var sdoMobile = sdoMobileCol !== -1 ? getValue(sdoMobileCol) : "";
+    var sdoCnic = sdoCnicCol !== -1 ? getValue(sdoCnicCol) : "";
+    var rawStatus = statusCol !== -1 ? getValue(statusCol).toLowerCase() : "allow";
+    var isAllowed = (statusCol === -1 || rawStatus === 'allow' || rawStatus === 'yes' || rawStatus === 'approved' || rawStatus === 'true' || rawStatus === 'allowed' || rawStatus === 'منظور');
+    
+    var policeStations = [];
+    psCols.forEach(function(col) {
+      var val = getValue(col);
+      if (val) policeStations.push(val);
+    });
+    
+    // Build Sync Payload
+    var payload = {
+      email: email,
+      name: name,
+      subDivision: subDivision,
+      sdoName: sdoName,
+      sdoNameUrdu: sdoNameUrdu,
+      designation: designation,
+      sdoMobile: sdoMobile,
+      sdoCnic: sdoCnic,
+      policeStations: policeStations,
+      isAllowed: isAllowed
+    };
+    
+    // Post directly to our backend server
+    var webhookUrl = "${window.location.origin}/api/approve-user";
+    
+    var options = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    
+    var response = UrlFetchApp.fetch(webhookUrl, options);
+    Logger.log("Webhook response status: " + response.getResponseCode());
+    Logger.log("Webhook response content: " + response.getContentText());
+  } catch (error) {
+    Logger.log("Auto sync failed: " + error.toString());
+  }
+}`;
+                      navigator.clipboard.writeText(regAppsScript).then(() => {
+                        setCopiedRegScript(true);
+                        toast.success('Registration Form Apps Script copied!');
+                        setTimeout(() => setCopiedRegScript(false), 2000);
+                      });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-colors cursor-pointer text-[10px]"
+                  >
+                    {copiedRegScript ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Script</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                
+                <p className="text-[11px] text-neutral-600 dark:text-slate-400 font-medium leading-relaxed">
+                  Now you don't even need to sync manually! When a new user signs up on your <strong>Google Registration Form</strong> and is approved, their account is <strong>created instantly in real-time</strong> in the app database.
+                </p>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegScriptCode(!showRegScriptCode)}
+                    className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
+                  >
+                    {showRegScriptCode ? "Hide script view" : "View registration script code"}
+                    <ChevronDown className={cn("w-3 h-3 transition-transform", showRegScriptCode ? "rotate-180" : "")} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showRegScriptCode && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden space-y-2.5 pt-2"
+                      >
+                        <textarea
+                          readOnly
+                          value={`// Google Forms Registration Webhook Sync Script
+function onFormSubmitTrigger(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var lastRow = sheet.getLastRow();
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    function findColumnIndex(keywords) {
+      for (var i = 0; i < headers.length; i++) {
+        var header = headers[i].toString().toLowerCase().trim();
+        for (var j = 0; j < keywords.length; j++) {
+          if (header.indexOf(keywords[j]) !== -1) return i + 1;
+        }
+      }
+      return -1;
+    }
+    
+    var emailCol = findColumnIndex(['email', 'mail', 'ای میل', 'address', 'gmail']);
+    var nameCol = findColumnIndex(['user name', 'name', 'نام', 'صارف']);
+    var subDivCol = findColumnIndex(['sub division', 'division', 'کوڈ']);
+    var sdoNameCol = findColumnIndex(['sdo name', 'officer name']);
+    var sdoNameUrduCol = findColumnIndex(['sdo name (urdu)', 'name (urdu)']);
+    var designationCol = findColumnIndex(['designation', 'post']);
+    var sdoMobileCol = findColumnIndex(['sdo mobile', 'sdo_mobile']);
+    var sdoCnicCol = findColumnIndex(['cnic', 'شناختی کارڈ']);
+    var statusCol = findColumnIndex(['status', 'allow', 'منظور']);
+    
+    var rowValues = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+    function getValue(colIdx) {
+      if (colIdx === -1 || colIdx > rowValues.length) return "";
+      return rowValues[colIdx - 1].toString().trim();
+    }
+    
+    var payload = {
+      email: getValue(emailCol),
+      name: getValue(nameCol),
+      subDivision: getValue(subDivCol),
+      sdoName: sdoNameCol !== -1 ? getValue(sdoNameCol) : getValue(nameCol),
+      sdoNameUrdu: getValue(sdoNameUrduCol),
+      designation: getValue(designationCol) || "SDO (Operation)",
+      sdoMobile: getValue(sdoMobileCol),
+      sdoCnic: getValue(sdoCnicCol),
+      isAllowed: statusCol === -1 || getValue(statusCol).toLowerCase() === 'allow'
+    };
+    
+    var webhookUrl = "${window.location.origin}/api/approve-user";
+    UrlFetchApp.fetch(webhookUrl, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log(e.toString());
+  }
+}`}
+                          className="w-full h-36 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl p-3 font-mono text-[9px] resize-none focus:outline-none"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 

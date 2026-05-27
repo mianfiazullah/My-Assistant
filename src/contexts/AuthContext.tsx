@@ -46,7 +46,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (userDoc && userDoc.exists()) {
             console.log('Profile found');
-            setUser(userDoc.data() as User);
+            const data = userDoc.data() as User;
+            const isMian = firebaseUser.email?.toLowerCase() === 'mianfiazullah@gmail.com';
+            if (isMian && data.role !== 'admin') {
+              console.log('Auto promoting super-admin to admin role in Firestore...');
+              const updatedUser = { ...data, role: 'admin' as const };
+              await setDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' }, { merge: true });
+              setUser(updatedUser);
+            } else {
+              setUser(data);
+            }
           } else {
             console.log('Profile not found, checking for pre-registered account...');
             // Check if there is an admin pre-created/pre-registered profile by email query
@@ -54,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const preUserQuery = query(collection(db, 'users'), where('email', '==', firebaseUser.email || ''));
             const preUserSnapshot = await getDocs(preUserQuery);
             
+            const isMian = firebaseUser.email?.toLowerCase() === 'mianfiazullah@gmail.com';
             if (!preUserSnapshot.empty) {
               const matchedDoc = preUserSnapshot.docs[0];
               const matchedData = matchedDoc.data();
@@ -62,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 uid: firebaseUser.uid,
                 name: firebaseUser.displayName || matchedData.name || 'New Employee',
                 email: firebaseUser.email || matchedData.email || '',
-                role: matchedData.role || 'user',
+                role: isMian ? 'admin' : (matchedData.role || 'user'),
                 expiryDate: matchedData.expiryDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
                 subDivision: matchedData.subDivision || 'Gulberg',
                 disabled: !!matchedData.disabled,
@@ -94,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 uid: firebaseUser.uid,
                 name: firebaseUser.displayName || 'New Employee',
                 email: firebaseUser.email || '',
-                role: 'user',
+                role: isMian ? 'admin' : 'user',
                 expiryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3-day demo
                 subDivision: 'Gulberg',
               };
