@@ -63,10 +63,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const preUserQuery = query(collection(db, 'users'), where('email', '==', firebaseUser.email || ''));
             const preUserSnapshot = await getDocs(preUserQuery);
             
-            const isMian = firebaseUser.email?.toLowerCase() === 'mianfiazullah@gmail.com';
             if (!preUserSnapshot.empty) {
               const matchedDoc = preUserSnapshot.docs[0];
               const matchedData = matchedDoc.data();
+              const isMian = firebaseUser.email?.toLowerCase() === 'mianfiazullah@gmail.com';
               // Create the linked profile for the user with their true UID
               const linkedUser: User = {
                 uid: firebaseUser.uid,
@@ -99,13 +99,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               setUser(linkedUser);
             } else {
               console.log('Profile not found, creating new profile');
+              const isMian = firebaseUser.email?.toLowerCase() === 'mianfiazullah@gmail.com';
               // Create a new user profile if it doesn't exist
               const newUser: User = {
                 uid: firebaseUser.uid,
                 name: firebaseUser.displayName || 'New Employee',
                 email: firebaseUser.email || '',
                 role: isMian ? 'admin' : 'user',
-                expiryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3-day demo
+                expiryDate: isMian 
+                  ? new Date(Date.now() + 3650 * 24 * 60 * 60 * 1000).toISOString()
+                  : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3-day demo
                 subDivision: 'Gulberg',
               };
               await setDoc(doc(db, 'users', firebaseUser.uid), newUser);

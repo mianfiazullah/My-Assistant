@@ -1747,6 +1747,47 @@ export default function Admin() {
 // After pasting, click the clock/trigger icon on the left parent menu, and add a trigger:
 // Choose function: "onFormSubmitTrigger", Event source: "From spreadsheet", Event type: "On form submit".
 
+// CRITICAL STEP to fix "You do not have permission to call UrlFetchApp.fetch" error:
+// 1. In Apps Script editor toolbar, select "testWebhook" from the function dropdown menu.
+// 2. Click the "Run" (▷) button.
+// 3. A popup will ask you for Authorization. Click "Review Permissions".
+// 4. Select your Google account, click "Advanced" at the bottom, click "Go to Untitled project (unsafe)", and click "Allow".
+// 5. This grants active permission for UrlFetchApp.fetch so your automated onFormSubmit trigger can run!
+
+function testWebhook() {
+  var url = "${window.location.origin}/api/approve-user";
+  var testPayload = {
+    email: "test_authorization@example.com",
+    name: "SDO Authorized Device",
+    subDivision: "Gulberg",
+    isAllowed: true,
+    sdoName: "Test Officer",
+    designation: "SDO"
+  };
+  try {
+    var response = UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(testPayload),
+      muteHttpExceptions: true
+    });
+    Logger.log("Response status: " + response.getResponseCode());
+    Logger.log("Response content: " + response.getContentText());
+    try {
+      SpreadsheetApp.getUi().alert("🎉 Authorization Successful! Your Google Spreadsheet is now allowed to automatically trigger real-time registrations to your server!");
+    } catch(uiErr) {
+      Logger.log("Authorized successfully but UI is not accessible in this context: " + uiErr.toString());
+    }
+  } catch(error) {
+    Logger.log("Error: " + error.toString());
+    try {
+      SpreadsheetApp.getUi().alert("Authorization failed: " + error.toString());
+    } catch(uiErr) {
+      Logger.log("Authorization failed and UI not accessible: " + error.toString());
+    }
+  }
+}
+
 function onFormSubmitTrigger(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -1768,17 +1809,17 @@ function onFormSubmitTrigger(e) {
     }
     
     // Scan standard columns dynamically (urdu/english flexible matching)
-    var emailCol = findColumnIndex(['email', 'mail', 'ای میل', 'address', 'gmail']);
+    var emailCol = findColumnIndex(['e-mail address', 'email', 'mail', 'ای میل', 'address', 'gmail']);
     var nameCol = findColumnIndex(['user name', 'username', 'user_name', 'employee name', 'name', 'نام', 'صارف', 'employee']);
     var subDivCol = findColumnIndex(['sub divisional code', 'sub divisional', 'sub division', 'subdivision', 'shoba', 'code', 'شعبہ', 'کوڈ']);
     var sdoNameCol = findColumnIndex(['sdo name', 'officer name', 'sdo_name']);
     var sdoNameUrduCol = findColumnIndex(['sdo name (urdu)', 'sdo name urdu', 'sdo_name_urdu', 'name (urdu)', 'name(urdu)']);
     var designationCol = findColumnIndex(['designation', 'post', 'scale']);
-    var sdoMobileCol = findColumnIndex(['sdo mobile', 'sdo mobile no', 'sdo_mobile', 'contact', 'mobi', 'phone']);
-    var sdoCnicCol = findColumnIndex(['sdo cnic no', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+    var sdoMobileCol = findColumnIndex(['sdo mobile no', 'sdo mobile', 'sdo mobile no.', 'sdo_mobile', 'contact', 'mobi', 'phone']);
+    var sdoCnicCol = findColumnIndex(['sdo cnic no', 'sdo cnic no.', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
     var statusCol = findColumnIndex(['status', 'allowed', 'approved', 'منظور', 'اجازت']);
     
-    // Multi police station lookups (PS 1, 2, 3, 4, 5)
+    // Multi police station lookups (Name Of Police Station 1 to 5)
     var psCols = [];
     for (var colIdx = 1; colIdx <= sheet.getLastColumn(); colIdx++) {
       var headerName = headers[colIdx - 1].toString().toLowerCase();
@@ -1872,6 +1913,16 @@ function onFormSubmitTrigger(e) {
                   </button>
                 </div>
                 
+                <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl p-3.5 space-y-1.5">
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 font-sans">
+                    <span>⚠️ Important Step to Fix Authorization Permission Issue:</span>
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-350 font-medium leading-relaxed font-sans">
+                    Google restricts script triggers from making external requests (like URLs) until authorized. 
+                    After pasting the Apps Script code, select the <strong>"testWebhook"</strong> function in the Apps Script toolbar dropdown and click the <strong>Run</strong> button. Accept permissions via the popup (<em>Go to project &gt; Allow</em>). <strong>Without this, your form entries will fail silently with permission errors!</strong>
+                  </p>
+                </div>
+
                 <p className="text-[11px] text-neutral-600 dark:text-slate-400 font-medium leading-relaxed">
                   Now you don't even need to sync manually! When a new user signs up on your <strong>Google Registration Form</strong> and is approved, their account is <strong>created instantly in real-time</strong> in the app database.
                 </p>
@@ -1896,7 +1947,38 @@ function onFormSubmitTrigger(e) {
                       >
                         <textarea
                           readOnly
-                          value={`// Google Forms Registration Webhook Sync Script
+                          value={`// Google Form Registration Auto-Sync Script
+// Paste this inside Extensions > Apps Script in your Google Sheet (connected to Google Forms)
+
+function testWebhook() {
+  var url = "${window.location.origin}/api/approve-user";
+  var testPayload = {
+    email: "test_authorization@example.com",
+    name: "SDO Authorized Device",
+    subDivision: "Gulberg",
+    isAllowed: true,
+    sdoName: "Test Officer",
+    designation: "SDO"
+  };
+  try {
+    var response = UrlFetchApp.fetch(url, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(testPayload),
+      muteHttpExceptions: true
+    });
+    Logger.log("Response status: " + response.getResponseCode());
+    Logger.log("Response content: " + response.getContentText());
+    try {
+      SpreadsheetApp.getUi().alert("🎉 Authorization Successful! Your Google Spreadsheet is now allowed to automatically trigger real-time registrations to your server!");
+    } catch(uiErr) {
+      Logger.log("Authorized successfully!");
+    }
+  } catch(error) {
+    Logger.log("Error: " + error.toString());
+  }
+}
+
 function onFormSubmitTrigger(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -1913,15 +1995,30 @@ function onFormSubmitTrigger(e) {
       return -1;
     }
     
-    var emailCol = findColumnIndex(['email', 'mail', 'ای میل', 'address', 'gmail']);
-    var nameCol = findColumnIndex(['user name', 'name', 'نام', 'صارف']);
-    var subDivCol = findColumnIndex(['sub division', 'division', 'کوڈ']);
-    var sdoNameCol = findColumnIndex(['sdo name', 'officer name']);
-    var sdoNameUrduCol = findColumnIndex(['sdo name (urdu)', 'name (urdu)']);
+    var emailCol = findColumnIndex(['e-mail address', 'email', 'mail', 'ای میل', 'address', 'gmail']);
+    var nameCol = findColumnIndex(['user name', 'username', 'user_name', 'employee name', 'name', 'نام', 'صارف']);
+    var subDivCol = findColumnIndex(['sub divisional code', 'sub divisional', 'sub division', 'subdivision', 'shoba', 'code', 'شعبہ', 'کوڈ']);
+    var sdoNameCol = findColumnIndex(['sdo name', 'officer name', 'sdo_name']);
+    var sdoNameUrduCol = findColumnIndex(['sdo name (urdu)', 'sdo name urdu', 'sdo_name_urdu', 'name (urdu)', 'name(urdu)']);
     var designationCol = findColumnIndex(['designation', 'post']);
-    var sdoMobileCol = findColumnIndex(['sdo mobile', 'sdo_mobile']);
-    var sdoCnicCol = findColumnIndex(['cnic', 'شناختی کارڈ']);
-    var statusCol = findColumnIndex(['status', 'allow', 'منظور']);
+    var sdoMobileCol = findColumnIndex(['sdo mobile no', 'sdo mobile', 'sdo mobile no.', 'sdo_mobile', 'contact', 'mobi', 'phone']);
+    var sdoCnicCol = findColumnIndex(['sdo cnic no', 'sdo cnic no.', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+    var statusCol = findColumnIndex(['status', 'allowed', 'approved', 'منظور']);
+    
+    var psCols = [];
+    for (var colIdx = 1; colIdx <= sheet.getLastColumn(); colIdx++) {
+      var headerName = headers[colIdx - 1].toString().toLowerCase();
+      if ((headerName.indexOf('police') !== -1 && headerName.indexOf('station') !== -1) || headerName.indexOf('thana') !== -1) {
+        if (headerName.indexOf('urdu') === -1) {
+          psCols.push(colIdx);
+        }
+      }
+    }
+    
+    if (emailCol === -1) {
+      Logger.log("Email column not detected.");
+      return;
+    }
     
     var rowValues = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
     function getValue(colIdx) {
@@ -1929,16 +2026,34 @@ function onFormSubmitTrigger(e) {
       return rowValues[colIdx - 1].toString().trim();
     }
     
+    var email = getValue(emailCol);
+    var name = getValue(nameCol);
+    var subDivision = getValue(subDivCol);
+    var sdoName = sdoNameCol !== -1 ? getValue(sdoNameCol) : name;
+    var sdoNameUrdu = sdoNameUrduCol !== -1 ? getValue(sdoNameUrduCol) : "";
+    var designation = designationCol !== -1 ? getValue(designationCol) : "SDO (Operation)";
+    var sdoMobile = sdoMobileCol !== -1 ? getValue(sdoMobileCol) : "";
+    var sdoCnic = sdoCnicCol !== -1 ? getValue(sdoCnicCol) : "";
+    var rawStatus = statusCol !== -1 ? getValue(statusCol).toLowerCase() : "allow";
+    var isAllowed = (statusCol === -1 || rawStatus === 'allow' || rawStatus === 'yes' || rawStatus === 'approved' || rawStatus === 'true' || rawStatus === 'allowed' || rawStatus === 'منظور');
+    
+    var policeStations = [];
+    psCols.forEach(function(col) {
+      var val = getValue(col);
+      if (val) policeStations.push(val);
+    });
+    
     var payload = {
-      email: getValue(emailCol),
-      name: getValue(nameCol),
-      subDivision: getValue(subDivCol),
-      sdoName: sdoNameCol !== -1 ? getValue(sdoNameCol) : getValue(nameCol),
-      sdoNameUrdu: getValue(sdoNameUrduCol),
-      designation: getValue(designationCol) || "SDO (Operation)",
-      sdoMobile: getValue(sdoMobileCol),
-      sdoCnic: getValue(sdoCnicCol),
-      isAllowed: statusCol === -1 || getValue(statusCol).toLowerCase() === 'allow'
+      email: email,
+      name: name,
+      subDivision: subDivision,
+      sdoName: sdoName,
+      sdoNameUrdu: sdoNameUrdu,
+      designation: designation,
+      sdoMobile: sdoMobile,
+      sdoCnic: sdoCnic,
+      policeStations: policeStations,
+      isAllowed: isAllowed
     };
     
     var webhookUrl = "${window.location.origin}/api/approve-user";
@@ -1949,10 +2064,10 @@ function onFormSubmitTrigger(e) {
       muteHttpExceptions: true
     });
   } catch(e) {
-    Logger.log(e.toString());
+    Logger.log("Auto sync failed: " + e.toString());
   }
 }`}
-                          className="w-full h-36 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl p-3 font-mono text-[9px] resize-none focus:outline-none"
+                          className="w-full h-44 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl p-3 font-mono text-[9px] resize-none focus:outline-none"
                         />
                       </motion.div>
                     )}

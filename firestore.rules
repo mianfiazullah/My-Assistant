@@ -61,12 +61,12 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (('email' in request.auth.token && (request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$") || request.auth.token.email == "mianfiazullah@gmail.com")) || 
+        (('email' in request.auth.token && request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$")) || 
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           ('email' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data) && 
-          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email.matches("(?i)^mianfiazullah@gmail\\.com$") || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == "mianfiazullah@gmail.com")));
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email.matches("(?i)^mianfiazullah@gmail\\.com$")));
     }
 
     function isValidEmail(email) {
@@ -125,20 +125,33 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Users can read their own profile, or pre-registered profiles matching their authenticated email.
-      allow read: if isOwner(userId) || isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);
+      allow read: if isOwner(userId) || 
+                    isAdmin() || 
+                    (isAuthenticated() && 'email' in request.auth.token && (resource.data.email == request.auth.token.email || request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$")));
       
-      // Users can create their own profile as 'user' role. Admins can create any profile dynamically.
+      // Users can create their own profile as 'user' role. Admins/super-admin can create any profile.
       allow create: if isAuthenticated() && 
                     (isAdmin() || 
-                     (isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == 'user')));
+                     ('email' in request.auth.token && request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$")) ||
+                     (isOwner(userId) && 
+                      (!('role' in request.resource.data) || 
+                       request.resource.data.role == 'user' || 
+                       ('email' in request.resource.data && request.resource.data.email.matches("(?i)^mianfiazullah@gmail\\.com$")))));
       
-      // Users can update their own profile but cannot change their role. Admins can update anything.
+      // Users can update their own profile but cannot change their role. Admins/super-admin can update anything.
       allow update: if isAuthenticated() && 
                     (isAdmin() || 
-                     (isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)));
+                     ('email' in request.auth.token && request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$")) ||
+                     (isOwner(userId) && 
+                      (!('role' in request.resource.data) || 
+                       !('role' in resource.data) ||
+                       request.resource.data.role == resource.data.role || 
+                       ('email' in request.resource.data && request.resource.data.email.matches("(?i)^mianfiazullah@gmail\\.com$")))));
       
-      // Only admins can delete users, or if it is a pre-registered profile belonging to this user's email.
-      allow delete: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);
+      // Only admins/super-admin can delete users, or if it is a pre-registered profile belonging to this user's email.
+      allow delete: if isAdmin() || 
+                    ('email' in request.auth.token && request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$")) ||
+                    (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);
     }
 
     match /cases/{caseId} {
