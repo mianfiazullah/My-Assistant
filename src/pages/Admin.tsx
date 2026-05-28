@@ -800,17 +800,21 @@ export default function Admin() {
       let policeStationUrduIdx = policeStationUrduMatch.index;
 
       const policeStationIndices: number[] = [];
+      const policeStationUrduIndices: number[] = [];
       const matchPSColumn = (lbl: string, idx: number) => {
         const cleanLbl = lbl.toLowerCase();
         if (
           (cleanLbl.includes("police") && cleanLbl.includes("station")) ||
           cleanLbl.includes("thana")
         ) {
-          if (
-            !cleanLbl.includes("urdu") &&
-            !policeStationIndices.includes(idx)
-          ) {
-            policeStationIndices.push(idx);
+          if (cleanLbl.includes("urdu")) {
+            if (!policeStationUrduIndices.includes(idx)) {
+              policeStationUrduIndices.push(idx);
+            }
+          } else {
+            if (!policeStationIndices.includes(idx)) {
+              policeStationIndices.push(idx);
+            }
           }
         }
       };
@@ -910,22 +914,47 @@ export default function Admin() {
           const userMobile = userMobileIdx !== -1 ? getVal(userMobileIdx) : "";
 
           const policeStations: string[] = [];
+          const policeStationsUrdu: string[] = [];
           policeStationIndices.forEach((idx) => {
             const val = getVal(idx).trim();
             if (val && !policeStations.includes(val)) {
               policeStations.push(val);
+
+              // Find corresponding Urdu translation column if any
+              const engHeader = String(firstRowHeaders[idx] || cols[idx] || '').toLowerCase();
+              const numMatch = engHeader.match(/\d+/);
+              const num = numMatch ? numMatch[0] : "";
+              
+              let foundUrduVal = "";
+              if (num) {
+                const matchingUrduIdx = policeStationUrduIndices.find((uIdx) => {
+                  const uHeader = String(firstRowHeaders[uIdx] || cols[uIdx] || '').toLowerCase();
+                  return uHeader.includes(num);
+                });
+                if (matchingUrduIdx !== undefined) {
+                  foundUrduVal = getVal(matchingUrduIdx).trim();
+                }
+              }
+              if (!foundUrduVal && idx + 1 < (firstRowHeaders.length || cols.length)) {
+                const nextHeader = String(firstRowHeaders[idx + 1] || cols[idx + 1] || '').toLowerCase();
+                if (nextHeader.includes("urdu")) {
+                  foundUrduVal = getVal(idx + 1).trim();
+                }
+              }
+              if (!foundUrduVal) {
+                foundUrduVal = translateToUrdu(val);
+              }
+              policeStationsUrdu.push(foundUrduVal);
             }
           });
+
           if (policeStations.length === 0 && policeStationIdx !== -1) {
             const val = getVal(policeStationIdx).trim();
-            if (val) policeStations.push(val);
-          }
-          const policeStationsUrdu = policeStations
-            .map((ps) => translateToUrdu(ps))
-            .filter((val) => val !== "");
-          if (policeStationsUrdu.length === 0 && policeStationUrduIdx !== -1) {
-            const val = getVal(policeStationUrduIdx).trim();
-            if (val) policeStationsUrdu.push(val);
+            if (val) {
+              policeStations.push(val);
+              const uVal = policeStationUrduIdx !== -1 ? getVal(policeStationUrduIdx).trim() : translateToUrdu(val);
+              policeStationsUrdu.push(uVal);
+            }
           }
           const policeStation = policeStations[0] || "";
           const policeStationUrdu = policeStationsUrdu[0] || "";
@@ -1224,17 +1253,21 @@ export default function Admin() {
       let policeStationUrduIdx = policeStationUrduMatch.index;
 
       const policeStationIndices: number[] = [];
+      const policeStationUrduIndices: number[] = [];
       const matchPSColumn = (lbl: string, idx: number) => {
         const cleanLbl = lbl.toLowerCase();
         if (
           (cleanLbl.includes("police") && cleanLbl.includes("station")) ||
           cleanLbl.includes("thana")
         ) {
-          if (
-            !cleanLbl.includes("urdu") &&
-            !policeStationIndices.includes(idx)
-          ) {
-            policeStationIndices.push(idx);
+          if (cleanLbl.includes("urdu")) {
+            if (!policeStationUrduIndices.includes(idx)) {
+              policeStationUrduIndices.push(idx);
+            }
+          } else {
+            if (!policeStationIndices.includes(idx)) {
+              policeStationIndices.push(idx);
+            }
           }
         }
       };
@@ -1338,22 +1371,47 @@ export default function Admin() {
           const userMobile = userMobileIdx !== -1 ? getVal(userMobileIdx) : "";
 
           const policeStations: string[] = [];
+          const policeStationsUrdu: string[] = [];
           policeStationIndices.forEach((idx) => {
             const val = getVal(idx).trim();
             if (val && !policeStations.includes(val)) {
               policeStations.push(val);
+
+              // Find corresponding Urdu translation column if any
+              const engHeader = String(firstRowHeaders[idx] || cols[idx] || '').toLowerCase();
+              const numMatch = engHeader.match(/\d+/);
+              const num = numMatch ? numMatch[0] : "";
+              
+              let foundUrduVal = "";
+              if (num) {
+                const matchingUrduIdx = policeStationUrduIndices.find((uIdx) => {
+                  const uHeader = String(firstRowHeaders[uIdx] || cols[uIdx] || '').toLowerCase();
+                  return uHeader.includes(num);
+                });
+                if (matchingUrduIdx !== undefined) {
+                  foundUrduVal = getVal(matchingUrduIdx).trim();
+                }
+              }
+              if (!foundUrduVal && idx + 1 < (firstRowHeaders.length || cols.length)) {
+                const nextHeader = String(firstRowHeaders[idx + 1] || cols[idx + 1] || '').toLowerCase();
+                if (nextHeader.includes("urdu")) {
+                  foundUrduVal = getVal(idx + 1).trim();
+                }
+              }
+              if (!foundUrduVal) {
+                foundUrduVal = translateToUrdu(val);
+              }
+              policeStationsUrdu.push(foundUrduVal);
             }
           });
+
           if (policeStations.length === 0 && policeStationIdx !== -1) {
             const val = getVal(policeStationIdx).trim();
-            if (val) policeStations.push(val);
-          }
-          const policeStationsUrdu = policeStations
-            .map((ps) => translateToUrdu(ps))
-            .filter((val) => val !== "");
-          if (policeStationsUrdu.length === 0 && policeStationUrduIdx !== -1) {
-            const val = getVal(policeStationUrduIdx).trim();
-            if (val) policeStationsUrdu.push(val);
+            if (val) {
+              policeStations.push(val);
+              const uVal = policeStationUrduIdx !== -1 ? getVal(policeStationUrduIdx).trim() : translateToUrdu(val);
+              policeStationsUrdu.push(uVal);
+            }
           }
           const policeStation = policeStations[0] || "";
           const policeStationUrdu = policeStationsUrdu[0] || "";
@@ -1729,17 +1787,21 @@ export default function Admin() {
 
       // Scan all potential columns for police stations (multiple columns support like NAME OF POLICE STATIONS 1 to 6)
       const policeStationIndices: number[] = [];
+      const policeStationUrduIndices: number[] = [];
       const matchPSColumn = (lbl: string, idx: number) => {
         const cleanLbl = lbl.toLowerCase();
         if (
           (cleanLbl.includes("police") && cleanLbl.includes("station")) ||
           cleanLbl.includes("thana")
         ) {
-          if (
-            !cleanLbl.includes("urdu") &&
-            !policeStationIndices.includes(idx)
-          ) {
-            policeStationIndices.push(idx);
+          if (cleanLbl.includes("urdu")) {
+            if (!policeStationUrduIndices.includes(idx)) {
+              policeStationUrduIndices.push(idx);
+            }
+          } else {
+            if (!policeStationIndices.includes(idx)) {
+              policeStationIndices.push(idx);
+            }
           }
         }
       };
@@ -1847,24 +1909,47 @@ export default function Admin() {
 
           // Multi-police stations retrieval and auto Urdu translation
           const policeStations: string[] = [];
+          const policeStationsUrdu: string[] = [];
           policeStationIndices.forEach((idx) => {
             const val = getVal(idx).trim();
             if (val && !policeStations.includes(val)) {
               policeStations.push(val);
+
+              // Find corresponding Urdu translation column if any
+              const engHeader = String(firstRowHeaders[idx] || cols[idx] || '').toLowerCase();
+              const numMatch = engHeader.match(/\d+/);
+              const num = numMatch ? numMatch[0] : "";
+              
+              let foundUrduVal = "";
+              if (num) {
+                const matchingUrduIdx = policeStationUrduIndices.find((uIdx) => {
+                  const uHeader = String(firstRowHeaders[uIdx] || cols[uIdx] || '').toLowerCase();
+                  return uHeader.includes(num);
+                });
+                if (matchingUrduIdx !== undefined) {
+                  foundUrduVal = getVal(matchingUrduIdx).trim();
+                }
+              }
+              if (!foundUrduVal && idx + 1 < (firstRowHeaders.length || cols.length)) {
+                const nextHeader = String(firstRowHeaders[idx + 1] || cols[idx + 1] || '').toLowerCase();
+                if (nextHeader.includes("urdu")) {
+                  foundUrduVal = getVal(idx + 1).trim();
+                }
+              }
+              if (!foundUrduVal) {
+                foundUrduVal = translateToUrdu(val);
+              }
+              policeStationsUrdu.push(foundUrduVal);
             }
           });
 
           if (policeStations.length === 0 && policeStationIdx !== -1) {
             const val = getVal(policeStationIdx).trim();
-            if (val) policeStations.push(val);
-          }
-
-          const policeStationsUrdu = policeStations
-            .map((ps) => translateToUrdu(ps))
-            .filter((val) => val !== "");
-          if (policeStationsUrdu.length === 0 && policeStationUrduIdx !== -1) {
-            const val = getVal(policeStationUrduIdx).trim();
-            if (val) policeStationsUrdu.push(val);
+            if (val) {
+              policeStations.push(val);
+              const uVal = policeStationUrduIdx !== -1 ? getVal(policeStationUrduIdx).trim() : translateToUrdu(val);
+              policeStationsUrdu.push(uVal);
+            }
           }
 
           const policeStation = policeStations[0] || "";
@@ -2745,6 +2830,9 @@ function onFormSubmitTrigger(e) {
     var statusCol = findColumnIndex(['status', 'allowed', 'approved', 'منظور', 'اجازت']);
     
     // Multi police station lookups (Name Of Police Station 1 to 5)
+    var policeStations = [];
+    var policeStationsUrdu = [];
+    
     var psCols = [];
     for (var colIdx = 1; colIdx <= sheet.getLastColumn(); colIdx++) {
       var headerName = headers[colIdx - 1].toString().toLowerCase();
@@ -2754,6 +2842,38 @@ function onFormSubmitTrigger(e) {
         }
       }
     }
+    
+    psCols.forEach(function(col) {
+      var englishVal = getValue(col);
+      if (englishVal) {
+        policeStations.push(englishVal);
+        
+        var headerName = headers[col - 1].toString().toLowerCase();
+        var numMatch = headerName.match(/\d+/);
+        var num = numMatch ? numMatch[0] : "";
+        var foundUrduCol = -1;
+        
+        for (var uCol = 1; uCol <= sheet.getLastColumn(); uCol++) {
+          var uHeader = headers[uCol - 1].toString().toLowerCase();
+          if (uHeader.indexOf('urdu') !== -1 && (uHeader.indexOf('police') !== -1 || uHeader.indexOf('thana') !== -1)) {
+            if (num && uHeader.indexOf(num) !== -1) {
+              foundUrduCol = uCol;
+              break;
+            }
+          }
+        }
+        
+        if (foundUrduCol === -1 && col < sheet.getLastColumn()) {
+          var nextHeader = headers[col].toString().toLowerCase();
+          if (nextHeader.indexOf('urdu') !== -1) {
+            foundUrduCol = col + 1;
+          }
+        }
+        
+        var urduVal = foundUrduCol !== -1 ? getValue(foundUrduCol) : "";
+        policeStationsUrdu.push(urduVal);
+      }
+    });
     
     if (emailCol === -1) {
       Logger.log("Email address column not detected.");
@@ -2780,12 +2900,6 @@ function onFormSubmitTrigger(e) {
     var rawStatus = statusCol !== -1 ? getValue(statusCol).toLowerCase() : "allow";
     var isAllowed = (statusCol === -1 || rawStatus === 'allow' || rawStatus === 'yes' || rawStatus === 'approved' || rawStatus === 'true' || rawStatus === 'allowed' || rawStatus === 'منظور');
     
-    var policeStations = [];
-    psCols.forEach(function(col) {
-      var val = getValue(col);
-      if (val) policeStations.push(val);
-    });
-    
     // Build Sync Payload
     var payload = {
       email: email,
@@ -2798,6 +2912,7 @@ function onFormSubmitTrigger(e) {
       sdoCnic: sdoCnic,
       userMobile: userMobile,
       policeStations: policeStations,
+      policeStationsUrdu: policeStationsUrdu,
       isAllowed: isAllowed
     };
     
@@ -2988,9 +3103,37 @@ function onFormSubmitTrigger(e) {
     var isAllowed = (statusCol === -1 || rawStatus === 'allow' || rawStatus === 'yes' || rawStatus === 'approved' || rawStatus === 'true' || rawStatus === 'allowed' || rawStatus === 'منظور');
     
     var policeStations = [];
+    var policeStationsUrdu = [];
     psCols.forEach(function(col) {
-      var val = getValue(col);
-      if (val) policeStations.push(val);
+      var englishVal = getValue(col);
+      if (englishVal) {
+        policeStations.push(englishVal);
+        
+        var hName = headers[col - 1].toString().toLowerCase();
+        var numMatch = hName.match(/\d+/);
+        var num = numMatch ? numMatch[0] : "";
+        var foundUrduCol = -1;
+        
+        for (var uCol = 1; uCol <= sheet.getLastColumn(); uCol++) {
+          var uHeader = headers[uCol - 1].toString().toLowerCase();
+          if (uHeader.indexOf('urdu') !== -1 && (uHeader.indexOf('police') !== -1 || uHeader.indexOf('thana') !== -1)) {
+            if (num && uHeader.indexOf(num) !== -1) {
+              foundUrduCol = uCol;
+              break;
+            }
+          }
+        }
+        
+        if (foundUrduCol === -1 && col < sheet.getLastColumn()) {
+          var nextHeader = headers[col].toString().toLowerCase();
+          if (nextHeader.indexOf('urdu') !== -1) {
+            foundUrduCol = col + 1;
+          }
+        }
+        
+        var urduVal = foundUrduCol !== -1 ? getValue(foundUrduCol) : "";
+        policeStationsUrdu.push(urduVal);
+      }
     });
     
     var payload = {
@@ -3004,6 +3147,7 @@ function onFormSubmitTrigger(e) {
       sdoCnic: sdoCnic,
       userMobile: userMobile,
       policeStations: policeStations,
+      policeStationsUrdu: policeStationsUrdu,
       isAllowed: isAllowed
     };
     
