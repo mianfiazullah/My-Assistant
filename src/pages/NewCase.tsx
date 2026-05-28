@@ -340,21 +340,21 @@ export default function NewCase() {
         const nextEmployeeCnic = user.sdoCnic || '35102-0565965-3';
         const nextEmployeeMobile = user.sdoMobile || '0370-4991751';
         const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
-        const nextPoliceStation = user.policeStation || '';
-        const nextPoliceStationUrdu = user.policeStationUrdu || '';
+        const nextPoliceStation = user.policeStation || (user.policeStations && user.policeStations[0]) || '';
+        const nextPoliceStationUrdu = user.policeStationUrdu || (user.policeStationsUrdu && user.policeStationsUrdu[0]) || '';
 
         // Force fill instantly and automatically when step 3 is entered, or if any details differ
-        if (
-          step === 3 ||
+        const hasDiff = 
           prev.employeeName !== nextEmployeeName ||
           prev.employeeDesignation !== nextEmployeeDesignation ||
           prev.employeeCnic !== nextEmployeeCnic ||
           prev.employeeMobile !== nextEmployeeMobile ||
           prev.employeeNameUrdu !== nextEmployeeNameUrdu ||
-          prev.policeStation !== nextPoliceStation ||
-          prev.policeStationUrdu !== nextPoliceStationUrdu ||
-          prev.userId !== user.uid
-        ) {
+          prev.userId !== user.uid ||
+          (!prev.policeStation && nextPoliceStation);
+
+        if (step === 3 || hasDiff) {
+          const overrideStation = (prev.userId !== user.uid || !prev.policeStation);
           return {
             ...prev,
             employeeName: nextEmployeeName,
@@ -362,8 +362,8 @@ export default function NewCase() {
             employeeCnic: nextEmployeeCnic,
             employeeMobile: nextEmployeeMobile,
             employeeNameUrdu: nextEmployeeNameUrdu,
-            policeStation: prev.policeStation || nextPoliceStation,
-            policeStationUrdu: prev.policeStationUrdu || nextPoliceStationUrdu,
+            policeStation: overrideStation ? nextPoliceStation : prev.policeStation,
+            policeStationUrdu: overrideStation ? nextPoliceStationUrdu : prev.policeStationUrdu,
             userId: user.uid
           };
         }
@@ -1079,36 +1079,48 @@ export default function NewCase() {
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100"
               >
                 <option value="">Select Police Station...</option>
-                {!isAdmin ? (
-                  user?.policeStations && user.policeStations.length > 0 ? (
-                    user.policeStations.map((ps, idx) => {
-                      const urdu = user.policeStationsUrdu?.[idx] || translateToUrdu(ps);
-                      return (
-                        <option key={idx} value={ps}>
-                          {ps} {urdu ? `(${urdu})` : ''}
-                        </option>
-                      );
+                {/* 1. Synced user police stations */}
+                {user?.policeStations && user.policeStations.length > 0 ? (
+                  user.policeStations.map((ps, idx) => {
+                    const urdu = user.policeStationsUrdu?.[idx] || translateToUrdu(ps);
+                    return (
+                      <option key={`synced-${idx}`} value={ps}>
+                        {ps} {urdu ? `(${urdu})` : ''}
+                      </option>
+                    );
+                  })
+                ) : user?.policeStation ? (
+                  (() => {
+                    const urdu = user?.policeStationUrdu || translateToUrdu(user.policeStation);
+                    return (
+                      <option value={user.policeStation}>
+                        {user.policeStation} {urdu ? `(${urdu})` : ''}
+                      </option>
+                    );
+                  })()
+                ) : null}
+
+                {/* 2. All other unique police stations (available for admins or as a fallback) */}
+                {isAdmin ? (
+                  allPoliceStations
+                    .filter(item => {
+                      if (user?.policeStations?.includes(item.en)) return false;
+                      if (user?.policeStation === item.en) return false;
+                      return true;
                     })
-                  ) : (
-                    user?.policeStation ? (
-                      (() => {
-                        const urdu = user?.policeStationUrdu || translateToUrdu(user.policeStation);
-                        return (
-                          <option value={user.policeStation}>
-                            {user.policeStation} {urdu ? `(${urdu})` : ''}
-                          </option>
-                        );
-                      })()
-                    ) : (
-                      <option disabled value="">No Police Station connected. Sync with Google Sheets first</option>
-                    )
-                  )
+                    .map((item, idx) => (
+                      <option key={`all-${idx}`} value={item.en}>
+                        {item.en} {item.ur ? `(${item.ur})` : ''}
+                      </option>
+                    ))
                 ) : (
-                  allPoliceStations.map((item, idx) => (
-                    <option key={idx} value={item.en}>
-                      {item.en} {item.ur ? `(${item.ur})` : ''}
-                    </option>
-                  ))
+                  (!user?.policeStation && (!user?.policeStations || user.policeStations.length === 0)) && (
+                    allPoliceStations.map((item, idx) => (
+                      <option key={`all-${idx}`} value={item.en}>
+                        {item.en} {item.ur ? `(${item.ur})` : ''}
+                      </option>
+                    ))
+                  )
                 )}
               </select>
             </div>
@@ -5318,6 +5330,8 @@ export default function NewCase() {
                           const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
                           const nextEmail = user.email || '';
                           const nextUserMobile = user.userMobile || '';
+                          const nextPoliceStation = user.policeStation || (user.policeStations && user.policeStations[0]) || '';
+                          const nextPoliceStationUrdu = user.policeStationUrdu || (user.policeStationsUrdu && user.policeStationsUrdu[0]) || '';
                           
                           setDetectionData(prev => ({
                             ...prev,
@@ -5328,6 +5342,8 @@ export default function NewCase() {
                             employeeNameUrdu: nextEmployeeNameUrdu,
                             email: nextEmail,
                             mobileNo: nextUserMobile,
+                            policeStation: nextPoliceStation,
+                            policeStationUrdu: nextPoliceStationUrdu
                           }));
                           toast.success('SDO/Officer Details filled instantly from active Roster!');
                         }}
