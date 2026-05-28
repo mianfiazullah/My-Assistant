@@ -548,6 +548,7 @@ Return ONLY JSON.` }
         sdoNameUrdu, 
         sdoCnic, 
         sdoMobile, 
+        userMobile,
         policeStations, 
         policeStationsUrdu, 
         isAllowed 
@@ -596,6 +597,7 @@ Return ONLY JSON.` }
         designation: designation || 'SDO (Operation)',
         sdoCnic: sdoCnic || '',
         sdoMobile: sdoMobile || '',
+        userMobile: userMobile || '',
         policeStation: finalPSList[0] || '',
         policeStationUrdu: finalPSUrduList[0] || '',
         policeStations: finalPSList,

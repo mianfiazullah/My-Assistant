@@ -2741,6 +2741,7 @@ function onFormSubmitTrigger(e) {
     var designationCol = findColumnIndex(['designation', 'post', 'scale']);
     var sdoMobileCol = findColumnIndex(['sdo mobile no', 'sdo mobile', 'sdo mobile no.', 'sdo_mobile', 'contact', 'mobi', 'phone']);
     var sdoCnicCol = findColumnIndex(['sdo cnic no', 'sdo cnic no.', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+    var userMobileCol = findColumnIndex(['user mobile no', 'user mobile', 'user phone', 'user contact', 'user_mobile', 'موبائل نمبر']);
     var statusCol = findColumnIndex(['status', 'allowed', 'approved', 'منظور', 'اجازت']);
     
     // Multi police station lookups (Name Of Police Station 1 to 5)
@@ -2775,6 +2776,7 @@ function onFormSubmitTrigger(e) {
     var designation = designationCol !== -1 ? getValue(designationCol) : "SDO (Operation)";
     var sdoMobile = sdoMobileCol !== -1 ? getValue(sdoMobileCol) : "";
     var sdoCnic = sdoCnicCol !== -1 ? getValue(sdoCnicCol) : "";
+    var userMobile = userMobileCol !== -1 ? getValue(userMobileCol) : "";
     var rawStatus = statusCol !== -1 ? getValue(statusCol).toLowerCase() : "allow";
     var isAllowed = (statusCol === -1 || rawStatus === 'allow' || rawStatus === 'yes' || rawStatus === 'approved' || rawStatus === 'true' || rawStatus === 'allowed' || rawStatus === 'منظور');
     
@@ -2794,6 +2796,7 @@ function onFormSubmitTrigger(e) {
       designation: designation,
       sdoMobile: sdoMobile,
       sdoCnic: sdoCnic,
+      userMobile: userMobile,
       policeStations: policeStations,
       isAllowed: isAllowed
     };
@@ -2948,6 +2951,7 @@ function onFormSubmitTrigger(e) {
     var designationCol = findColumnIndex(['designation', 'post']);
     var sdoMobileCol = findColumnIndex(['sdo mobile no', 'sdo mobile', 'sdo mobile no.', 'sdo_mobile', 'contact', 'mobi', 'phone']);
     var sdoCnicCol = findColumnIndex(['sdo cnic no', 'sdo cnic no.', 'sdo cnic', 'sdo_cnic', 'cnic', 'شناختی کارڈ']);
+    var userMobileCol = findColumnIndex(['user mobile no', 'user mobile', 'user phone', 'user contact', 'user_mobile', 'موبائل نمبر']);
     var statusCol = findColumnIndex(['status', 'allowed', 'approved', 'منظور']);
     
     var psCols = [];
@@ -2979,6 +2983,7 @@ function onFormSubmitTrigger(e) {
     var designation = designationCol !== -1 ? getValue(designationCol) : "SDO (Operation)";
     var sdoMobile = sdoMobileCol !== -1 ? getValue(sdoMobileCol) : "";
     var sdoCnic = sdoCnicCol !== -1 ? getValue(sdoCnicCol) : "";
+    var userMobile = userMobileCol !== -1 ? getValue(userMobileCol) : "";
     var rawStatus = statusCol !== -1 ? getValue(statusCol).toLowerCase() : "allow";
     var isAllowed = (statusCol === -1 || rawStatus === 'allow' || rawStatus === 'yes' || rawStatus === 'approved' || rawStatus === 'true' || rawStatus === 'allowed' || rawStatus === 'منظور');
     
@@ -2997,6 +3002,7 @@ function onFormSubmitTrigger(e) {
       designation: designation,
       sdoMobile: sdoMobile,
       sdoCnic: sdoCnic,
+      userMobile: userMobile,
       policeStations: policeStations,
       isAllowed: isAllowed
     };

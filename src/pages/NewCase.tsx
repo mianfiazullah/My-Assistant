@@ -5316,6 +5316,8 @@ export default function NewCase() {
                           const nextEmployeeCnic = user.sdoCnic || '35102-0565965-3';
                           const nextEmployeeMobile = user.sdoMobile || '0370-4991751';
                           const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
+                          const nextEmail = user.email || '';
+                          const nextUserMobile = user.userMobile || '';
                           
                           setDetectionData(prev => ({
                             ...prev,
@@ -5324,6 +5326,8 @@ export default function NewCase() {
                             employeeCnic: nextEmployeeCnic,
                             employeeMobile: nextEmployeeMobile,
                             employeeNameUrdu: nextEmployeeNameUrdu,
+                            email: nextEmail,
+                            mobileNo: nextUserMobile,
                           }));
                           toast.success('SDO/Officer Details filled instantly from active Roster!');
                         }}
