@@ -3578,17 +3578,29 @@ export default function NewCase() {
             await new Promise(resolve => setTimeout(resolve, 400));
 
             const dataUrl = await domToJpeg(templateRef.current, {
-              scale: 2,
-              quality: 0.92,
+              scale: 3.5, // Enhanced scale for pristine readability
+              quality: 0.98, // Visually lossless quality
               backgroundColor: '#ffffff',
             });
+
+            // Upload the individual high-quality picture directly to Google Drive as requested
+            if (googleTokens && folderId) {
+              const { uploadToGoogleDrive } = await import('../lib/googleDrive');
+              const imageFileName = type === 'DETECTION BILL PROFORMA' 
+                ? `D.Bill_Performa_${billData?.referenceNumber || 'Case'}.jpg`
+                : `${type.replace(/\s+/g, '_')}_${billData?.referenceNumber || 'Case'}.jpg`;
+              
+              toast.loading(`Uploading high-quality image of ${type}...`, { id: 'bulkUpload' });
+              await uploadToGoogleDrive(googleTokens, folderId, dataUrl, imageFileName, 'image/jpeg');
+            }
 
             if (pageCount > 0) {
               pdf.addPage();
             }
 
             // A4 dimensions are 210 x 297 mm
-            pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+            // Use 'SLOW' compression instead of 'FAST' to retain very high quality for PDF
+            pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
             pageCount++;
           } catch (itemErr: any) {
             console.error(`Item ${type} failed to capture:`, itemErr);
