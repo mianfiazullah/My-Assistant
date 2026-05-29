@@ -149,7 +149,8 @@ export default function NewCase() {
     { en: "Kot Radha Kishan", ur: "کوٹ رادھا کشن" },
     { en: "Raiwind", ur: "رائے ونڈ" },
     { en: "Changa Manga", ur: "چھانگا مانگا" },
-    { en: "Manga Mandi", ur: "مانگا منڈی" }
+    { en: "Manga Mandi", ur: "مانگا منڈی" },
+    { en: "Raja Jang", ur: "راجہ جنگ" }
   ]);
   const isUploadingRef = useRef(false);
   
@@ -3532,7 +3533,7 @@ export default function NewCase() {
       // Give time for DOM to ensure refs are attached
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      let folderId = null;
+      let folderId: string | null = null;
       let existingFiles: any[] = [];
       
       if (googleTokens) {

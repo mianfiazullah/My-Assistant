@@ -141,6 +141,7 @@ export function translateToUrdu(en: string): string {
     "misri shah": "مصری شاہ",
     "factory area": "فیکٹری ایریا",
     sheikhupura: "شیخوپورہ",
+    sheikhum: "شیخم",
     gujranwala: "گوجرانوالہ",
     faisalabad: "فیصل آباد",
     "rawal pindi": "راولپنڈی",
@@ -176,6 +177,8 @@ export function translateToUrdu(en: string): string {
     okara: "اوکاڑہ",
     depalpur: "دیپالپور",
     "renala khurd": "رینالہ خورد",
+    "raja jang": "راجہ جنگ",
+    "raja jung": "راجہ جنگ",
   };
 
   // Direct match
