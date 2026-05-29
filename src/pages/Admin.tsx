@@ -319,29 +319,65 @@ export default function Admin() {
   const [newUserWebhookUrl, setNewUserWebhookUrl] = useState("");
   const [newUserWebhookUrl2, setNewUserWebhookUrl2] = useState("");
 
-  const appsScriptCode = `function doPost(e) {
+  const appsScriptCode = `/* 
+   ★ UNIVERSAL GOOGLE SHEETS AUTOMATOR (یونیورسل اور خودکار گوگل شیٹس آٹومیٹر) ★
+   
+   This is the Universal Webhook Script. You only need to deploy this script ONCE in your 
+   Master Google Spreadsheet! 
+   آپ کو یہ سکرپٹ صرف ایک بار اپنے مین گوگل سپریڈ شیٹ میں لگانا ہے۔ 
+   
+   It will automatically:
+   1. Detect the user's Sub Division when they submit a case.
+   2. Automatically create a Google Drive Folder for that Sub Division: "My Assistant [Sub Division]"
+   3. Automatically create/find a sub-sheet (tab) named [Sub Division] inside your Master Sheet.
+   4. Automatically create/find a dedicated separate Google Spreadsheet named "[Sub Division] Sheet" 
+      directly inside the user's Google Drive Folder, connect it, and sync latest headers and data!
+   5. No need to write any Apps Script or configure individual Webhooks (1 or 2) for each user! 
+*/
+
+function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     // Get Sub Division name/code dynamically from incoming payload (or fallback)
-    var subDivision = (data["Sub Division"] || data["subDivision"] || "").toString().trim();
+    var subDivision = (data["Sub Division"] || data["subDivisionName"] || data["subDivision"] || "").toString().trim();
     if (!subDivision) {
       subDivision = "Default";
     }
     
-    // Check and create Dynamic Google Drive Folder named "My Assistant [subDivision]"
+    // 1. Check and create Dynamic Google Drive Folder named "My Assistant [subDivision]"
     var folderName = "My Assistant " + subDivision;
-    var folders = DriveApp.getFoldersByName(folderName);
     var folder;
-    if (folders.hasNext()) {
-      folder = folders.next();
-    } else {
-      folder = DriveApp.createFolder(folderName);
+    try {
+      var folders = DriveApp.getFoldersByName(folderName);
+      if (folders.hasNext()) {
+        folder = folders.next();
+      } else {
+        folder = DriveApp.createFolder(folderName);
+      }
+      
+      // Auto-share folder with the User's Google Drive Account!
+      var submitterEmail = (data["submitterEmail"] || data["submitter_email"] || "").toString().trim();
+      if (submitterEmail) {
+        try {
+          folder.addEditor(submitterEmail);
+        } catch (shareErr) {
+          Logger.log("Failed to share folder: " + shareErr.toString());
+        }
+      }
+    } catch (err) {
+      Logger.log("Drive folder creation failed: " + err.toString());
     }
 
-    // Check if this is a File Upload request
+    // Check if this is a File Upload request (Save Evidence Photos/PDFs)
     if (data.action === "uploadFile") {
+      if (!folder) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          "success": false, 
+          "message": "Drive folder is not accessible to upload file."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
       var fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileData), data.fileType, data.fileName);
       var file = folder.createFile(fileBlob);
       return ContentService.createTextOutput(JSON.stringify({ 
@@ -352,52 +388,116 @@ export default function Admin() {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
-    // Get or Create Dynamic Google Sheets Tab dynamically named like the Sub Division!
-    var sheet = ss.getSheetByName(subDivision);
-    if (!sheet) {
-      sheet = ss.insertSheet(subDivision);
-    }
-    
-    // Otherwise, it is standard Row Data
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    if (headers.length === 0 || headers[0] === "") {
-      headers = [
-        "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
-        "Present Occupier", "Present Occupier (Urdu)", "Address", "Address (Urdu)", "Customer ID", 
-        "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
-        "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
-        "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
-        "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
-        "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
-        "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
-        "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
-        "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
-        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
-        "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
-      ];
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    }
-    
-    // Update links inside standard data cells
-    if (!data["Drive Folder Link"]) {
+    // Definitions of fields / column headers
+    var headers = [
+      "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
+      "Present Occupier", "Present Occupier (Urdu)", "Address", "Address (Urdu)", "Customer ID", 
+      "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
+      "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
+      "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
+      "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
+      "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
+      "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
+      "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
+      "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
+      "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
+      "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
+      "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
+      "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
+    ];
+
+    // Ensure links are populated in data cells
+    if (folder && !data["Drive Folder Link"]) {
       data["Drive Folder Link"] = folder.getUrl();
     }
-    
+    if (!data["Sub Division"]) {
+      data["Sub Division"] = subDivision;
+    }
+
     var row = [];
     for (var i = 0; i < headers.length; i++) {
       var key = headers[i];
       row.push(data[key] || "");
     }
-    
-    sheet.appendRow(row);
+
+    var masterSaved = false;
+    var userSheetSaved = false;
+    var errMsg = "";
+    var userSpreadsheetUrl = "";
+
+    // 2. SAVE to MASTER SPREADSHEET (under subdivision tab)
+    try {
+      var masterSheet = ss.getSheetByName(subDivision);
+      if (!masterSheet) {
+        masterSheet = ss.insertSheet(subDivision);
+      }
+      
+      var masterHeaders = masterSheet.getRange(1, 1, 1, Math.max(1, masterSheet.getLastColumn())).getValues()[0];
+      if (masterHeaders.length === 0 || masterHeaders[0] === "") {
+        masterSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      }
+      masterSheet.appendRow(row);
+      masterSaved = true;
+    } catch (saveMasterErr) {
+      errMsg += "Master Sheet error: " + saveMasterErr.toString() + "; ";
+    }
+
+    // 3. SAVE to USER'S DEDICATED INDIVIDUAL SPREADSHEET inside their Google Drive folder
+    if (folder) {
+      try {
+        var dedicatedFilePrefix = "My Assistant Sheet - " + subDivision;
+        var files = folder.getFilesByName(dedicatedFilePrefix);
+        var userSpreadsheet;
+        
+        if (files.hasNext()) {
+          userSpreadsheet = SpreadsheetApp.open(files.next());
+        } else {
+          // Create a brand new Spreadsheet for this subdivision
+          userSpreadsheet = SpreadsheetApp.create(dedicatedFilePrefix);
+          var fileId = userSpreadsheet.getId();
+          var sheetFile = DriveApp.getFileById(fileId);
+          
+          // Move this sheet file into the dedicated subdivision folder using modern moveTo
+          sheetFile.moveTo(folder);
+        }
+
+        // Auto-share Spreadsheet with the User's Google Drive Account!
+        var submitterEmail = (data["submitterEmail"] || data["submitter_email"] || "").toString().trim();
+        if (submitterEmail) {
+          try {
+            userSpreadsheet.addEditor(submitterEmail);
+          } catch (shareSheetErr) {
+            Logger.log("Failed to share sheet with user: " + shareSheetErr.toString());
+          }
+        }
+
+        var userSheet = userSpreadsheet.getSheets()[0];
+        // Rename tab to subdivision for styling matching
+        if (userSheet.getName() !== subDivision) {
+          userSheet.setName(subDivision);
+        }
+        
+        var userSheetHeaders = userSheet.getRange(1, 1, 1, Math.max(1, userSheet.getLastColumn())).getValues()[0];
+        if (userSheetHeaders.length === 0 || userSheetHeaders[0] === "") {
+          userSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+        }
+        userSheet.appendRow(row);
+        userSpreadsheetUrl = userSpreadsheet.getUrl();
+        userSheetSaved = true;
+      } catch (saveUserErr) {
+        errMsg += "Individual Sheet error: " + saveUserErr.toString() + "; ";
+      }
+    }
     
     return ContentService.createTextOutput(JSON.stringify({ 
-      "success": true, 
-      "message": "Data saved and folder verified/created successfully.",
+      "success": masterSaved || userSheetSaved, 
+      "message": errMsg ? "Completed with errors: " + errMsg : "Data written successfully to both Master Tab & Individual Sheet!",
+      "masterSaved": masterSaved,
+      "userSheetSaved": userSheetSaved,
       "folderName": folderName,
-      "sheetName": subDivision
+      "sheetName": subDivision,
+      "folderUrl": folder ? folder.getUrl() : "",
+      "dedicatedSheetUrl": userSpreadsheetUrl
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
@@ -2547,65 +2647,107 @@ export default function Admin() {
         {/* Google Apps Script Integration Helper Card */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm p-6 sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+            <div className="p-3 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 shrink-0">
               <Shield className="w-6 h-6" />
             </div>
             <div className="flex-1 space-y-4">
               <div>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border border-purple-150 rounded-lg uppercase tracking-wider mb-2 font-sans">
+                  🌟 Universal Automatic System (یونیورسل اور خودکار سسٹم)
+                </span>
                 <h2 className="text-lg font-bold text-neutral-900 dark:text-slate-100 mb-1">
-                  Google Apps Script Webhook Code (Auto-Drive Folder & Photo
-                  Sync)
+                  Universal Google Webhook Code & Dynamic Automation Setup
                 </h2>
-                <p className="text-neutral-500 dark:text-slate-400 text-sm">
-                  To automatically create folders in Google Drive using the
-                  exact same name as your sheets, and automatically upload
-                  evidence photos directly to those folders, use this updated
-                  code in your Google Sheets' Apps Script!
+                <p className="text-neutral-500 dark:text-slate-400 text-sm leading-relaxed">
+                  Provide your master sheet this single Universal Script! When your employees submit any case, 
+                  the app will automatically create their sub-division folder in Google Drive, 
+                  append their case parameters to a dedicated sub-division tab, and create their own independent connected 
+                  Google Spreadsheet inside their Drive folder with latest headers dynamically!
                 </p>
               </div>
 
-              <div className="bg-neutral-50 dark:bg-slate-800 p-4 rounded-2xl border border-neutral-100 dark:border-slate-700">
-                <div className="text-xs font-mono text-neutral-600 dark:text-slate-300 space-y-2">
-                  <p className="font-bold text-neutral-900 dark:text-white">
-                    🚀 Real-time Drive & Sheet Automation features included:
+              {/* Centralized guide in simple clear steps, perfect for a smart student */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-4 rounded-2xl space-y-2 text-xs">
+                  <p className="font-bold text-neutral-900 dark:text-white font-sans text-[12px] text-indigo-600 dark:text-indigo-400">
+                    💡 100% Automatic Flow (انگلش گائیڈ)
                   </p>
-                  <ul className="list-disc pl-4 space-y-1">
-                    <li>
-                      Creates a Google Drive folder named exactly like the
-                      spreadsheet automatically.
+                  <ol className="list-decimal pl-4.5 space-y-1.5 text-neutral-600 dark:text-slate-350 font-medium">
+                    <li>Copy this Universal Apps Script code by clicking the green button below.</li>
+                    <li>Go to your **Master Google Spreadsheet**, click on **Extensions &gt; Apps Script**.</li>
+                    <li>Delete all existing placeholder code, paste this script, and click "Save".</li>
+                    <li>Click the blue **"Deploy" &gt; "New deployment"** button.</li>
+                    <li>Under *Select type*, select **"Web App"**. Set *Execute as* to **"Me"**, and *Who has access* to **"Anyone"**.</li>
+                    <li>Copy your **Web App URL**, and enter it in **Webhook 1 (Primary)** above. You're done! Everything else runs themselves.</li>
+                  </ol>
+                </div>
+
+                <div className="bg-purple-50/20 dark:bg-purple-950/10 border border-purple-100/50 dark:border-purple-800/20 p-4 rounded-2xl space-y-2">
+                  <p className="font-urdu text-[15px] font-bold text-violet-700 dark:text-violet-400 text-right">
+                    💡 خودکار اور آسان گائیڈ (اردو میں)
+                  </p>
+                  <ul className="list-none space-y-2 text-right">
+                    <li className="font-urdu font-medium text-[13px] text-neutral-700 dark:text-slate-300 leading-normal">
+                      ۱۔ نیچے دیے گئے سبز بٹن پر کلک کر کے اسکرپٹ کوڈ کاپی کریں۔
                     </li>
-                    <li>
-                      Receives case details and base64 evidence photos, saves
-                      them as JPEGs inside that folder.
+                    <li className="font-urdu font-medium text-[13px] text-neutral-700 dark:text-slate-300 leading-normal">
+                      ۲۔ اپنی مین گوگل شیٹ پر جائیں اور اوپر مینو میں **Extensions &gt; Apps Script** پر کلک کریں۔
                     </li>
-                    <li>
-                      Saves specific Google Drive view links back into your
-                      spreadsheet columns automatically!
+                    <li className="font-urdu font-medium text-[13px] text-neutral-700 dark:text-slate-300 leading-normal">
+                      ۳۔ تمام پرانی چیزیں مٹا کر یہ نیا یونیورسل اسکرپٹ پیسٹ کریں اور سیو کریں۔
+                    </li>
+                    <li className="font-urdu font-medium text-[13px] text-neutral-700 dark:text-slate-300 leading-normal">
+                      ۴۔ اوپر دائیں کونے میں **Deploy &gt; New deployment** کریں۔
+                    </li>
+                    <li className="font-urdu font-medium text-[13px] text-neutral-700 dark:text-slate-300 leading-normal">
+                      ۵۔ اس میں **Web App** منتخب کریں، *Execute as* کو **"Me"** اور *Who has access* کو **"Anyone"** پر سیٹ کریں۔
+                    </li>
+                    <li className="font-urdu font-medium text-[13px] text-neutral-700 dark:text-slate-300 leading-normal">
+                      ۶۔ اب ویب ایپ کا لنک کاپی کر کے اسی پیج کے اوپر **Webhook 1 (Primary)** میں سیو کر دیں۔ تمام کام خودکار ہو جائیں گے!
                     </li>
                   </ul>
                 </div>
               </div>
 
+              <div className="bg-neutral-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-neutral-100 dark:border-slate-700 space-y-2">
+                <p className="font-bold text-neutral-900 dark:text-white text-xs flex items-center gap-1.5">
+                  🚀 Fully Loaded Automation Features (کیا کیا خودکار ہوگا؟):
+                </p>
+                <ul className="list-disc pl-4 text-[11px] text-neutral-600 dark:text-slate-300 space-y-1 font-sans">
+                  <li>
+                    <strong className="text-violet-600 dark:text-violet-400">Dynamic Google Drive User Folder:</strong> Authenticates the Sub Division name and creates a distinct folder for the division automatically inside Google Drive.
+                  </li>
+                  <li>
+                    <strong className="text-violet-600 dark:text-violet-400">Master Sheet Auto-Segmentation:</strong> Generates dynamic sub-sheets (tabs) categorized under their sub-division directly in the central Master Spreadsheet.
+                  </li>
+                  <li>
+                    <strong className="text-violet-600 dark:text-violet-400">Standalone User Sheet Generation:</strong> Automatically builds a new connected separate Google Spreadsheet inside that user's folder, copies all field headers, and writes data automatically!
+                  </li>
+                  <li>
+                    <strong className="text-violet-600 dark:text-violet-400">Centralized Registration Trigger:</strong> Connects directly to the user approval portal, allowing real-time account authorization.
+                  </li>
+                </ul>
+              </div>
+
               <button
                 onClick={handleCopyScript}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/10 text-sm"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/10 text-sm cursor-pointer"
               >
                 {copiedScript ? (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>Apps Script Copied!</span>
+                    <span>Universal Apps Script Copied!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    <span>Copy Google Apps Script Code</span>
+                    <span>Copy Universal Apps Script Code</span>
                   </>
                 )}
               </button>
             </div>
           </div>
         </div>
-
         {/* Google Sheets Helper Card */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-neutral-100 dark:border-slate-800 shadow-sm p-6 sm:p-8">
           <div className="flex items-start gap-4">

@@ -3690,6 +3690,7 @@ export default function NewCase() {
         // 2. Sync PDF with both Google Sheets webhooks
         const fileBase64 = dataUrl.split(',')[1];
         const webhookPromises: Promise<any>[] = [];
+        const finalSubDivision = billData?.subDivisionName || user?.subDivision || "";
 
         if (webhookUrl) {
           webhookPromises.push(
@@ -3703,7 +3704,8 @@ export default function NewCase() {
                   fileName: finalFileName,
                   fileType: "application/pdf",
                   fileData: fileBase64,
-                  subDivision: billData?.subDivisionName || ""
+                  subDivision: finalSubDivision,
+                  submitterEmail: user?.email || ""
                 }
               }),
             }).then(async (res) => {
@@ -3725,7 +3727,8 @@ export default function NewCase() {
                   fileName: finalFileName,
                   fileType: "application/pdf",
                   fileData: fileBase64,
-                  subDivision: billData?.subDivisionName || ""
+                  subDivision: finalSubDivision,
+                  submitterEmail: user?.email || ""
                 }
               }),
             }).then(async (res) => {
@@ -3764,7 +3767,8 @@ export default function NewCase() {
                     fileName: photoName,
                     fileType: photoMimeType,
                     fileData: photoBase64,
-                    subDivision: billData?.subDivisionName || ""
+                    subDivision: finalSubDivision,
+                    submitterEmail: user?.email || ""
                   }
                 }),
               }).then(res => {
@@ -3785,7 +3789,8 @@ export default function NewCase() {
                     fileName: photoName,
                     fileType: photoMimeType,
                     fileData: photoBase64,
-                    subDivision: billData?.subDivisionName || ""
+                    subDivision: finalSubDivision,
+                    submitterEmail: user?.email || ""
                   }
                 }),
               }).then(res => {
@@ -4310,7 +4315,7 @@ export default function NewCase() {
           const payload = {
             "Date of Checking": newCase.dateOfChecking,
             "Reference Number": newCase.referenceNumber,
-            "Sub Division": billData?.subDivisionName || '',
+            "Sub Division": billData?.subDivisionName || user?.subDivision || '',
             "Billing Month": newCase.billingMonth || '',
             "Consumer Name": newCase.name,
             "Consumer Name (Urdu)": newCase.nameUrdu || '',
@@ -4375,6 +4380,7 @@ export default function NewCase() {
             "SDO CNIC": newCase.employeeCnic || '',
             "SDO Mobile": newCase.employeeMobile || '',
             "photoUrl": newCase.photoUrl || '',
+            "submitterEmail": user?.email || '',
           };
 
           const promises: Promise<any>[] = [];
