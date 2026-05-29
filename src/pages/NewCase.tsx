@@ -3597,11 +3597,13 @@ export default function NewCase() {
 
       let folderId: string | null = null;
       let existingFiles: any[] = [];
+      const finalSubDivision = billData?.subDivisionName || user?.subDivision || "";
       
       if (googleTokens) {
         try {
           const { createOrGetFolder, listFilesFromGoogleDrive } = await import('../lib/googleDrive');
-          folderId = await createOrGetFolder(googleTokens, 'My Assistant');
+          const finalFolderName = finalSubDivision ? `My Assistant ${finalSubDivision}` : 'My Assistant';
+          folderId = await createOrGetFolder(googleTokens, finalFolderName);
           existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
         } catch (folderErr: any) {
           if (folderErr.message.includes('expired')) {
@@ -3690,7 +3692,6 @@ export default function NewCase() {
         // 2. Sync PDF with both Google Sheets webhooks
         const fileBase64 = dataUrl.split(',')[1];
         const webhookPromises: Promise<any>[] = [];
-        const finalSubDivision = billData?.subDivisionName || user?.subDivision || "";
 
         if (webhookUrl) {
           webhookPromises.push(
@@ -4310,7 +4311,7 @@ export default function NewCase() {
       const webhookUrl = user?.webhookUrl || localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
       const webhookUrl2 = user?.webhookUrl2 || localStorage.getItem('google_sheets_webhook_2') || '';
       
-      if (webhookUrl || webhookUrl2) {
+      if (webhookUrl || webhookUrl2 || googleTokens) {
         try {
           const payload = {
             "Date of Checking": newCase.dateOfChecking,
@@ -4409,8 +4410,30 @@ export default function NewCase() {
             );
           }
 
+          // 4. Save directly into User's own Google Drive Spreadsheet (if connected)
+          if (googleTokens && folderId) {
+            promises.push(
+              (async () => {
+                try {
+                  const { createOrGetSpreadsheet, appendRowToSpreadsheet } = await import('../lib/googleDrive');
+                  const sheetName = finalSubDivision ? `My Assistant Sheet - ${finalSubDivision}` : 'My Assistant Sheet';
+                  const spreadsheetId = await createOrGetSpreadsheet(googleTokens, folderId, sheetName);
+                  
+                  const headers = Object.keys(payload);
+                  const row = Object.values(payload);
+
+                  await appendRowToSpreadsheet(googleTokens, spreadsheetId, headers, row);
+                  console.log('Case automatically appended to User\'s personal Drive Spreadsheet');
+                } catch (personalSheetErr) {
+                  console.error("Personal Drive Sheet Error:", personalSheetErr);
+                  toast.error("Failed to sync directly to your personal Google Sheet.");
+                }
+              })()
+            );
+          }
+
           await Promise.all(promises);
-          toast.success("Saved to Google Sheets.");
+          toast.success("Saved dynamically to Google Sheets.");
         } catch (sheetsErr) {
           console.error("Failed to sync to Google Sheets:", sheetsErr);
           toast.error("Failed to sync with one or both Google Sheets.");
