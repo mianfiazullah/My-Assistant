@@ -124,10 +124,8 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      // Users can read their own profile, or pre-registered profiles matching their authenticated email.
-      allow read: if isOwner(userId) || 
-                    isAdmin() || 
-                    (isAuthenticated() && 'email' in request.auth.token && (resource.data.email == request.auth.token.email || request.auth.token.email.matches("(?i)^mianfiazullah@gmail\\.com$")));
+      // Users can read any user profile to get subdivision mapping, which is authenticated-only.
+      allow read: if isAuthenticated();
       
       // Users can create their own profile as 'user' role. Admins/super-admin can create any profile.
       allow create: if isAuthenticated() && 

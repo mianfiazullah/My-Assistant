@@ -152,6 +152,7 @@ export default function NewCase() {
     { en: "Manga Mandi", ur: "مانگا منڈی" },
     { en: "Raja Jang", ur: "راجہ جنگ" }
   ]);
+  const [allDbUsers, setAllDbUsers] = useState<any[]>([]);
   const isUploadingRef = useRef(false);
   
   const resetCase = () => {
@@ -336,13 +337,23 @@ export default function NewCase() {
   useEffect(() => {
     if (user) {
       setDetectionData(prev => {
-        const nextEmployeeName = user.sdoName || user.name || '';
-        const nextEmployeeDesignation = user.designation || 'Assistant Manager (Operation)';
-        const nextEmployeeCnic = user.sdoCnic || '35102-0565965-3';
-        const nextEmployeeMobile = user.sdoMobile || '0370-4991751';
-        const nextEmployeeNameUrdu = user.sdoNameUrdu || '';
-        const nextPoliceStation = user.policeStation || (user.policeStations && user.policeStations[0]) || '';
-        const nextPoliceStationUrdu = user.policeStationUrdu || (user.policeStationsUrdu && user.policeStationsUrdu[0]) || '';
+        // Find matching subdivision user record in allDbUsers if any
+        const activeSubDivUser = allDbUsers.find(u => 
+          u.subDivision && 
+          billData?.subDivisionName && 
+          u.subDivision.toString().toLowerCase().trim() === billData.subDivisionName.toString().toLowerCase().trim()
+        );
+
+        // If activeSubDivUser is found, pre-fill with its values, otherwise fall back to logged-in user's
+        const sourceUser = activeSubDivUser || user;
+
+        const nextEmployeeName = sourceUser.sdoName || sourceUser.name || '';
+        const nextEmployeeDesignation = sourceUser.designation || 'Assistant Manager (Operation)';
+        const nextEmployeeCnic = sourceUser.sdoCnic || '35102-0565965-3';
+        const nextEmployeeMobile = sourceUser.sdoMobile || '0370-4991751';
+        const nextEmployeeNameUrdu = sourceUser.sdoNameUrdu || '';
+        const nextPoliceStation = sourceUser.policeStation || (sourceUser.policeStations && sourceUser.policeStations[0]) || '';
+        const nextPoliceStationUrdu = sourceUser.policeStationUrdu || (sourceUser.policeStationsUrdu && sourceUser.policeStationsUrdu[0]) || '';
 
         // Force fill instantly and automatically when step 3 is entered, or if any details differ
         const hasDiff = 
@@ -352,10 +363,11 @@ export default function NewCase() {
           prev.employeeMobile !== nextEmployeeMobile ||
           prev.employeeNameUrdu !== nextEmployeeNameUrdu ||
           prev.userId !== user.uid ||
-          (!prev.policeStation && nextPoliceStation);
+          (!prev.policeStation && nextPoliceStation) ||
+          (activeSubDivUser && prev.policeStation !== nextPoliceStation);
 
         if (step === 3 || hasDiff) {
-          const overrideStation = (prev.userId !== user.uid || !prev.policeStation);
+          const overrideStation = (prev.userId !== user.uid || !prev.policeStation || (activeSubDivUser && prev.policeStation !== nextPoliceStation));
           return {
             ...prev,
             employeeName: nextEmployeeName,
@@ -371,14 +383,14 @@ export default function NewCase() {
         return prev;
       });
     }
-  }, [user, step]);
+  }, [user, step, allDbUsers, billData?.subDivisionName]);
 
   useEffect(() => {
-    if (!isAdmin) return;
     const fetchAllPS = async () => {
       try {
         const q = query(collection(db, 'users'));
         const qs = await getDocs(q);
+        const usersList: any[] = [];
         const unique = new Map<string, string>();
         
         // Add defaults first so they are present
@@ -394,6 +406,7 @@ export default function NewCase() {
 
         qs.forEach(docSnap => {
           const uData = docSnap.data();
+          usersList.push(uData);
           if (uData.policeStation) {
             const en = String(uData.policeStation).trim();
             const ur = String(uData.policeStationUrdu || translateToUrdu(en)).trim();
@@ -413,6 +426,8 @@ export default function NewCase() {
           }
         });
 
+        setAllDbUsers(usersList);
+
         const list: { en: string; ur: string }[] = [];
         unique.forEach((ur, en) => {
           list.push({ en, ur });
@@ -424,7 +439,7 @@ export default function NewCase() {
       }
     };
     fetchAllPS();
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     if (photo) localStorage.setItem('lesco_new_case_photo', photo);
@@ -1007,7 +1022,36 @@ export default function NewCase() {
             </div>
           </SortableItem>
         );
-      case 'policeStation':
+      case 'policeStation': {
+        const activeSubDivUser = allDbUsers.find(u => 
+          u.subDivision && 
+          billData?.subDivisionName && 
+          u.subDivision.toString().toLowerCase().trim() === billData.subDivisionName.toString().toLowerCase().trim()
+        );
+
+        const subDivisionPS: { en: string; ur: string }[] = [];
+        if (activeSubDivUser) {
+          const uniquePS = new Map<string, string>();
+          if (activeSubDivUser.policeStation) {
+            const en = activeSubDivUser.policeStation.trim();
+            const ur = activeSubDivUser.policeStationUrdu || translateToUrdu(en);
+            uniquePS.set(en, ur);
+          }
+          if (Array.isArray(activeSubDivUser.policeStations)) {
+            activeSubDivUser.policeStations.forEach((enVal: any, idx: number) => {
+              const en = String(enVal || '').trim();
+              if (en) {
+                const ur = activeSubDivUser.policeStationsUrdu?.[idx] || translateToUrdu(en);
+                uniquePS.set(en, ur);
+              }
+            });
+          }
+          uniquePS.forEach((ur, en) => {
+            subDivisionPS.push({ en, ur });
+          });
+          subDivisionPS.sort((a, b) => a.en.localeCompare(b.en));
+        }
+
         return (
           <SortableItem 
             id="policeStation" 
@@ -1017,8 +1061,10 @@ export default function NewCase() {
             label={
               <div className="flex items-center gap-1.5 justify-between w-full">
                 <label className="text-xs font-bold text-neutral-900 dark:text-slate-100 uppercase tracking-widest">Name Of Police Station</label>
-                {(user?.policeStation || (user?.policeStations && user.policeStations.length > 0)) && (
-                  <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">Synced Roster</span>
+                {(activeSubDivUser || user?.policeStation || (user?.policeStations && user.policeStations.length > 0)) && (
+                  <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100 uppercase dark:bg-teal-950/40 dark:border-teal-800">
+                    {activeSubDivUser ? "Sub Division Roster" : "Synced Roster"}
+                  </span>
                 )}
               </div>
             }
@@ -1033,7 +1079,10 @@ export default function NewCase() {
                   else if (val === 'Raiwind') urduVal = 'رائے ونڈ';
                   else if (val === 'Changa Manga') urduVal = 'چھانگا مانگا';
                   else if (val === 'Manga Mandi') urduVal = 'مانگا منڈی';
-                  else if (user?.policeStations && user.policeStations.includes(val)) {
+                  else if (subDivisionPS.some(item => item.en === val)) {
+                    const matchedIdx = subDivisionPS.findIndex(item => item.en === val);
+                    urduVal = subDivisionPS[matchedIdx]?.ur || '';
+                  } else if (user?.policeStations && user.policeStations.includes(val)) {
                     const idx = user.policeStations.indexOf(val);
                     urduVal = user.policeStationsUrdu?.[idx] || '';
                   } else if (val === user?.policeStation) {
@@ -1080,31 +1129,43 @@ export default function NewCase() {
                 className="w-full bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold text-neutral-900 dark:text-slate-100"
               >
                 <option value="">Select Police Station...</option>
-                {/* 1. Synced user police stations */}
-                {user?.policeStations && user.policeStations.length > 0 ? (
-                  user.policeStations.map((ps, idx) => {
-                    const urdu = user.policeStationsUrdu?.[idx] || translateToUrdu(ps);
-                    return (
-                      <option key={`synced-${idx}`} value={ps}>
-                        {ps} {urdu ? `(${urdu})` : ''}
-                      </option>
-                    );
-                  })
-                ) : user?.policeStation ? (
-                  (() => {
-                    const urdu = user?.policeStationUrdu || translateToUrdu(user.policeStation);
-                    return (
-                      <option value={user.policeStation}>
-                        {user.policeStation} {urdu ? `(${urdu})` : ''}
-                      </option>
-                    );
-                  })()
-                ) : null}
+                {/* 1. Direct active subdivision police stations from Registration Sheet */}
+                {subDivisionPS && subDivisionPS.length > 0 ? (
+                  subDivisionPS.map((item, idx) => (
+                    <option key={`subdiv-ps-${idx}`} value={item.en}>
+                      {item.en} {item.ur ? `(${item.ur})` : ''}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    {/* Fallback space: Synced user police stations */}
+                    {user?.policeStations && user.policeStations.length > 0 ? (
+                      user.policeStations.map((ps, idx) => {
+                        const urdu = user.policeStationsUrdu?.[idx] || translateToUrdu(ps);
+                        return (
+                          <option key={`synced-${idx}`} value={ps}>
+                            {ps} {urdu ? `(${urdu})` : ''}
+                          </option>
+                        );
+                      })
+                    ) : user?.policeStation ? (
+                      (() => {
+                        const urdu = user?.policeStationUrdu || translateToUrdu(user.policeStation);
+                        return (
+                          <option value={user.policeStation}>
+                            {user.policeStation} {urdu ? `(${urdu})` : ''}
+                          </option>
+                        );
+                      })()
+                    ) : null}
+                  </>
+                )}
 
                 {/* 2. All other unique police stations (available for admins or as a fallback) */}
                 {isAdmin ? (
                   allPoliceStations
                     .filter(item => {
+                      if (subDivisionPS.some(subItem => subItem.en === item.en)) return false;
                       if (user?.policeStations?.includes(item.en)) return false;
                       if (user?.policeStation === item.en) return false;
                       return true;
@@ -1115,7 +1176,7 @@ export default function NewCase() {
                       </option>
                     ))
                 ) : (
-                  (!user?.policeStation && (!user?.policeStations || user.policeStations.length === 0)) && (
+                  (subDivisionPS.length === 0 && !user?.policeStation && (!user?.policeStations || user.policeStations.length === 0)) && (
                     allPoliceStations.map((item, idx) => (
                       <option key={`all-${idx}`} value={item.en}>
                         {item.en} {item.ur ? `(${item.ur})` : ''}
@@ -1127,6 +1188,7 @@ export default function NewCase() {
             </div>
           </SortableItem>
         );
+      }
       case 'meterStatus':
         return (
           <SortableItem 
