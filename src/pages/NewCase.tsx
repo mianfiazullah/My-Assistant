@@ -3597,12 +3597,12 @@ export default function NewCase() {
 
       let folderId: string | null = null;
       let existingFiles: any[] = [];
-      const finalSubDivisionCode = user?.subDivision || billData?.subDivisionName || "";
+      const finalSubDivision = billData?.subDivisionName || user?.subDivision || "";
       
       if (googleTokens) {
         try {
           const { createOrGetFolder, listFilesFromGoogleDrive } = await import('../lib/googleDrive');
-          const finalFolderName = finalSubDivisionCode ? `My Assistant ${finalSubDivisionCode}` : 'My Assistant';
+          const finalFolderName = finalSubDivision ? `My Assistant ${finalSubDivision}` : 'My Assistant';
           folderId = await createOrGetFolder(googleTokens, finalFolderName);
           existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
         } catch (folderErr: any) {
@@ -3692,7 +3692,6 @@ export default function NewCase() {
         // 2. Sync PDF with both Google Sheets webhooks
         const fileBase64 = dataUrl.split(',')[1];
         const webhookPromises: Promise<any>[] = [];
-        const finalSubDivision = user?.subDivision || billData?.subDivisionName || "";
 
         if (webhookUrl) {
           webhookPromises.push(
@@ -4311,13 +4310,15 @@ export default function NewCase() {
       // 3. Save to Google Sheets (Client-side Webhook Automation)
       const webhookUrl = user?.webhookUrl || localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
       const webhookUrl2 = user?.webhookUrl2 || localStorage.getItem('google_sheets_webhook_2') || '';
+      const googleTokens = localStorage.getItem('google_drive_token');
+      const finalSubDivision = billData?.subDivisionName || user?.subDivision || "";
       
       if (webhookUrl || webhookUrl2 || googleTokens) {
         try {
-          const payload = {
+          const rawPayload = {
             "Date of Checking": newCase.dateOfChecking,
             "Reference Number": newCase.referenceNumber,
-            "Sub Division": user?.subDivision || billData?.subDivisionName || '',
+            "Sub Division": billData?.subDivisionName || user?.subDivision || '',
             "Billing Month": newCase.billingMonth || '',
             "Consumer Name": newCase.name,
             "Consumer Name (Urdu)": newCase.nameUrdu || '',
@@ -4385,6 +4386,20 @@ export default function NewCase() {
             "submitterEmail": user?.email || '',
           };
 
+          const payload: any = {};
+          for (const key in rawPayload) {
+            const val = (rawPayload as any)[key];
+            if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+              payload[key] = val;
+            } else {
+              try {
+                payload[key] = val ? String(val) : '';
+              } catch (e) {
+                payload[key] = '';
+              }
+            }
+          }
+
           const promises: Promise<any>[] = [];
           if (webhookUrl) {
             promises.push(
@@ -4412,16 +4427,24 @@ export default function NewCase() {
           }
 
           // 4. Save directly into User's own Google Drive Spreadsheet (if connected)
-          if (googleTokens && folderId) {
+          if (googleTokens) {
             promises.push(
               (async () => {
                 try {
-                  const { createOrGetSpreadsheet, appendRowToSpreadsheet } = await import('../lib/googleDrive');
-                  const sheetName = finalSubDivisionCode ? `${finalSubDivisionCode}` : 'My Assistant Sheet';
-                  const spreadsheetId = await createOrGetSpreadsheet(googleTokens, folderId, sheetName);
+                  const { createOrGetFolder, createOrGetSpreadsheet, appendRowToSpreadsheet } = await import('../lib/googleDrive');
+                  const finalFolderName = finalSubDivision ? `My Assistant ${finalSubDivision}` : 'My Assistant';
+                  const fetchedFolderId = await createOrGetFolder(googleTokens, finalFolderName);
                   
+                  const sheetName = finalSubDivision ? `My Assistant Sheet - ${finalSubDivision}` : 'My Assistant Sheet';
+                  const spreadsheetId = await createOrGetSpreadsheet(googleTokens, fetchedFolderId, sheetName);
+                  
+                  // Ensure simple string row conversion to avoid circular JSON structure errors
                   const headers = Object.keys(payload);
-                  const row = Object.values(payload);
+                  const row = Object.values(payload).map(val => 
+                    typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean' 
+                      ? val 
+                      : (val ? JSON.stringify(val) : '')
+                  );
 
                   await appendRowToSpreadsheet(googleTokens, spreadsheetId, headers, row);
                   console.log('Case automatically appended to User\'s personal Drive Spreadsheet');

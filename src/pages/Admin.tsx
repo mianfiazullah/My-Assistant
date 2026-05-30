@@ -345,7 +345,49 @@ function doPost(e) {
     if (!subDivision) {
       subDivision = "Default";
     }
+    
+    // 1. Check and create Dynamic Google Drive Folder named "My Assistant [subDivision]"
+    var folderName = "My Assistant " + subDivision;
+    var folder;
+    try {
+      var folders = DriveApp.getFoldersByName(folderName);
+      if (folders.hasNext()) {
+        folder = folders.next();
+      } else {
+        folder = DriveApp.createFolder(folderName);
+      }
+      
+      // Auto-share folder with the User's Google Drive Account!
+      var submitterEmail = (data["submitterEmail"] || data["submitter_email"] || "").toString().trim();
+      if (submitterEmail) {
+        try {
+          folder.addEditor(submitterEmail);
+        } catch (shareErr) {
+          Logger.log("Failed to share folder: " + shareErr.toString());
+        }
+      }
+    } catch (err) {
+      Logger.log("Drive folder creation failed: " + err.toString());
+    }
 
+    // Check if this is a File Upload request (Save Evidence Photos/PDFs)
+    if (data.action === "uploadFile") {
+      if (!folder) {
+        return ContentService.createTextOutput(JSON.stringify({ 
+          "success": false, 
+          "message": "Drive folder is not accessible to upload file."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      var fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileData), data.fileType, data.fileName);
+      var file = folder.createFile(fileBlob);
+      return ContentService.createTextOutput(JSON.stringify({ 
+        "success": true, 
+        "message": "File saved to folder: " + folderName,
+        "fileId": file.getId(),
+        "url": file.getUrl()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // Definitions of fields / column headers
     var headers = [
       "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
@@ -365,6 +407,9 @@ function doPost(e) {
     ];
 
     // Ensure links are populated in data cells
+    if (folder && !data["Drive Folder Link"]) {
+      data["Drive Folder Link"] = folder.getUrl();
+    }
     if (!data["Sub Division"]) {
       data["Sub Division"] = subDivision;
     }
@@ -375,10 +420,12 @@ function doPost(e) {
       row.push(data[key] || "");
     }
 
-    // Only save to MASTER SPREADSHEET (under subdivision tab)
     var masterSaved = false;
+    var userSheetSaved = false;
     var errMsg = "";
+    var userSpreadsheetUrl = "";
 
+    // 2. SAVE to MASTER SPREADSHEET (under subdivision tab)
     try {
       var masterSheet = ss.getSheetByName(subDivision);
       if (!masterSheet) {
@@ -394,12 +441,63 @@ function doPost(e) {
     } catch (saveMasterErr) {
       errMsg += "Master Sheet error: " + saveMasterErr.toString() + "; ";
     }
+
+    // 3. SAVE to USER'S DEDICATED INDIVIDUAL SPREADSHEET inside their Google Drive folder
+    if (folder) {
+      try {
+        var dedicatedFilePrefix = "My Assistant Sheet - " + subDivision;
+        var files = folder.getFilesByName(dedicatedFilePrefix);
+        var userSpreadsheet;
+        
+        if (files.hasNext()) {
+          userSpreadsheet = SpreadsheetApp.open(files.next());
+        } else {
+          // Create a brand new Spreadsheet for this subdivision
+          userSpreadsheet = SpreadsheetApp.create(dedicatedFilePrefix);
+          var fileId = userSpreadsheet.getId();
+          var sheetFile = DriveApp.getFileById(fileId);
+          
+          // Move this sheet file into the dedicated subdivision folder using modern moveTo
+          sheetFile.moveTo(folder);
+        }
+
+        // Auto-share Spreadsheet with the User's Google Drive Account!
+        var submitterEmail = (data["submitterEmail"] || data["submitter_email"] || "").toString().trim();
+        if (submitterEmail) {
+          try {
+            userSpreadsheet.addEditor(submitterEmail);
+          } catch (shareSheetErr) {
+            Logger.log("Failed to share sheet with user: " + shareSheetErr.toString());
+          }
+        }
+
+        var userSheet = userSpreadsheet.getSheets()[0];
+        // Rename tab to subdivision for styling matching
+        if (userSheet.getName() !== subDivision) {
+          userSheet.setName(subDivision);
+        }
+        
+        var userSheetHeaders = userSheet.getRange(1, 1, 1, Math.max(1, userSheet.getLastColumn())).getValues()[0];
+        if (userSheetHeaders.length === 0 || userSheetHeaders[0] === "") {
+          userSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+        }
+        userSheet.appendRow(row);
+        userSpreadsheetUrl = userSpreadsheet.getUrl();
+        userSheetSaved = true;
+      } catch (saveUserErr) {
+        errMsg += "Individual Sheet error: " + saveUserErr.toString() + "; ";
+      }
+    }
     
     return ContentService.createTextOutput(JSON.stringify({ 
-      "success": masterSaved, 
-      "message": errMsg ? "Completed with errors: " + errMsg : "Data written successfully to Master Tab!",
+      "success": masterSaved || userSheetSaved, 
+      "message": errMsg ? "Completed with errors: " + errMsg : "Data written successfully to both Master Tab & Individual Sheet!",
       "masterSaved": masterSaved,
-      "sheetName": subDivision
+      "userSheetSaved": userSheetSaved,
+      "folderName": folderName,
+      "sheetName": subDivision,
+      "folderUrl": folder ? folder.getUrl() : "",
+      "dedicatedSheetUrl": userSpreadsheetUrl
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
@@ -2617,10 +2715,13 @@ function doPost(e) {
                 </p>
                 <ul className="list-disc pl-4 text-[11px] text-neutral-600 dark:text-slate-300 space-y-1 font-sans">
                   <li>
-                    <strong className="text-violet-600 dark:text-violet-400">Master Sheet Auto-Segmentation (Central Drive):</strong> The Admin Webhook generates dynamic sub-sheets automatically named by code (e.g., 11752) in the central Master Spreadsheet.
+                    <strong className="text-violet-600 dark:text-violet-400">Dynamic Google Drive User Folder:</strong> Authenticates the Sub Division name and creates a distinct folder for the division automatically inside Google Drive.
                   </li>
                   <li>
-                    <strong className="text-violet-600 dark:text-violet-400">User's Local Drive Organization (User Drive):</strong> The Application itself intelligently creates a local folder ("My Assistant 11752") and connected Google Spreadsheet natively inside the User's own Google Drive.
+                    <strong className="text-violet-600 dark:text-violet-400">Master Sheet Auto-Segmentation:</strong> Generates dynamic sub-sheets (tabs) categorized under their sub-division directly in the central Master Spreadsheet.
+                  </li>
+                  <li>
+                    <strong className="text-violet-600 dark:text-violet-400">Standalone User Sheet Generation:</strong> Automatically builds a new connected separate Google Spreadsheet inside that user's folder, copies all field headers, and writes data automatically!
                   </li>
                   <li>
                     <strong className="text-violet-600 dark:text-violet-400">Centralized Registration Trigger:</strong> Connects directly to the user approval portal, allowing real-time account authorization.
