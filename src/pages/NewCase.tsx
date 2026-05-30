@@ -3597,12 +3597,12 @@ export default function NewCase() {
 
       let folderId: string | null = null;
       let existingFiles: any[] = [];
-      const finalSubDivision = billData?.subDivisionName || user?.subDivision || "";
+      const finalSubDivisionCode = user?.subDivision || billData?.subDivisionName || "";
       
       if (googleTokens) {
         try {
           const { createOrGetFolder, listFilesFromGoogleDrive } = await import('../lib/googleDrive');
-          const finalFolderName = finalSubDivision ? `My Assistant ${finalSubDivision}` : 'My Assistant';
+          const finalFolderName = finalSubDivisionCode ? `My Assistant ${finalSubDivisionCode}` : 'My Assistant';
           folderId = await createOrGetFolder(googleTokens, finalFolderName);
           existingFiles = await listFilesFromGoogleDrive(googleTokens, folderId);
         } catch (folderErr: any) {
@@ -3692,6 +3692,7 @@ export default function NewCase() {
         // 2. Sync PDF with both Google Sheets webhooks
         const fileBase64 = dataUrl.split(',')[1];
         const webhookPromises: Promise<any>[] = [];
+        const finalSubDivision = user?.subDivision || billData?.subDivisionName || "";
 
         if (webhookUrl) {
           webhookPromises.push(
@@ -4316,7 +4317,7 @@ export default function NewCase() {
           const payload = {
             "Date of Checking": newCase.dateOfChecking,
             "Reference Number": newCase.referenceNumber,
-            "Sub Division": billData?.subDivisionName || user?.subDivision || '',
+            "Sub Division": user?.subDivision || billData?.subDivisionName || '',
             "Billing Month": newCase.billingMonth || '',
             "Consumer Name": newCase.name,
             "Consumer Name (Urdu)": newCase.nameUrdu || '',
@@ -4416,7 +4417,7 @@ export default function NewCase() {
               (async () => {
                 try {
                   const { createOrGetSpreadsheet, appendRowToSpreadsheet } = await import('../lib/googleDrive');
-                  const sheetName = finalSubDivision ? `My Assistant Sheet - ${finalSubDivision}` : 'My Assistant Sheet';
+                  const sheetName = finalSubDivisionCode ? `${finalSubDivisionCode}` : 'My Assistant Sheet';
                   const spreadsheetId = await createOrGetSpreadsheet(googleTokens, folderId, sheetName);
                   
                   const headers = Object.keys(payload);
