@@ -3556,13 +3556,10 @@ export default function NewCase() {
   const [driveToken, setDriveToken] = useState<string | null>(localStorage.getItem('google_drive_token'));
 
   useEffect(() => {
-    if (isUploadedToDrive) {
+    if (isUploadedToDrive && step < 4) {
       setIsUploadedToDrive(false);
     }
-    if (isSaved) {
-      setIsSaved(false);
-    }
-  }, [detectionData, referenceNumber, photo, billData]);
+  }, [detectionData, referenceNumber, photo, billData, step, isUploadedToDrive]);
 
   const connectDriveAndUpload = async () => {
     try {
@@ -3583,20 +3580,31 @@ export default function NewCase() {
   const handleBulkUploadToDrive = async () => {
     if (isUploadingRef.current || isUploadedToDrive) return;
     
-    let googleTokens = localStorage.getItem('google_drive_token');
     const webhookUrl = user?.webhookUrl || localStorage.getItem('google_sheets_webhook') || 'https://script.google.com/macros/s/AKfycbzFThMoqFExs2O_Gry9SrcZ_4W-RuFI7jADKEDf0Rq8LKBgxnO-IpK9yzdsRu-CNerp/exec';
     const webhookUrl2 = user?.webhookUrl2 || localStorage.getItem('google_sheets_webhook_2') || '';
     
-    if (!googleTokens && !webhookUrl && !webhookUrl2) {
-      toast('No Google account or webhook is linked', {
-        description: 'Please connect Google Drive or configure sheets in the Admin area.'
-      });
-      return;
-    }
-
     try {
       isUploadingRef.current = true;
       setIsBulkUploading(true);
+      
+      let googleTokens = localStorage.getItem('google_drive_token');
+      
+      if (!googleTokens) {
+        toast.loading('Activating Google Drive Connection...', { id: 'bulkUpload' });
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          localStorage.setItem('google_drive_token', credential.accessToken);
+          setDriveToken(credential.accessToken);
+          googleTokens = credential.accessToken;
+          toast.loading('Google Drive connected! Starting upload...', { id: 'bulkUpload' });
+        } else {
+          throw new Error('Google Drive authorization was canceled or failed.');
+        }
+      }
+
       toast.loading('Creating combined PDF of the case...', { id: 'bulkUpload' });
       
       const templates = ['DETECTION BILL PROFORMA', 'NOTICE', 'FIR Urdu'];
@@ -5682,45 +5690,33 @@ export default function NewCase() {
                 </div>
 
                 <div className="flex flex-col gap-3 w-full max-w-md mx-auto">
-                  {!driveToken && (
-                    <button
-                      onClick={connectDriveAndUpload}
-                      className="w-full py-4 rounded-2xl font-bold border-2 border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-all flex items-center justify-center gap-3 text-lg"
-                    >
-                      <Cloud className="w-6 h-6 animate-pulse" />
-                      <span>Connect Google Drive</span>
-                    </button>
-                  )}
-
-                  {driveToken && (
-                    <button
-                      onClick={handleBulkUploadToDrive}
-                      disabled={isBulkUploading || isSaving || isUploadedToDrive}
-                      className={cn(
-                        "w-full py-4 rounded-2xl font-bold border-2 transition-all flex items-center justify-center gap-3 text-lg",
-                        isBulkUploading || isUploadedToDrive
-                          ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
-                          : "bg-white dark:bg-slate-900 border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 active:scale-95 shadow-sm"
-                      )}
-                    >
-                      {isBulkUploading ? (
-                        <>
-                          <Loader2 className="w-6 h-6 animate-spin" /> 
-                          <span>Uploading to Drive...</span>
-                        </>
-                      ) : isUploadedToDrive ? (
-                        <>
-                          <CheckCircle className="w-6 h-6" /> 
-                          <span>Templates Baked Up!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Cloud className="w-6 h-6" /> 
-                          <span>Bulk Upload (PDF) to Drive</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    onClick={handleBulkUploadToDrive}
+                    disabled={isBulkUploading || isSaving || isUploadedToDrive}
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold border-2 transition-all flex items-center justify-center gap-3 text-lg",
+                      isBulkUploading || isUploadedToDrive
+                        ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
+                        : "bg-white dark:bg-slate-900 border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 active:scale-95 shadow-sm"
+                    )}
+                  >
+                    {isBulkUploading ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin" /> 
+                        <span>{!driveToken ? 'Connecting...' : 'Uploading to Drive...'}</span>
+                      </>
+                    ) : isUploadedToDrive ? (
+                      <>
+                        <CheckCircle className="w-6 h-6" /> 
+                        <span>Templates Backed Up!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Cloud className="w-6 h-6" /> 
+                        <span>{!driveToken ? 'Connect & Bulk Upload (PDF) to Drive' : 'Bulk Upload (PDF) to Drive'}</span>
+                      </>
+                    )}
+                  </button>
 
                   <button
                     onClick={saveCase}
