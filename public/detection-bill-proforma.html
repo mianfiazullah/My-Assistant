@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LESCO Detection Bill Proforma</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        :root {
+            --primary-red: #cc0000;
+            --border-color: #000;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .no-print {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .print-button {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+        .print-button:hover {
+            background-color: #1d4ed8;
+        }
+        .proforma-container {
+            background-color: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            position: relative;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .logo-container {
+            width: 100px;
+            height: 100px;
+        }
+        .logo-container img {
+            width: 100px;
+            height: 100px;
+            mix-blend-mode: multiply;
+            object-fit: contain;
+        }
+        .header-center {
+            text-align: center;
+            flex: 1;
+        }
+        .header-center h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+        .header-right {
+            text-align: right;
+            width: 200px;
+        }
+        .header-right h2 {
+            margin: 0;
+            color: var(--primary-red);
+            font-size: 18px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            border-bottom: 1px dotted #ccc;
+            padding: 4px 0;
+        }
+        .label {
+            font-weight: 700;
+            font-size: 13px;
+            color: #333;
+            white-space: nowrap;
+        }
+        .value {
+            flex: 1;
+            font-size: 14px;
+            color: #000;
+            outline: none;
+            min-height: 1.2em;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+        .section-title {
+            background-color: #f8f8f8;
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin: 15px 0 10px 0;
+            color: var(--primary-red);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+        th {
+            background-color: #f0f0f0;
+            font-weight: 700;
+        }
+        .history-table th {
+            font-size: 11px;
+        }
+        .meter-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .recovery-summary {
+            margin-top: 20px;
+            border: 2px solid var(--border-color);
+            padding: 15px;
+            background-color: #fff9f9;
+        }
+        .recovery-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        .recovery-row.total {
+            border-top: 2px solid var(--border-color);
+            padding-top: 8px;
+            font-size: 18px;
+            color: var(--primary-red);
+        }
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            padding: 0 20px;
+        }
+        .sig-box {
+            text-align: center;
+            width: 180px;
+        }
+        .sig-line {
+            border-top: 1px solid #000;
+            margin-bottom: 5px;
+        }
+        .sig-label {
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .footer-note {
+            margin-top: 30px;
+            font-size: 10px;
+            color: #666;
+            text-align: center;
+            font-style: italic;
+        }
+        [contenteditable="true"]:hover {
+            background-color: #fffde7;
+            cursor: pointer;
+        }
+        [contenteditable="true"]:focus {
+            background-color: #fffde7;
+            outline: 2px solid #2563eb;
+        }
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .proforma-container {
+                box-shadow: none;
+                width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="print-button" onclick="window.print()">Print Proforma</button>
+        <span style="font-size: 14px; color: #666;">Click any field to edit content</span>
+    </div>
+
+    <div class="proforma-container">
+        <header>
+            <div class="logo-container">
+                <!-- LESCO Logo Placeholder - Replace with actual base64 string -->
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" alt="LESCO Logo">
+            </div>
+            <div class="header-center">
+                <h1>Lahore Electric Supply Company</h1>
+                <div style="font-weight: 600; font-size: 14px; margin-top: 5px;">(Operation Wing)</div>
+            </div>
+            <div class="header-right">
+                <h2>Detection Bill Proforma</h2>
+            </div>
+        </header>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="label">Reference No:</span>
+                <span class="value" contenteditable="true">04 11751 0284317</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Date of Checking:</span>
+                <span class="value" contenteditable="true">02-04-2026</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Type:</span>
+                <span class="value" contenteditable="true">Single Phase</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Capacity:</span>
+                <span class="value" contenteditable="true">40 Amps</span>
+            </div>
+            <div class="info-item full-width">
+                <span class="label">Consumer Name & Address:</span>
+                <span class="value" contenteditable="true">Muhammad Ahmad, House #123, Street #4, Lahore</span>
+            </div>
+            <div class="info-item">
+                <span class="label">FIR Request No. & Date:</span>
+                <span class="value" contenteditable="true">LESCO/KRK/123 - 01/04/2026</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Police Station:</span>
+                <span class="value" contenteditable="true">Kot Radha Kishan</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Consumer ID:</span>
+                <span class="value" contenteditable="true">7768821</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Tariff:</span>
+                <span class="value" contenteditable="true">A-1a(01)</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Connected Load (kW):</span>
+                <span class="value" contenteditable="true">2.5 kW</span>
+            </div>
+        </div>
+
+        <div class="section-title">Meter Details</div>
+        <div class="meter-details">
+            <div class="info-item">
+                <span class="label">Meter Make:</span>
+                <span class="value" contenteditable="true">MicroTech</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Serial No:</span>
+                <span class="value" contenteditable="true">MT-987654</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Seal No:</span>
+                <span class="value" contenteditable="true">L-554433</span>
+            </div>
+        </div>
+
+        <div class="section-title">Reading & Consumption</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Previous Reading</th>
+                    <th>Present Reading</th>
+                    <th>Units Consumed</th>
+                    <th>Difference</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td contenteditable="true">12450</td>
+                    <td contenteditable="true">13100</td>
+                    <td contenteditable="true">650</td>
+                    <td contenteditable="true">650</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">12-Month Billing History</div>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Units</th>
+                    <th>Amount (Rs)</th>
+                    <th>Month</th>
+                    <th>Units</th>
+                    <th>Amount (Rs)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Mar-26</td><td contenteditable="true">450</td><td contenteditable="true">12,500</td>
+                    <td>Sep-25</td><td contenteditable="true">850</td><td contenteditable="true">28,000</td>
+                </tr>
+                <tr>
+                    <td>Feb-26</td><td contenteditable="true">380</td><td contenteditable="true">9,800</td>
+                    <td>Aug-25</td><td contenteditable="true">920</td><td contenteditable="true">32,500</td>
+                </tr>
+                <tr>
+                    <td>Jan-26</td><td contenteditable="true">410</td><td contenteditable="true">11,200</td>
+                    <td>Jul-25</td><td contenteditable="true">1100</td><td contenteditable="true">45,000</td>
+                </tr>
+                <tr>
+                    <td>Dec-25</td><td contenteditable="true">350</td><td contenteditable="true">8,500</td>
+                    <td>Jun-25</td><td contenteditable="true">980</td><td contenteditable="true">38,000</td>
+                </tr>
+                <tr>
+                    <td>Nov-25</td><td contenteditable="true">320</td><td contenteditable="true">7,800</td>
+                    <td>May-25</td><td contenteditable="true">750</td><td contenteditable="true">22,000</td>
+                </tr>
+                <tr>
+                    <td>Oct-25</td><td contenteditable="true">650</td><td contenteditable="true">18,500</td>
+                    <td>Apr-25</td><td contenteditable="true">520</td><td contenteditable="true">14,500</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">Billing Summary</div>
+        <div class="recovery-summary">
+            <div class="recovery-row">
+                <span>Assessed Amount (Rs.):</span>
+                <span contenteditable="true">45,600</span>
+            </div>
+            <div class="recovery-row">
+                <span>Surcharge (Rs.):</span>
+                <span contenteditable="true">4,560</span>
+            </div>
+            <div class="recovery-row total">
+                <span>Total Recovery (Rs.):</span>
+                <span contenteditable="true">50,160</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div class="label">Checking Officer Details:</div>
+            <div class="value" contenteditable="true" style="border-bottom: 1px solid #000; margin-top: 5px; padding-bottom: 5px;">
+                Engr. Muhammad Ali - Assistant Manager (Operation)
+            </div>
+        </div>
+
+        <div class="signatures">
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-label">Signature of Consumer</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-label">SDO (Operation) LESCO</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-label">XEN (Operation) LESCO</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            This is a computer generated proforma for detection billing purposes. All rights reserved by LESCO.
+        </div>
+    </div>
+</body>
+</html>

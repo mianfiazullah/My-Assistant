@@ -3,10 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Applet</title>
+    <title>My Assistant</title>
+    <script>
+      // Support system dark mode
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+      
+      // Keep in sync with system changes
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      });
+
+      // Workaround for environments defining non-writable global fetch
+      if (typeof window !== 'undefined' && window.fetch) {
+        try {
+          const original = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: () => original,
+            set: (val) => {
+              console.warn("Intercepted and ignored assignment to window.fetch", val);
+            },
+            configurable: true
+          });
+        } catch (e) {
+          console.warn('Could not redefine window.fetch:', e);
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

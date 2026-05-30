@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Bill Proforma - Quick Fill Template</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e2f;
+            --panel-dark: #2a2a40;
+            --text-light: #e0e0e0;
+            --accent: #4CAF50;
+            --accent-hover: #45a049;
+            --danger: #f44336;
+            --danger-hover: #d32f2f;
+            --info: #2196F3;
+            --info-hover: #1976D2;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; height: 100vh; display: flex; overflow: hidden; }
+        
+        .app-container { display: flex; width: 100%; height: 100%; }
+        
+        /* Form Panel */
+        .form-panel { width: 40%; background-color: var(--bg-dark); color: var(--text-light); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; border-right: 2px solid #111; }
+        .form-panel h2 { color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
+        .form-section { background-color: var(--panel-dark); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .form-section h3 { margin-bottom: 15px; font-size: 1.1em; color: #aaa; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+        .form-group input, .form-group textarea { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #555; background-color: #333; color: #fff; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        
+        .actions { display: flex; gap: 10px; position: sticky; top: 0; background-color: var(--bg-dark); padding-bottom: 15px; z-index: 10; border-bottom: 1px solid #444; margin-bottom: 15px; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: background 0.2s; }
+        .btn-print { background-color: var(--accent); }
+        .btn-print:hover { background-color: var(--accent-hover); }
+        .btn-save { background-color: var(--info); }
+        .btn-save:hover { background-color: var(--info-hover); }
+        .btn-load { background-color: #ff9800; }
+        .btn-load:hover { background-color: #e68a00; }
+        .btn-reset { background-color: var(--danger); }
+        .btn-reset:hover { background-color: var(--danger-hover); }
+
+        /* Preview Panel */
+        .preview-panel { width: 60%; padding: 20px; overflow-y: auto; background-color: #525659; display: flex; justify-content: center; }
+        .proforma-page { background-color: white; width: 210mm; min-height: 297mm; padding: 15mm; box-shadow: 0 0 10px rgba(0,0,0,0.5); font-family: 'Times New Roman', Times, serif; color: black; font-size: 12px; line-height: 1.8; }
+        
+        /* Proforma Styles */
+        .proforma-title { text-align: center; font-size: 18px; font-weight: bold; text-decoration: none; letter-spacing: 2px; margin-bottom: 20px; }
+        .p-row { display: flex; justify-content: space-between; margin-bottom: 5px; flex-wrap: wrap; }
+        .p-field { display: inline-flex; align-items: flex-end; gap: 5px; margin-right: 15px; margin-bottom: 2px; }
+        .p-label { font-weight: normal; white-space: nowrap; }
+        .p-val { color: #cc0000; font-weight: bold; text-decoration: none; min-width: 50px; display: inline-block; border-bottom: 1px solid black; padding: 0; }
+        
+        .p-table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 10px; text-align: center; font-size: 11px; }
+        .p-table th, .p-table td { border: 1px solid black; padding: 2px 4px; height: 18px; }
+        .p-table th { font-weight: bold; }
+        
+        .load-remarks-container { display: flex; border: 1px solid black; margin-top: 10px; }
+        .load-section { width: 60%; border-right: 1px solid black; }
+        .load-section h4 { text-align: center; border-bottom: 1px solid black; padding: 4px; font-size: 11px; }
+        .remarks-section { width: 40%; display: flex; flex-direction: column; }
+        .remarks-text { padding: 8px; font-size: 10px; border-bottom: 1px solid black; }
+        .remarks-box { padding: 8px; flex: 1; }
+        .remarks-box h4 { font-size: 11px; margin-bottom: 5px; }
+        
+        .signatures { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; font-weight: bold; font-size: 11px; }
+        .sig-block { display: flex; flex-direction: column; align-items: center; }
+        .sig-line { border-top: 1px solid black; width: 150px; margin-bottom: 5px; }
+
+        @media print {
+            body { background: white; display: block; height: auto; overflow: visible; }
+            .form-panel, .no-print { display: none !important; }
+            .preview-panel { width: 100%; padding: 0; background: transparent; display: block; }
+            .proforma-page { box-shadow: none; margin: 0; padding: 0; width: 100%; min-height: auto; }
+            @page { size: A4; margin: 15mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- FORM PANEL -->
+        <div class="form-panel no-print">
+            <div class="actions">
+                <button class="btn-print" onclick="window.print()">Print / PDF</button>
+                <button class="btn-save" onclick="saveDraft()">Save Draft</button>
+                <button class="btn-load" onclick="loadDraft()">Load Last Draft</button>
+                <button class="btn-reset" onclick="resetForm()">Reset</button>
+                <a href="https://www.lesco.gov.pk:36269/Modules/CustomerBillN/CheckBill.asp" target="_blank" style="text-decoration: none; color: #fff; font-weight: bold; font-size: 12px; background-color: #cc0000; padding: 10px 15px; border-radius: 4px; display: flex; align-items: center; justify-content: center; text-align: center;">Official Portal</a>
+            </div>
+            
+            <h2>Quick Fill Template</h2>
+            
+            <form id="proformaForm">
+                <div class="form-section">
+                    <h3>1. Basic Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Reference No.</label><input type="text" id="f_refNo" oninput="updatePreview('refNo')"></div>
+                        <div class="form-group"><label>Customer I.D</label><input type="text" id="f_custId" oninput="updatePreview('custId')"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Tariff</label><input type="text" id="f_tariff" oninput="updatePreview('tariff')"></div>
+                        <div class="form-group"><label>Sanctioned Load</label><input type="text" id="f_sancLoad" oninput="updatePreview('sancLoad')"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>2. Consumer Details</h3>
+                    <div class="form-group"><label>Name & Address</label><input type="text" id="f_nameAddr" oninput="updatePreview('nameAddr')"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>3. Checking & Meter Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Date of Checking</label><input type="text" id="f_dateCheck" oninput="updatePreview('dateCheck')"></div>
+                        <div class="form-group"><label>Present Reading</label><input type="text" id="f_presRead" oninput="updatePreview('presRead')"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Meter No</label><input type="text" id="f_meterNo" oninput="updatePreview('meterNo')"></div>
+                        <div class="form-group"><label>Make</label><input type="text" id="f_make" oninput="updatePreview('make')"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>4. Meter Specs & Notice</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Type</label><input type="text" id="f_type" oninput="updatePreview('type')"></div>
+                        <div class="form-group"><label>Capacity</label><input type="text" id="f_capacity" oninput="updatePreview('capacity')"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Notice No</label><input type="text" id="f_noticeNo" oninput="updatePreview('noticeNo')"></div>
+                        <div class="form-group"><label>Dated</label><input type="text" id="f_noticeDate" oninput="updatePreview('noticeDate')"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>5. FIR Details</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>FIR Request Vide T/O No.</label><input type="text" id="f_firReqNo" oninput="updatePreview('firReqNo')"></div>
+                        <div class="form-group"><label>Dated</label><input type="text" id="f_firReqDate" oninput="updatePreview('firReqDate')"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Registered FIR No.</label><input type="text" id="f_regFirNo" oninput="updatePreview('regFirNo')"></div>
+                        <div class="form-group"><label>Dated</label><input type="text" id="f_regFirDate" oninput="updatePreview('regFirDate')"></div>
+                    </div>
+                    <div class="form-group"><label>Name Of Police Station</label><input type="text" id="f_policeStation" oninput="updatePreview('policeStation')"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>6. Discrepancy</h3>
+                    <div class="form-group"><label>Discrepancy</label><textarea id="f_discrepancy" rows="2" oninput="updatePreview('discrepancy')"></textarea></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>7. ACs & Detection Period</h3>
+                    <div class="form-group"><label>NO of AC</label><input type="text" id="f_noOfAc" oninput="updatePreview('noOfAc')"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Period From</label><input type="month" id="f_periodFrom" oninput="updateDetectionPeriod()"></div>
+                        <div class="form-group"><label>To</label><input type="month" id="f_periodTo" oninput="updateDetectionPeriod()"></div>
+                        <div class="form-group"><label>Months</label><input type="text" id="f_periodMonths" oninput="updatePreview('periodMonths')" readonly></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Consumption Data</h3>
+                    <div id="consumptionInputs"></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Connected Load</h3>
+                    <div id="loadInputs"></div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-group"><label>Total C/Load</label><input type="text" id="f_totalCLoad" oninput="updatePreview('totalCLoad')"></div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Remarks</h3>
+                    <div class="form-group"><label>Remarks</label><textarea id="f_remarks" rows="3" oninput="updatePreview('remarks')"></textarea></div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Summary</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Units Assessed</label><input type="text" id="f_sumUnitsAssessed" oninput="updatePreview('sumUnitsAssessed')"></div>
+                        <div class="form-group"><label>Load Factor</label><input type="text" id="f_sumLoadFactor" oninput="updatePreview('sumLoadFactor')"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Units Already Charged</label><input type="text" id="f_sumUnitsCharged" oninput="updatePreview('sumUnitsCharged')"></div>
+                        <div class="form-group"><label>UNITS TO BE CHARGED AS PER CONNECTED LOAD</label><input type="text" id="f_sumNetUnits" oninput="updatePreview('sumNetUnits')" style="color: #000000; font-weight: normal;"></div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- PREVIEW PANEL -->
+        <div class="preview-panel">
+            <div class="proforma-page">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid black; padding-bottom: 5px;">
+                    <img src="https://www.lesco.gov.pk/images/logo.png" alt="LESCO Logo" style="width: 60px; height: 60px; object-fit: contain;">
+                    <div style="text-align: center; flex: 1;">
+                        <div class="proforma-title" style="margin-bottom: 2px; font-size: 16px;">DETECTION BILL PROFORMA</div>
+                        <div style="font-weight: bold; font-size: 11px;">LAHORE ELECTRIC SUPPLY COMPANY</div>
+                    </div>
+                    <div style="width: 60px;"></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field"><span class="p-label">1. Reference No. : -</span><span class="p-val" id="p_refNo"></span></div>
+                    <div class="p-field"><span class="p-label">Customer I.D : -</span><span class="p-val" id="p_custId"></span></div>
+                    <div class="p-field"><span class="p-label">Tariff : -</span><span class="p-val" id="p_tariff"></span></div>
+                    <div class="p-field"><span class="p-label">Sanctioned Load : -</span><span class="p-val" id="p_sancLoad"></span></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field"><span class="p-label">2. Consumer Name & Address : -</span><span class="p-val" id="p_nameAddr"></span></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field"><span class="p-label">3. Date of checking : -</span><span class="p-val" id="p_dateCheck"></span></div>
+                    <div class="p-field"><span class="p-label">Present Reading : -</span><span class="p-val" id="p_presRead"></span></div>
+                    <div class="p-field"><span class="p-label">Meter No : -</span><span class="p-val" id="p_meterNo"></span></div>
+                    <div class="p-field"><span class="p-label">Make : -</span><span class="p-val" id="p_make"></span></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field"><span class="p-label">4. Type : -</span><span class="p-val" id="p_type"></span></div>
+                    <div class="p-field"><span class="p-label">Capacity : -</span><span class="p-val" id="p_capacity"></span></div>
+                    <div class="p-field"><span class="p-label">Notice No : -</span><span class="p-val" id="p_noticeNo"></span></div>
+                    <div class="p-field"><span class="p-label">Dated : -</span><span class="p-val" id="p_noticeDate"></span></div>
+                </div>
+                
+                <div class="p-row" style="justify-content: flex-start; gap: 10px;">
+                    <div class="p-field"><span class="p-label">5. FIR Request Vide T/O No. : -</span><span class="p-val" id="p_firReqNo"></span></div>
+                    <div class="p-field"><span class="p-label">FIR Request T/O Dated : -</span><span class="p-val" id="p_firReqDate"></span></div>
+                    <div class="p-field"><span class="p-label">Registered FIR No. : -</span><span class="p-val" id="p_regFirNo"></span></div>
+                    <div class="p-field"><span class="p-label">Dated : -</span><span class="p-val" id="p_regFirDate"></span></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field"><span class="p-label">Name Of Police Station : -</span><span class="p-val" id="p_policeStation"></span></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field" style="align-items: flex-start;"><span class="p-label">6. Discrepancy : -</span><span class="p-val" id="p_discrepancy" style="text-align: left;"></span></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-field"><span class="p-label">7. NO of AC : -</span><span class="p-val" id="p_noOfAc"></span></div>
+                    <div class="p-field">
+                        <span class="p-label">Detection Bill Period : -</span>
+                        <span class="p-val" id="p_periodFrom"></span> To <span class="p-val" id="p_periodTo"></span> 
+                        (<span class="p-val" id="p_periodMonths"></span> Months)
+                    </div>
+                </div>
+                
+                <div style="text-align: center; font-weight: bold; text-decoration: underline; margin-top: 10px;">CONSUMPTION DATA</div>
+                <table class="p-table" id="consumptionTable">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Reading</th>
+                            <th>Advance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="p_consumptionBody">
+                        <!-- Generated by JS -->
+                    </tbody>
+                </table>
+                
+                <div class="load-remarks-container">
+                    <div class="load-section">
+                        <h4>Detail of Connected Load</h4>
+                        <table class="p-table" style="margin: 0; border: none; border-top: 1px solid black;">
+                            <thead>
+                                <tr>
+                                    <th style="border-top: none; border-left: none;">Description</th>
+                                    <th style="border-top: none;">Qty</th>
+                                    <th style="border-top: none;">Watts</th>
+                                    <th style="border-top: none; border-right: none;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="p_loadBody">
+                                <!-- Generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="remarks-section">
+                        <div class="remarks-text">
+                            Detection Bill for Registered Consumers Clause 9.1.3 (b) (Load*Load Factor*730*Months).<br><br>
+                            Load means the connected load or sanctioned load whichever is higher.
+                        </div>
+                        <div class="remarks-box">
+                            <h4>Remarks : -</h4>
+                            <div class="p-val" id="p_remarks" style="border: none; white-space: pre-wrap; display: block; min-height: 50px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-row" style="margin-top: 5px;">
+                    <div class="p-field"><span class="p-label">Units Assessed : - </span><span class="p-val" id="p_sumUnitsAssessed"></span></div>
+                    <div class="p-field"><span class="p-label">Units Already Charged : - </span><span class="p-val" id="p_sumUnitsCharged"></span></div>
+                    <div class="p-field"><span class="p-label">NET UNITS : - </span><span class="p-val" id="p_sumNetUnits"></span></div>
+                </div>
+
+                
+                <div class="signatures">
+                    <div class="sig-block"><div class="sig-line"></div>Meter Inspector<br>K.R.K-I Sub Division</div>
+                    <div class="sig-block"><div class="sig-line"></div>Assistant Manager (OP)<br>K.R.K-I Sub Division</div>
+                    <div class="sig-block"><div class="sig-line"></div>Dy. Manager (OP)<br>K.R.K Division LESCO</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loadItems = ['E/Saver', 'Tube Light', 'Fan', 'TV', 'Computer', 'Refrigerator', 'Freezer', 'W/Machine', 'Water Pump', 'Iron', 'UPS', 'Toka/Heater'];
+        let detectionMonthsList = [];
+        
+        // Initialize dynamic inputs
+        function initDynamicInputs() {
+            // Load Inputs
+            let loadHtml = '';
+            loadItems.forEach((item, i) => {
+                loadHtml += `<div class="form-row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex: 2;"><label>${item}</label><input type="hidden" id="l_${i}_desc" value="${item}"></div>
+                    <div class="form-group"><label>Qty</label><input type="text" id="l_${i}_qty" oninput="updateLoad()"></div>
+                    <div class="form-group"><label>Watts</label><input type="text" id="l_${i}_watts" oninput="updateLoad()"></div>
+                    <div class="form-group"><label>Total</label><input type="text" id="l_${i}_total" oninput="updateLoad()"></div>
+                </div>`;
+            });
+            document.getElementById('loadInputs').innerHTML = loadHtml;
+            
+            updateLoad();
+            updateDetectionPeriod();
+        }
+
+        function formatMonth(yyyyMm) {
+            if (!yyyyMm) return '';
+            const [year, month] = yyyMm.split('-');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${monthNames[parseInt(month) - 1]} ${year}`;
+        }
+
+        function updateDetectionPeriod() {
+            const fromVal = document.getElementById('f_periodFrom').value;
+            const toVal = document.getElementById('f_periodTo').value;
+            
+            document.getElementById('p_periodFrom').innerText = fromVal ? formatMonth(fromVal) : '';
+            document.getElementById('p_periodTo').innerText = toVal ? formatMonth(toVal) : '';
+            
+            if (fromVal && toVal) {
+                const fromDate = new Date(fromVal);
+                const toDate = new Date(toVal);
+                
+                if (fromDate <= toDate) {
+                    let monthsCount = (toDate.getFullYear() - fromDate.getFullYear()) * 12 + (toDate.getMonth() - fromDate.getMonth()) + 1;
+                    document.getElementById('f_periodMonths').value = monthsCount;
+                    document.getElementById('p_periodMonths').innerText = monthsCount;
+                    
+                    detectionMonthsList = [];
+                    let current = new Date(fromDate);
+                    while (current <= toDate) {
+                        detectionMonthsList.push({
+                            value: `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`,
+                            label: formatMonth(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`)
+                        });
+                        current.setMonth(current.getMonth() + 1);
+                    }
+                    
+                    generateDynamicConsumptionInputs();
+                } else {
+                    document.getElementById('f_periodMonths').value = '0';
+                    document.getElementById('p_periodMonths').innerText = '0';
+                    detectionMonthsList = [];
+                    generateDynamicConsumptionInputs();
+                }
+            } else {
+                detectionMonthsList = [];
+                generateDynamicConsumptionInputs();
+            }
+        }
+
+        function generateDynamicConsumptionInputs() {
+            let consHtml = '';
+            if (detectionMonthsList.length === 0) {
+                consHtml = '<div style="color: #aaa; font-style: italic;">Select Period From and To to generate consumption inputs.</div>';
+            } else {
+                detectionMonthsList.forEach((m, i) => {
+                    consHtml += `<div style="margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px;">
+                        <div style="font-weight: bold; margin-bottom: 5px;">${m.label}</div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Reading</label><input type="text" id="c_dyn_${i}_r" oninput="updateDynamicCons()"></div>
+                            <div class="form-group"><label>Advance</label><input type="text" id="c_dyn_${i}_a" oninput="updateDynamicCons()"></div>
+                        </div>
+                    </div>`;
+                });
+            }
+            document.getElementById('consumptionInputs').innerHTML = consHtml;
+            updateDynamicCons();
+        }
+
+        function updateDynamicCons() {
+            let html = '';
+            if (detectionMonthsList.length === 0) {
+                html = '<tr><td colspan="3" style="color: #888; font-style: italic;">No period selected</td></tr>';
+            } else {
+                detectionMonthsList.forEach((m, i) => {
+                    const r = document.getElementById(`c_dyn_${i}_r`)?.value || '';
+                    const a = document.getElementById(`c_dyn_${i}_a`)?.value || '';
+                    
+                    html += `<tr>
+                        <td style="font-weight: bold;">${m.label}</td>
+                        <td><span class="p-val" style="border:none;">${r}</span></td>
+                        <td><span class="p-val" style="border:none;">${a}</span></td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('p_consumptionBody').innerHTML = html;
+        }
+
+        // Update basic fields
+        function updatePreview(id) {
+            let val = document.getElementById('f_' + id).value;
+            
+            if (id === 'sumUnitsAssessed' || id === 'sumUnitsCharged' || id === 'sumNetUnits') {
+                const assessed = parseFloat(document.getElementById('f_sumUnitsAssessed').value) || 0;
+                const charged = parseFloat(document.getElementById('f_sumUnitsCharged').value) || 0;
+                const net = assessed - charged;
+                const netInput = document.getElementById('f_sumNetUnits');
+                const netTarget = document.getElementById('p_sumNetUnits');
+                
+                if (net < 0) {
+                    const msg = 'D.BILL IS NOT JUSTIFIED AS PER CONNECTED LOAD';
+                    netInput.value = msg;
+                    netInput.style.color = '#cc0000';
+                    netInput.style.fontWeight = 'bold';
+                    if (netTarget) {
+                        netTarget.style.color = '#cc0000';
+                        netTarget.style.fontWeight = 'bold';
+                    }
+                } else {
+                    netInput.value = net;
+                    netInput.style.color = '#000000';
+                    netInput.style.fontWeight = 'normal';
+                    if (netTarget) {
+                        netTarget.style.color = '#cc0000'; // Keep red for numbers as per design
+                        netTarget.style.fontWeight = 'bold';
+                    }
+                }
+                // Also update the preview for net units
+                const netVal = netInput.value;
+                if (netTarget) netTarget.innerText = netVal;
+            }
+
+            const target = document.getElementById('p_' + id);
+            if (target) target.innerText = val;
+        }
+
+        // Update Load Table
+        function updateLoad() {
+            let html = '';
+            loadItems.forEach((item, i) => {
+                const qty = document.getElementById(`l_${i}_qty`).value;
+                const watts = document.getElementById(`l_${i}_watts`).value;
+                const total = document.getElementById(`l_${i}_total`).value;
+                
+                html += `<tr>
+                    <td style="text-align: left; border-left: none;">${item}</td>
+                    <td><span class="p-val" style="border:none;">${qty}</span></td>
+                    <td><span class="p-val" style="border:none;">${watts}</span></td>
+                    <td style="border-right: none;"><span class="p-val" style="border:none;">${total}</span></td>
+                </tr>`;
+            });
+            
+            const totalCLoad = document.getElementById('f_totalCLoad').value;
+            html += `<tr>
+                <td colspan="3" style="text-align: right; font-weight: bold; border-left: none; border-bottom: none;">Total C/Load : -</td>
+                <td style="border-right: none; border-bottom: none;"><span class="p-val" style="border:none;">${totalCLoad}</span></td>
+            </tr>`;
+            
+            document.getElementById('p_loadBody').innerHTML = html;
+        }
+
+        // Save Draft
+        function saveDraft() {
+            const data = {};
+            document.querySelectorAll('input[type="text"], input[type="month"], textarea').forEach(el => {
+                data[el.id] = el.value;
+            });
+            // Also save dynamic consumption inputs
+            document.querySelectorAll('input[id^="c_dyn_"]').forEach(el => {
+                data[el.id] = el.value;
+            });
+            
+            // Basic safe stringify for the simple object we have here
+            const safeStringifyLocally = (obj) => {
+                try {
+                    return JSON.stringify(obj);
+                } catch (e) {
+                    const cache = new Set();
+                    return JSON.stringify(obj, (key, value) => {
+                        if (typeof value === 'object' && value !== null) {
+                            if (cache.has(value)) return '[Circular]';
+                            cache.add(value);
+                        }
+                        return value;
+                    });
+                }
+            };
+
+            localStorage.setItem('detectionBillDraft', safeStringifyLocally(data));
+            alert('Draft saved successfully!');
+        }
+
+        // Load Draft
+        function loadDraft() {
+            const saved = localStorage.getItem('detectionBillDraft');
+            if (saved) {
+                const trimmed = saved.trim();
+                if (trimmed !== 'undefined' && trimmed !== 'null' && trimmed !== '') {
+                    try {
+                        const data = JSON.parse(trimmed);
+                        if (data && typeof data === 'object') {
+                            for (const id in data) {
+                                const el = document.getElementById(id);
+                                if (el) {
+                                    el.value = data[id];
+                                    if (id.startsWith('f_')) {
+                                        if (id === 'f_periodFrom' || id === 'f_periodTo') {
+                                            // Handled by updateDetectionPeriod later
+                                        } else {
+                                            updatePreview(id.substring(2));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        updateDetectionPeriod();
+                        
+                        // Now that dynamic inputs are generated, restore their values
+                        for (const id in data) {
+                            if (id.startsWith('c_dyn_')) {
+                                const el = document.getElementById(id);
+                                if (el) el.value = data[id];
+                            }
+                        }
+                        updateDynamicCons();
+                        updateLoad();
+                    } catch (e) {
+                        console.error("Error parsing draft data:", e);
+                    }
+                }
+            } else {
+                alert('No saved draft found.');
+            }
+        }
+
+        // Reset Form
+        function resetForm() {
+            if(confirm('Are you sure you want to clear all fields?')) {
+                document.getElementById('proformaForm').reset();
+                document.querySelectorAll('input[type="text"], input[type="month"], textarea').forEach(el => {
+                    if (el.id.startsWith('f_')) {
+                        if (el.id === 'f_periodFrom' || el.id === 'f_periodTo') {
+                            // Handled by updateDetectionPeriod
+                        } else {
+                            updatePreview(el.id.substring(2));
+                        }
+                    }
+                });
+                updateDetectionPeriod();
+                updateLoad();
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            initDynamicInputs();
+            // Trigger initial preview updates for empty state
+            document.querySelectorAll('input[id^="f_"], textarea[id^="f_"]').forEach(el => {
+                if (el.id !== 'f_periodFrom' && el.id !== 'f_periodTo') {
+                    updatePreview(el.id.substring(2));
+                }
+            });
+        };
+    </script>
+</body>
+</html>
