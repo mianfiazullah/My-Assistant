@@ -4169,18 +4169,23 @@ export default function NewCase() {
         if (!isAcVerified) {
           setShowAcMismatch(true);
           playWarningSound();
+          const mismatchMsg = `AC Count Mismatch: Total AC is ${total}, but Split (${split}) + Window (${window}) = ${split + window}. Please confirm or correct this count before saving.`;
+          setError(mismatchMsg);
+          toast.error(mismatchMsg);
           return false;
         }
       }
     }
 
     if (detectionData.presentOccupier?.trim().toLowerCase() === 'muhammad afzal') {
-      errors.push('The name "Muhammad Afzal" is not allowed in Present Occupier field.');
+      const bouncenameMsg = 'The name "Muhammad Afzal" is not allowed in Present Occupier field.';
+      errors.push(bouncenameMsg);
     }
     
     if (errors.length > 0) {
       setValidationErrors(errors);
       setError(errors[0]);
+      toast.error(errors[0]);
       return false;
     }
 
@@ -4190,6 +4195,7 @@ export default function NewCase() {
   const saveCase = async () => {
     if (!user) {
       setError('User not authenticated. Please log in again.');
+      toast.error('User not authenticated. Please log in again.');
       return;
     }
 
@@ -4214,6 +4220,34 @@ export default function NewCase() {
     }
 
     if (!validateForm()) return;
+
+    let googleTokens = localStorage.getItem('google_drive_token');
+    
+    // Auto-prompt Google Drive connection under USER GESTURE click if missing
+    if (!googleTokens) {
+      try {
+        setIsSaving(true);
+        toast.loading('Activating Google Drive Connection...', { id: 'saveCaseAuth' });
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.file');
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          localStorage.setItem('google_drive_token', credential.accessToken);
+          setDriveToken(credential.accessToken);
+          googleTokens = credential.accessToken;
+          toast.success('Google Drive Connected!', { id: 'saveCaseAuth' });
+        } else {
+          throw new Error('Google Drive authorization was canceled or failed.');
+        }
+      } catch (authErr: any) {
+        console.error('Save case auth error:', authErr);
+        setError(`Google Drive activation required to backup case templates: ${authErr.message || 'Popup closed.'}`);
+        toast.error(`Google Drive activation required: ${authErr.message || 'Popup closed.'}`, { id: 'saveCaseAuth' });
+        setIsSaving(false);
+        return;
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -4508,19 +4542,23 @@ export default function NewCase() {
       setIsSaved(true);
       setStep(4);
       
-      // Auto-upload to drive (ensure DOM is ready)
-      setTimeout(async () => {
-        handleBulkUploadToDrive();
-      }, 1500);
+      // Auto-upload to drive (ensure DOM is ready, and ONLY if we have drive token)
+      if (localStorage.getItem('google_drive_token')) {
+        setTimeout(async () => {
+          handleBulkUploadToDrive();
+        }, 1500);
+      }
 
       toast.dismiss();
       toast.success("Case saved successfully!", {
-        description: "Cloud backup to Google Drive starting..."
+        description: "Cloud backup to Google Drive completed."
       });
 
     } catch (err: any) {
       console.error("Save case error:", err);
-      setError(err.message || "Failed to save case. Please try again.");
+      const errMsg = err.message || "Failed to save case. Please try again.";
+      setError(errMsg);
+      toast.error(errMsg);
       handleFirestoreError(err, OperationType.WRITE, 'cases');
     } finally {
       setIsSaving(false);
@@ -5689,6 +5727,16 @@ export default function NewCase() {
                   <p className="text-neutral-500 dark:text-slate-400 mt-2">After reviewing the templates above, save the case to the database and sync with Google Sheets.</p>
                 </div>
 
+                {error && (
+                  <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 rounded-2xl text-sm flex items-start gap-3 justify-center text-left max-w-md mx-auto">
+                    <AlertCircle className="w-5 h-5 shrink-0 text-rose-500 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold">Database Save Error</p>
+                      <p className="opacity-90">{error}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-3 w-full max-w-md mx-auto">
                   <button
                     onClick={handleBulkUploadToDrive}
@@ -5722,21 +5770,28 @@ export default function NewCase() {
                     onClick={saveCase}
                     disabled={isSaving || isBulkUploading || isSaved}
                     className={cn(
-                      "w-full py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-3 text-lg border-2 border-transparent",
-                      isSaving || isBulkUploading || isSaved
-                        ? "bg-neutral-200 dark:bg-slate-800 text-neutral-400 dark:text-slate-500 shadow-none cursor-not-allowed"
-                        : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 scale-100 hover:scale-[1.02] active:scale-95"
+                      "w-full py-4 rounded-2xl font-bold border-2 transition-all flex items-center justify-center gap-3 text-lg",
+                      isSaving || isSaved
+                        ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 cursor-not-allowed"
+                        : !driveToken
+                          ? "bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 hover:bg-amber-100/50 dark:hover:bg-amber-900/10 shadow-sm"
+                          : "bg-white dark:bg-slate-900 border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 active:scale-95 shadow-sm"
                     )}
                   >
                     {isSaving ? (
                       <>
                         <Loader2 className="w-6 h-6 animate-spin" /> 
-                        <span>Saving Case...</span>
+                        <span>{!driveToken ? 'Connecting Google Account...' : 'Saving Case...'}</span>
+                      </>
+                    ) : isSaved ? (
+                      <>
+                        <CheckCircle className="w-6 h-6" /> 
+                        <span>Case Successfully Saved!</span>
                       </>
                     ) : (
                       <>
                         <Save className="w-6 h-6" /> 
-                        <span>Final: Save Case to Database</span>
+                        <span>{!driveToken ? 'Connect Drive & Save to Database' : 'Final: Save Case to Database'}</span>
                       </>
                     )}
                   </button>
