@@ -190,13 +190,13 @@ app.post("/api/extract-bill", async (req, res) => {
     if (req.body) {
       console.log(`[extract-bill] req.body keys: ${Object.keys(req.body).join(", ")}`);
     }
-    const { base64Data, image, model: requestedModel = "gemini-3.5-flash" } = req.body || {};
+    const { base64Data, image, model: requestedModel = "gemini-3.1-pro-preview" } = req.body || {};
     const imgData = image || base64Data;
     if (!imgData) {
       return res.status(400).json({ error: `Missing image data. Body keys: ${req.body ? Object.keys(req.body).join(", ") : 'none'}` });
     }
 
-    const modelName = requestedModel === "gemini-flash-latest" || requestedModel === "gemini-1.5-flash" ? "gemini-3.5-flash" : requestedModel;
+    const modelName = requestedModel === "gemini-flash-latest" || requestedModel === "gemini-1.5-flash" ? "gemini-3.1-pro-preview" : requestedModel;
     const ai = getAI();
     
     console.log(`Analyzing bill using model: ${modelName}, data length: ${imgData.length}`);
@@ -317,7 +317,7 @@ app.post("/api/chat", async (req, res) => {
 
     const ai = getAI();
     const result = await ai.models.generateContent({ 
-      model: "gemini-3.5-flash",
+      model: "gemini-3.1-pro-preview",
       contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
       config: {
         systemInstruction: "You are an expert assistant. You help users with billing issues, detection procedures, and using the application. Be professional, helpful, and concise."
@@ -337,7 +337,7 @@ app.post("/api/generate", async (req, res) => {
 
     const ai = getAI();
     const result = await ai.models.generateContent({ 
-      model: "gemini-3.5-flash",
+      model: "gemini-3.1-pro-preview",
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
     res.json({ text: result.text });
