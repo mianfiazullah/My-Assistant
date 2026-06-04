@@ -42,6 +42,96 @@ function getAI() {
   return _ai;
 }
 
+function isQuotaOrRateLimitError(error: any): boolean {
+  if (!error) return false;
+  if (error.code === 429 || error.status === 'RESOURCE_EXHAUSTED' || error.status === 429) {
+    return true;
+  }
+  const msg = error.message || String(error);
+  if (typeof msg === 'string') {
+    const errorLower = msg.toLowerCase();
+    return errorLower.includes('quota') || 
+           errorLower.includes('429') || 
+           errorLower.includes('resource_exhausted') || 
+           errorLower.includes('rate limit');
+  }
+  try {
+    const str = JSON.stringify(error).toLowerCase();
+    return str.includes('quota') || 
+           str.includes('429') || 
+           str.includes('resource_exhausted') || 
+           str.includes('rate limit');
+  } catch (_) {}
+  return false;
+}
+
+const _failedModelsSet = new Set<string>();
+
+async function generateContentWithFallback(params: {
+  model: string;
+  contents: any;
+  config?: any;
+}): Promise<any> {
+  const ai = getAI();
+  let primaryModel = params.model || "gemini-3.1-pro-preview";
+  
+  // Sequence of fallback models to try
+  const fallbackList = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  
+  // If we already know the primary model is failing, failover immediately to the first working candidate
+  if (_failedModelsSet.has(primaryModel)) {
+    console.log(`[AI-Fallback-Wrapper] Model '${primaryModel}' has previously exhausted its quota. Bypassing to next fallback model.`);
+    for (const fb of fallbackList) {
+      if (!_failedModelsSet.has(fb) && fb !== primaryModel) {
+        console.log(`[AI-Fallback-Wrapper] Instantly rerouting request to '${fb}' to save latency.`);
+        primaryModel = fb;
+        break;
+      }
+    }
+  }
+  
+  try {
+    console.log(`[AI-Fallback-Wrapper] Attempting content generation with model: ${primaryModel}`);
+    return await ai.models.generateContent({
+      ...params,
+      model: primaryModel
+    });
+  } catch (error: any) {
+    const errorMsg = error.message || String(error);
+    console.warn(`[AI-Fallback-Wrapper] Model '${primaryModel}' failed. Error message: ${errorMsg}`);
+    
+    if (isQuotaOrRateLimitError(error)) {
+      _failedModelsSet.add(primaryModel);
+      console.log(`[AI-Fallback-Wrapper] Detected quota/rate limit on '${primaryModel}'. Attempting fallback chain...`);
+      
+      for (const fallbackModel of fallbackList) {
+        if (fallbackModel === primaryModel || _failedModelsSet.has(fallbackModel)) {
+          continue;
+        }
+        
+        console.log(`[AI-Fallback-Wrapper] Attempting fallback to '${fallbackModel}'...`);
+        try {
+          const result = await ai.models.generateContent({
+            ...params,
+            model: fallbackModel
+          });
+          console.log(`[AI-Fallback-Wrapper] Successfully generated content using fallback model: '${fallbackModel}'`);
+          return result;
+        } catch (fallbackError: any) {
+          const fallbackErrorMsg = fallbackError.message || String(fallbackError);
+          console.warn(`[AI-Fallback-Wrapper] Fallback model '${fallbackModel}' failed. Error: ${fallbackErrorMsg}`);
+          if (isQuotaOrRateLimitError(fallbackError)) {
+            _failedModelsSet.add(fallbackModel);
+          }
+        }
+      }
+      
+      console.error(`[AI-Fallback-Wrapper] All fallback models in the chain failed! Throwing original quota error.`);
+    }
+    throw error;
+  }
+}
+
 // Initialize Firebase Admin lazily
 let _bucket: any = null;
 let _firebaseAdminInitialized = false;
@@ -224,7 +314,7 @@ async function startServer() {
       
       console.log(`Analyzing bill using model: ${modelName}, data length: ${imgData.length}`);
 
-      const result = await ai.models.generateContent({
+      const result = await generateContentWithFallback({
         model: modelName,
         contents: [
           {
@@ -355,8 +445,7 @@ Return ONLY JSON.` }
       const { input } = req.body;
       if (!input) return res.status(400).json({ error: "No input provided" });
 
-      const ai = getAI();
-      const result = await ai.models.generateContent({ 
+      const result = await generateContentWithFallback({ 
         model: "gemini-3.1-pro-preview",
         contents: [{ role: 'user', parts: [{ text: input.trim() }] }],
         config: {
@@ -389,8 +478,7 @@ Return ONLY JSON.` }
       const { prompt } = req.body;
       if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-      const ai = getAI();
-      const result = await ai.models.generateContent({ 
+      const result = await generateContentWithFallback({ 
         model: "gemini-3.1-pro-preview",
         contents: [{ role: 'user', parts: [{ text: prompt }] }]
       });
