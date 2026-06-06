@@ -165,7 +165,11 @@ function getRobustErrorMessage(error: any): string {
     if (error.error?.message) {
       errorMsg += ` Details: ${error.error.message}`;
     } else if (error.error?.details) {
-      errorMsg += ` Details: ${JSON.stringify(error.error.details)}`;
+      try {
+        errorMsg += ` Details: ${JSON.stringify(error.error.details)}`;
+      } catch (_) {
+        errorMsg += ` Details: [Complex Error Details]`;
+      }
     }
     
     if (!errorMsg) {

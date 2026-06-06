@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [showFirDetailsModal, setShowFirDetailsModal] = useState(false);
   const [showActiveUsersModal, setShowActiveUsersModal] = useState(false);
   const [activeUsersList, setActiveUsersList] = useState<User[]>([]);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [usersSearchFilter, setUsersSearchFilter] = useState('');
   const [editingUserUid, setEditingUserUid] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{ 
@@ -2213,6 +2214,7 @@ export default function Dashboard() {
                         const assignedColor = colors[hash % colors.length];
                         const canManageUsers = false;
                         const isEditing = editingUserUid === u.uid;
+                        const isAdmin = user?.email?.toLowerCase() === 'mianfiazullah@gmail.com' || user?.role === 'admin';
 
                         return (
                           <motion.div
@@ -2234,348 +2236,182 @@ export default function Dashboard() {
                                   <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate text-sm">
                                     {u.name}
                                   </h4>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {isCurrentUser && (
-                                      <span className="text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-400 px-2 py-0.5 rounded-md">
-                                        You
+                                  {isAdmin && (
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {isCurrentUser && (
+                                        <span className="text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-400 px-2 py-0.5 rounded-md">
+                                          You
+                                        </span>
+                                      )}
+                                      <span className={cn(
+                                        "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border",
+                                        u.role === 'admin' 
+                                          ? "bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border-red-100 dark:border-red-900/25" 
+                                          : "bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/80"
+                                      )}>
+                                        {u.role}
                                       </span>
-                                    )}
-                                    <span className={cn(
-                                      "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border",
-                                      u.role === 'admin' 
-                                        ? "bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border-red-100 dark:border-red-900/25" 
-                                        : "bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/80"
-                                    )}>
-                                      {u.role}
-                                    </span>
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-1.5">
                                   {u.email}
                                 </p>
-                                {u.disabled ? (
-                                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-0.5 rounded-full">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                    Account Disabled
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 rounded-full">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Session Active
-                                  </span>
+                                {isAdmin && (
+                                  u.disabled ? (
+                                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-0.5 rounded-full">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                      Account Disabled
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 rounded-full">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      Session Active
+                                    </span>
+                                  )
                                 )}
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs">
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none">Sub Division</span>
-                                {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={editDraft?.subDivision || ''}
-                                    onChange={(e) => setEditDraft(prev => prev ? { ...prev, subDivision: e.target.value } : null)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                    placeholder="Enter subdivision..."
-                                  />
-                                ) : (
-                                  <span className="font-bold text-slate-700 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-800/40 px-2 py-0.5 rounded-md block truncate">
+                            {/* Sub division / Expiry block - admin vs non-admin */}
+                            {!isAdmin ? (
+                              <div className="grid grid-cols-1 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none animate-pulse">Sub Division</span>
+                                  <span className="font-bold text-slate-705 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-800/40 px-2 py-0.5 rounded-md block truncate">
                                     {u.subDivision || 'N/A'}
                                   </span>
-                                )}
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none">Account Expires</span>
-                                {isEditing ? (
-                                  <input
-                                    type="date"
-                                    value={editDraft?.expiryDate || ''}
-                                    onChange={(e) => setEditDraft(prev => prev ? { ...prev, expiryDate: e.target.value } : null)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-900 dark:text-slate-101 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                  />
-                                ) : (
-                                  <span className="font-bold text-slate-700 dark:text-slate-300 font-mono text-[10px] block truncate">
-                                    {u.expiryDate ? format(new Date(u.expiryDate), 'MMM d, yyyy') : 'Never'}
-                                  </span>
-                                )}
+                            ) : (
+                              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none">Sub Division</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editDraft?.subDivision || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, subDivision: e.target.value } : null)}
+                                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                      placeholder="Enter subdivision..."
+                                    />
+                                  ) : (
+                                    <span className="font-bold text-slate-705 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-800/40 px-2 py-0.5 rounded-md block truncate">
+                                      {u.subDivision || 'N/A'}
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5 font-sans select-none">Account Expires</span>
+                                  {isEditing ? (
+                                    <input
+                                      type="date"
+                                      value={editDraft?.expiryDate || ''}
+                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, expiryDate: e.target.value } : null)}
+                                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-900 dark:text-slate-101 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                    />
+                                  ) : (
+                                    <span className="font-bold text-slate-700 dark:text-slate-300 font-mono text-[10px] block truncate">
+                                      {u.expiryDate ? format(new Date(u.expiryDate), 'MMM d, yyyy') : 'Never'}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* SDO / Officer Details */}
-                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs space-y-2">
-                              <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block font-sans select-none">SDO / Officer Details</span>
-                              <div className="grid grid-cols-2 gap-2 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
-                                <div>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Name</span>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={editDraft?.sdoName || ''}
-                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoName: e.target.value } : null)}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                      placeholder="SDO Name..."
-                                    />
-                                  ) : (
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block truncate">{u.sdoName || 'Not Loaded'}</span>
-                                  )}
-                                </div>
-                                <div>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Name (Urdu)</span>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={editDraft?.sdoNameUrdu || ''}
-                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoNameUrdu: e.target.value } : null)}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 urdu-font focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                      placeholder="ایس ڈی او کا نام..."
-                                    />
-                                  ) : (
-                                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 urdu-font block truncate">{u.sdoNameUrdu || 'درج نہیں'}</span>
-                                  )}
-                                </div>
-                                <div>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Designation</span>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={editDraft?.designation || ''}
-                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, designation: e.target.value } : null)}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                      placeholder="Designation..."
-                                    />
-                                  ) : (
-                                    <span className="text-xs font-semibold text-slate-655 dark:text-slate-400 block truncate">{u.designation || 'Not Loaded'}</span>
-                                  )}
-                                </div>
-                                <div>
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO CNIC</span>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={editDraft?.sdoCnic || ''}
-                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoCnic: e.target.value } : null)}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                      placeholder="SDO CNIC..."
-                                    />
-                                  ) : (
-                                    <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoCnic || 'Not Loaded'}</span>
-                                  )}
-                                </div>
-                                <div className="col-span-2">
-                                  <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Mobile</span>
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={editDraft?.sdoMobile || ''}
-                                      onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoMobile: e.target.value } : null)}
-                                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                                      placeholder="SDO Mobile..."
-                                    />
-                                  ) : (
-                                    <span className="text-xs font-mono text-slate-600 dark:text-slate-450 block truncate">{u.sdoMobile || 'Not Loaded'}</span>
-                                  )}
+                            {isAdmin && (
+                              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 text-xs space-y-2">
+                                <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block font-sans select-none font-sans select-none">SDO / Officer Details</span>
+                                <div className="grid grid-cols-2 gap-2 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                                  <div>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Name</span>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editDraft?.sdoName || ''}
+                                        onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoName: e.target.value } : null)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="SDO Name..."
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block truncate">{u.sdoName || 'Not Loaded'}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Name (Urdu)</span>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editDraft?.sdoNameUrdu || ''}
+                                        onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoNameUrdu: e.target.value } : null)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 urdu-font focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="ایس ڈی او کا نام..."
+                                      />
+                                    ) : (
+                                      <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 urdu-font block truncate">{u.sdoNameUrdu || 'درج نہیں'}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">Designation</span>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editDraft?.designation || ''}
+                                        onChange={(e) => setEditDraft(prev => prev ? { ...prev, designation: e.target.value } : null)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-100 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="Designation..."
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-semibold text-slate-655 dark:text-slate-400 block truncate">{u.designation || 'Not Loaded'}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO CNIC</span>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editDraft?.sdoCnic || ''}
+                                        onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoCnic: e.target.value } : null)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="SDO CNIC..."
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-mono text-slate-600 dark:text-slate-455 block truncate">{u.sdoCnic || 'Not Loaded'}</span>
+                                    )}
+                                  </div>
+                                  <div className="col-span-2">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase block select-none mb-0.5">SDO Mobile</span>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editDraft?.sdoMobile || ''}
+                                        onChange={(e) => setEditDraft(prev => prev ? { ...prev, sdoMobile: e.target.value } : null)}
+                                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-900 dark:text-slate-101 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                                        placeholder="SDO Mobile..."
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-mono text-slate-600 dark:text-slate-455 block truncate">{u.sdoMobile || 'Not Loaded'}</span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            )}
 
-                            {/* User-specific Webhook Configurations (Moved to Admin Panel) */}
-
-                            {/* Dynamic Google Apps Script Generator (Moved to Admin Panel) */}
-                            {false && !isEditing && (
-                              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/40 select-none">
+                            {/* View Action for Non-Admin */}
+                            {!isAdmin && (
+                              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 font-sans">
                                 <button
-                                  onClick={() => setExpandedScriptUid(expandedScriptUid === u.uid ? null : u.uid)}
-                                  className="w-full flex items-center justify-between py-1.5 px-3 bg-purple-50/50 hover:bg-purple-100/60 dark:bg-purple-950/20 dark:hover:bg-purple-900/30 text-purple-655 dark:text-purple-400 rounded-xl text-[11px] font-bold font-sans transition-all cursor-pointer"
+                                  onClick={() => setViewingUser(u)}
+                                  className="w-full py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-purple-600/10 hover:shadow-lg active:scale-95"
                                 >
-                                  <span className="flex items-center gap-1.5">
-                                    <Zap className="w-3.5 h-3.5 animate-pulse text-purple-500" />
-                                    {expandedScriptUid === u.uid ? "Hide Google Sheet Script & Setup Guide" : "Show Google Sheet Script & Setup Guide"}
-                                  </span>
-                                  <ChevronDown className={cn("w-3.5 h-3.5 transition-all", expandedScriptUid === u.uid ? "rotate-180" : "")} />
+                                  <Eye className="w-3.5 h-3.5 animate-pulse text-purple-200" /> View
                                 </button>
-                                
-                                <AnimatePresence>
-                                  {expandedScriptUid === u.uid && (
-                                    <motion.div
-                                      initial={{ opacity: 0, height: 0 }}
-                                      animate={{ opacity: 1, height: "auto" }}
-                                      exit={{ opacity: 0, height: 0 }}
-                                      className="overflow-hidden space-y-3 pt-3 text-[11px]"
-                                    >
-                                      <div className="bg-slate-50 dark:bg-slate-950/70 border border-slate-100 dark:border-slate-850 p-3 rounded-2xl select-text">
-                                        <p className="font-bold text-slate-850 dark:text-slate-200 mb-1 font-sans">
-                                          Follow these simple steps for: <span className="text-purple-600 dark:text-purple-400">{u.name} (Sub-Division: {u.subDivision || 'Default'})</span>
-                                        </p>
-                                        <ol className="list-decimal pl-4.5 space-y-1 text-slate-550 dark:text-slate-400 font-medium font-sans">
-                                          <li>Create a new Google Sheet named for subdivision <span className="font-bold text-slate-700 dark:text-slate-350">"{u.subDivision || 'Default'}"</span></li>
-                                          <li>Click on <span className="font-bold text-slate-750 dark:text-slate-350">Extensions &gt; Apps Script</span> in the Google Sheet menu.</li>
-                                          <li>Remove all placeholder code and <span className="font-bold text-purple-600 dark:text-purple-400">paste the code block below</span>!</li>
-                                          <li>Click <span className="font-bold text-slate-700 dark:text-slate-350">Deploy &gt; New Deployment</span>. Select "Web App".</li>
-                                          <li>Set "Who has access" to <span className="font-bold text-rose-500">"Anyone"</span> and click Deploy.</li>
-                                          <li>Authorize Google permissions, copy the generated Web App URL and edit this user to paste in Webhook 1 field above!</li>
-                                        </ol>
-                                      </div>
-
-                                      <div className="relative">
-                                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 select-none z-10">
-                                          <button
-                                            onClick={() => {
-                                              const code = `function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // Auto subdivision preconfigured specifically for this employee's active records
-    var subDivision = "${u.subDivision || 'Default'}";
-    
-    // Check and create Dynamic Google Drive Folder named "My Assistant [subDivision]"
-    var folderName = "My Assistant " + subDivision;
-    var folders = DriveApp.getFoldersByName(folderName);
-    var folder;
-    if (folders.hasNext()) {
-      folder = folders.next();
-    } else {
-      folder = DriveApp.createFolder(folderName);
-    }
-
-    // Check if this is a File Upload request
-    if (data.action === "uploadFile") {
-      var fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileData), data.fileType, data.fileName);
-      var file = folder.createFile(fileBlob);
-      return ContentService.createTextOutput(JSON.stringify({ 
-        "success": true, 
-        "message": "File saved to folder: " + folderName,
-        "fileId": file.getId(),
-        "url": file.getUrl()
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // Get or Create Dynamic Google Sheets Tab dynamically named like the Sub Division!
-    var sheet = ss.getSheetByName(subDivision);
-    if (!sheet) {
-      sheet = ss.insertSheet(subDivision);
-    }
-    
-    // Otherwise, it is standard Row Data
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    if (headers.length === 0 || headers[0] === "") {
-      headers = [
-        "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
-        "Present Occupier", "Present Occupier (Urdu)", "Address", "Address (Urdu)", "Customer ID", 
-        "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
-        "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
-        "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
-        "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
-        "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
-        "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
-        "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
-        "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
-        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
-        "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
-      ];
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    }
-    
-    // Update links inside standard data cells
-    if (!data["Drive Folder Link"]) {
-      data["Drive Folder Link"] = folder.getUrl();
-    }
-    
-    var row = [];
-    for (var i = 0; i < headers.length; i++) {
-      var key = headers[i];
-      row.push(data[key] || "");
-    }
-    
-    sheet.appendRow(row);
-    
-    return ContentService.createTextOutput(JSON.stringify({ 
-      "success": true, 
-      "message": "Data saved and folder verified/created successfully.",
-      "folderName": folderName,
-      "sheetName": subDivision
-    })).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ 
-      "success": false, 
-      "error": error.toString() 
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
-                                              navigator.clipboard.writeText(code).then(() => {
-                                                toast.success(`Google Apps Script code copied for ${u.name}!`);
-                                              });
-                                            }}
-                                            className="px-2.5 py-1 bg-slate-900 border border-slate-700/80 rounded-lg text-white font-bold cursor-pointer hover:bg-slate-800 flex items-center gap-1 scale-[0.85]"
-                                          >
-                                            <Copy className="w-3.5 h-3.5" /> Copy Code
-                                          </button>
-                                        </div>
-                                        <textarea
-                                          readOnly
-                                          value={`// Google Sheets Automator specifically preconfigured for Division: "${u.subDivision || 'Default'}"
-function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var subDivision = "${u.subDivision || 'Default'}";
-    var folderName = "My Assistant " + subDivision;
-    var folders = DriveApp.getFoldersByName(folderName);
-    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
-
-    if (data.action === "uploadFile") {
-      var fileBlob = Utilities.newBlob(Utilities.base64Decode(data.fileData), data.fileType, data.fileName);
-      var file = folder.createFile(fileBlob);
-      return ContentService.createTextOutput(JSON.stringify({ "success": true, "url": file.getUrl() })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    var sheet = ss.getSheetByName(subDivision) || ss.insertSheet(subDivision);
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    if (headers.length === 0 || headers[0] === "") {
-      headers = [
-        "Date of Checking", "Reference Number", "Sub Division", "Billing Month", "Consumer Name", "Consumer Name (Urdu)", 
-        "Present Occupier", "Present Occupier (Urdu)", "Address", "Address (Urdu)", "Customer ID", 
-        "Tariff", "Sanction Load", "Connected Load", "Feeder Name", "G. Total Units TO BE CHARGED", 
-        "Meter No.", "Meter Make", "Meter Type", "Capacity", "Meter Status", "Meter Slow By (%)", 
-        "Discrepancy", "Notice No.", "Notice Dated", "FIR Request No.", "FIR Request Dated", 
-        "Registered FIR No.", "Registered FIR Dated", "Police Station", "NAME OF POLICE STATIONS", "NAME OF POLICE STATIONS (URDU)", "No. of AC", "Split AC Count", 
-        "Window AC Count", "AC Type", "AC Period From", "AC Period To", "AC Period Months", 
-        "Units of AC Period", "Detection Period From", "Detection Period To", "Detection Period Months", 
-        "Units Assessed", "Units Already Charged", "Net Units to be Charged", "D.BILL MEMO NO.", 
-        "D.BILL MEMO DATED", "Loss Amount", "Seizure Cable Size", "Seizure Cable Color", 
-        "Seizure Cable Length", "Checked By", "Witnesses", "Present Reading at Site", 
-        "E-Mail Address", "Mobile Number", "Load Factor", "Connected Load Details", "Remarks", 
-        "SDO NAME", "SDO NAME (Urdu)", "SDO NAME(Urdu)", "Designation", "SDO CNIC", "SDO Mobile",
-        "Evidence Photo Drive Link", "Drive Folder Link", "photoUrl"
-      ];
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    }
-    
-    if (!data["Drive Folder Link"]) data["Drive Folder Link"] = folder.getUrl();
-    var row = [];
-    for (var i = 0; i < headers.length; i++) {
-      row.push(data[headers[i]] || "");
-    }
-    sheet.appendRow(row);
-    return ContentService.createTextOutput(JSON.stringify({ "success": true, "folderName": folderName, "sheetName": subDivision })).setMimeType(ContentService.MimeType.JSON);
-  } catch(e) {
-    return ContentService.createTextOutput(JSON.stringify({ "success": false, "error": e.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}`}
-                                          className="w-full h-32 bg-slate-900 border border-slate-800 text-slate-350 rounded-2xl p-3 font-mono text-[9px] resize-none focus:outline-none"
-                                        />
-                                      </div>
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
                               </div>
                             )}
 
                             {/* Admin Controls */}
-                            {canManageUsers && (
+                            {isAdmin && canManageUsers && (
                               <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2.5 select-none font-sans">
                                 {isEditing ? (
                                   <>
@@ -2641,11 +2477,13 @@ function doPost(e) {
                             )}
 
                             {/* Client ID info */}
-                            <div className="pt-2 text-right border-t border-slate-100/40 dark:border-slate-800/40 select-none">
-                              <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                                ID: {u.uid}
-                              </span>
-                            </div>
+                            {isAdmin && (
+                              <div className="pt-2 text-right border-t border-slate-100/40 dark:border-slate-800/40 select-none">
+                                <span className="text-[8px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                                  ID: {u.uid}
+                                </span>
+                              </div>
+                            )}
                           </motion.div>
                         );
                       })}
@@ -2661,6 +2499,96 @@ function doPost(e) {
                   className="px-5 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-bold text-slate-705 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 rounded-xl transition-all cursor-pointer"
                 >
                   Close Register
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Viewing User Detail Modal */}
+        {viewingUser && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl relative overflow-hidden"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base font-sans flex items-center gap-2">
+                  <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span>User Profile Record</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">/</span>
+                    <span className="urdu-font text-xs text-purple-600 dark:text-purple-400 pt-0.5 font-medium">یوزر کی تفصیلات</span>
+                  </span>
+                </h3>
+                <button
+                  onClick={() => setViewingUser(null)}
+                  className="p-1.5 hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 font-sans">
+                {/* Name Row */}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      Full Name
+                    </span>
+                    <span className="urdu-font text-[11px] text-slate-400 dark:text-slate-500 font-semibold block">
+                      پورا نام
+                    </span>
+                  </div>
+                  <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-950/50 px-4 py-3 rounded-2xl border border-slate-100/50 dark:border-slate-800/40">
+                    {viewingUser.name || 'Not Available'}
+                  </div>
+                </div>
+
+                {/* Gmail Account Row */}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      Gmail Account
+                    </span>
+                    <span className="urdu-font text-[11px] text-slate-400 dark:text-slate-500 font-semibold block">
+                      جی میل اکاؤنٹ
+                    </span>
+                  </div>
+                  <div className="text-sm font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-950/20 px-4 py-3 rounded-2xl border border-indigo-100/20 dark:border-indigo-900/20">
+                    {viewingUser.email || 'Not Available'}
+                  </div>
+                </div>
+
+                {/* Sub Division Code Row */}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                      Sub Division Code
+                    </span>
+                    <span className="urdu-font text-[11px] text-slate-400 dark:text-slate-500 font-semibold block">
+                      سب ڈویژن کوڈ
+                    </span>
+                  </div>
+                  <div className="text-sm font-black text-purple-700 dark:text-purple-400 bg-purple-50/40 dark:bg-purple-950/20 px-4 py-3 rounded-2xl border border-purple-100/20 dark:border-purple-900/20 tracking-wider">
+                    {viewingUser.subDivision || 'Default / Not Set'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between">
+                <span className="urdu-font text-xs text-slate-500 dark:text-slate-400">تصدیق کریں</span>
+                <button
+                  onClick={() => setViewingUser(null)}
+                  className="px-5 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-905 text-xs font-black rounded-xl transition-all shadow-md shadow-slate-950/10 cursor-pointer hover:opacity-90 active:scale-95 flex items-center gap-1.5"
+                >
+                  Close / بند کریں
                 </button>
               </div>
             </motion.div>
