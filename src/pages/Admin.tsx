@@ -525,7 +525,7 @@ function doPost(e) {
 
   useEffect(() => {
     const savedStep = localStorage.getItem("lesco_new_case_step");
-    if (savedStep) {
+    if (savedStep && savedStep !== 'undefined' && savedStep !== 'null') {
       try {
         const step = JSON.parse(savedStep);
         if (step > 1) {

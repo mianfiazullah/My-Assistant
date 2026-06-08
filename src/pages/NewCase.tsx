@@ -560,24 +560,29 @@ export default function NewCase() {
   };
 
   const defaultFieldOrder = [
-    'dateOfChecking', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'registeredFirNo', 'registeredFirDated', 'policeStation',
-    'noOfAC', 'feederName', 'grandTotalUnits', 'meterStatus', 'detectionPeriodFrom', 'detectionPeriodTo', 'detectionPeriodMonths',
-    'unitsAssessed', 'unitsAlreadyCharged', 'netUnitsToBeCharged', 'dBillingMemoNo', 'dBillingMemoDated', 'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength', 'checkedBy', 'referenceNo',
-    'consumerName', 'nameUrdu', 'presentOccupier', 'presentOccupierUrdu', 'address', 'addressUrdu', 'customerId', 'tariff', 'sanctionLoad', 'meterNo', 'meterMake',
-    'meterType', 'capacity', 'discrepancy', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod',
-    'presentReadingAtSite', 'email', 'mobileNo', 'witnesses', 'loadFactor', 'loadItems', 'remarks',
-    'employeeName', 'employeeNameUrdu', 'employeeDesignation', 'employeeCnic', 'employeeMobile'
+    'email', 'mobileNo', 'customerId', 'tariff', 'sanctionLoad', 'meterStatus', 'feederName', 
+    'dateOfChecking', 'referenceNo', 'consumerName', 'nameUrdu', 'presentOccupier', 'presentOccupierUrdu', 
+    'address', 'addressUrdu', 'checkedBy', 'meterNo', 'meterMake', 'meterType', 'capacity', 
+    'presentReadingAtSite', 'discrepancy', 'witnesses', 'loadFactor', 'detectionPeriodFrom', 
+    'detectionPeriodTo', 'detectionPeriodMonths', 'unitsAlreadyCharged', 'unitsAssessed', 'loadItems', 
+    'netUnitsToBeCharged', 'noOfAC', 'acPeriodFrom', 'acPeriodTo', 'acPeriodMonths', 'unitsOfAcPeriod', 
+    'grandTotalUnits', 'remarks', 'employeeName', 'employeeNameUrdu', 'employeeDesignation', 'employeeCnic', 
+    'employeeMobile', 'noticeNo', 'noticeDated', 'firNo', 'firDated', 'policeStation', 'registeredFirNo', 
+    'registeredFirDated', 'dBillingMemoNo', 'dBillingMemoDated', 
+    'lossAmount', 'seizureCableSize', 'seizureCableColor', 'seizureCableLength'
   ];
 
   const defaultFieldSerials = {
-    dateOfChecking: '1', noticeNo: '2', noticeDated: '3', firNo: '4', firDated: '5', registeredFirNo: '6', registeredFirDated: '7', policeStation: '8',
-    noOfAC: '9', detectionPeriodFrom: '10', detectionPeriodTo: '11', detectionPeriodMonths: '12',
-    dBillingMemoNo: '34a', dBillingMemoDated: '34b',
-    unitsAssessed: '34', unitsAlreadyCharged: '33', netUnitsToBeCharged: '35', checkedBy: '16', referenceNo: '17',
-    consumerName: '18', nameUrdu: '18U', presentOccupier: '18A', presentOccupierUrdu: '18B', address: '19', addressUrdu: '19U', customerId: '20', tariff: '21', sanctionLoad: '22', meterNo: '23', meterMake: '24',
-    meterType: '25', capacity: '26', discrepancy: '27', acPeriodFrom: '28', acPeriodTo: '29', acPeriodMonths: '30', unitsOfAcPeriod: '31',
-    presentReadingAtSite: '32', email: '13', mobileNo: '14', witnesses: '15', loadFactor: '39', loadItems: '37', remarks: '38', feederName: '36', grandTotalUnits: '36a', meterStatus: '26a',
-    employeeName: '40', employeeNameUrdu: '40U', employeeDesignation: '41', employeeCnic: '42', employeeMobile: '43'
+    email: '1', mobileNo: '2', customerId: '3', tariff: '4', sanctionLoad: '5', meterStatus: '6', feederName: '7',
+    dateOfChecking: '8', referenceNo: '9', consumerName: '10', nameUrdu: '11', presentOccupier: '12', presentOccupierUrdu: '13',
+    address: '14', addressUrdu: '15', checkedBy: '16', meterNo: '17', meterMake: '18', meterType: '19', capacity: '20',
+    presentReadingAtSite: '21', discrepancy: '22', witnesses: '23', loadFactor: '24', detectionPeriodFrom: '25',
+    detectionPeriodTo: '26', detectionPeriodMonths: '27', unitsAlreadyCharged: '28', unitsAssessed: '29', loadItems: '30',
+    netUnitsToBeCharged: '31', noOfAC: '32', acPeriodFrom: '33', acPeriodTo: '34', acPeriodMonths: '35', unitsOfAcPeriod: '36',
+    grandTotalUnits: '37', remarks: '38', employeeName: '39', employeeNameUrdu: '40', employeeDesignation: '41', employeeCnic: '42',
+    employeeMobile: '43', noticeNo: '44', noticeDated: '45', firNo: '46', firDated: '47', policeStation: '48', registeredFirNo: '49',
+    registeredFirDated: '50', dBillingMemoNo: '51', dBillingMemoDated: '52',
+    lossAmount: '', seizureCableSize: '', seizureCableColor: '', seizureCableLength: ''
   };
 
   const [fieldOrder, setFieldOrder] = useState(() => {
