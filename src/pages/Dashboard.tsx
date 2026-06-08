@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const savedStep = localStorage.getItem('lesco_new_case_step');
-      if (savedStep && savedStep !== 'undefined' && savedStep !== 'null') {
+    if (savedStep) {
       try {
         const step = JSON.parse(savedStep);
         if (step > 1) {
